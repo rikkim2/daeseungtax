@@ -119,6 +119,7 @@ secrets.json
 dump.rdb
 
 # Compiled static files
+/static/cert_DS/
 /static/CACHE/
 /static/.webassets-cache
 
