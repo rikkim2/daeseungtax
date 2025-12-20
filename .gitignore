@@ -1,0 +1,157 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+
+# Django
+*.log
+*.pot
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+local_settings.py
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Node.js / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnp
+.pnp.js
+
+# Build outputs
+/build/
+/dist/
+*.egg-info/
+.eggs/
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.hypothesis/
+.cache/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Selenium / Web Automation
+chromedriver/
+geckodriver
+selenium-manager.json
+*.png
+*.jpg
+*.jpeg
+*.gif
+screenshots/
+
+# Project-specific
+chat_log.txt
+id_log.txt
+response.html
+response.txt
+popup.png
+popup2.png
+tmp_newline.py
+
+# Credentials and Secrets
+credentials.json
+credentials/
+secrets.json
+*.pem
+*.key
+*.crt
+
+# Microsoft SQL Server
+*.bak
+*.mdf
+*.ldf
+
+# Redis dump
+dump.rdb
+
+# Compiled static files
+/static/CACHE/
+/static/.webassets-cache
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Claude Code
+.claude/
+
+# IIS / Windows Server
+web.config.backup
+*.publish.xml
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Large model files
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.pb
+
+# Vector database / embeddings
+vector_db/
+embeddings/
+*.index
+*.faiss
