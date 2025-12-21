@@ -1,0 +1,821 @@
+{% extends 'components/base.html' %}
+{% load static %}
+{% load humanize %}
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">제조원가명세서</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">재무제표</li>
+										<li class="breadcrumb-item">주요원장</li>
+										<li class="breadcrumb-item active" aria-current="page"><a href="javascript:void(0);">제조원가명세서</a></li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-lg-4 col-xl-3">
+									<div class="card mb-4">
+										<div class="card-header border-bottom d-flex flex-row-reverse">
+                
+
+                      <div class="btn-group">
+                        <button id="btn_selectedYear"  type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                           {{selectedYear}} 년<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li class="dropdown-plus-title">
+                            결산연도
+                            <b class="fa fa-angle-up" aria-hidden="true"></b>
+                          </li>
+													<div class="list-group">
+														{% for node in statementYears %}
+															<li class='list-group-item list-group-item-action'><a href='javascript:handleButtonClose({{node.work_yy}},{{node.ki}})' >{{node.work_yy}}년</a></li>
+														{% endfor %}
+													</div>
+                        </ul>
+                      </div>
+										</div>
+                    <div class="card-body">
+                      <div class="ps-5 d-flex">
+                        <div>
+                          <div class="text-muted fs-13 btn-list">유동비율 <i class="fe fe-arrow-right-circle"></i>
+                            <span class="p-2 br-5 text-info">
+                              <h3 class="fw-semibold" id="currentA"></h3>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- 유동비율차트 -->
+                      <div id="chartCurrentA" class="d-flex ms-auto" style="height:240px"></div>
+                      <div class="ps-5 d-flex mt-6">
+                        <div>
+                          <div class="text-muted fs-13 btn-list">부채비율 <i class="fe fe-arrow-right-circle"></i>
+                            <span class="p-2 br-5 text-orange">
+                              <h3 class="fw-semibold" id="currentR"></h3>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- 부채비율차트 -->
+                      <div id="chartCurrentR" class="d-flex ms-auto" style="height:240px"></div>
+                      <!-- 기타비율 -->
+                      <div class="card  mt-6">
+                        <div class="card-header d-flex justify-content-between">
+                          <div><h3 class="card-title">유동자산비율</h3></div>
+                          <div><h3 class="card-title " id="ratio1"></h3></div>
+                        </div>
+                      </div>
+                      <div class="card  ">
+                        <div class="card-header d-flex justify-content-between">
+                          <div><h3 class="card-title">자기자본비율(BIS)</h3></div>
+                          <div><h3 class="card-title" id="ratio2"></h3></div>
+                        </div>
+                      </div>
+                      <div class="card ">
+                        <div class="card-header d-flex justify-content-between">
+                          <div><h3 class="card-title">차입금의존도</h3></div>
+                          <div><h3 class="card-title" id="ratio3"></h3></div>
+                        </div>
+                      </div>
+                      <div class="card ">
+                        <div class="card-header d-flex justify-content-between">
+                          <div><h3 class="card-title">자기자본증가율</h3></div>
+                          <div><h3 class="card-title" id="ratio5"></h3></div>
+                        </div>
+                      </div>
+                      <div class="card ">
+                        <div class="card-header d-flex justify-content-between">
+                          <div><h3 class="card-title">총자산증가율</h3></div>
+                          <div><h3 class="card-title" id="ratio6"></h3></div>
+                        </div>
+                      </div>
+                      <div class="card">
+                        <div class="card-header bg-yellow border-bottom">
+                          <h3 class="card-title"><i class="fa fa-grav text-success"></i> 안정성 지표 안내</h3>
+                          <div class="card-options">
+                            <a href="#collapseExample" class="card-options-collapse" data-bs-toggle="collapse"  aria-expanded="false" aria-controls="collapseExample"><i class="fe fe-chevron-up"></i></a>
+                            <!-- <a href="#" class="card-options-remove" data-bs-toggle="card-remove"><i class="fe fe-x"></i></a> -->
+                          </div>
+                        </div>
+                        <div class="card-body collapse"  id="collapseExample">
+                          <div class="visitor-list" >
+                            <div class=" border-bottom">
+                              <div class="transaction-icon  mt-2">
+                                <i class="fe fe-chevrons-right  "></i> 유동비율 <img src=" {% static 'assets/images/icon/reorder-two-outline.svg' %} " style="width:20px;height:15px"/> 유동자산 ÷ 유동부채
+                              </div>
+                              <div class="media-body mt-1">
+                                <p class="text-muted">유동부채에 대한 유동자산의 비율로써 단기채무에 충당할 수 있는 유동성 자산이 얼마나 되는지 나타내는 비율. 회사의 단기 지급능력 및 건설업종의 시공능력 또는 은행권의 이자변제력 등을 파악하는데 활용됩니다.</p>
+                              </div>
+                            </div>
+                            <div class=" border-bottom">
+                              <div class="transaction-icon  mt-2">
+                                <i class="fe fe-chevrons-right  "></i> 부채비율 <img src=" {% static 'assets/images/icon/reorder-two-outline.svg' %} " style="width:20px;height:15px"/> 부채총액 ÷ 자본총액
+                              </div>
+                              <div class="media-body mt-1">
+                                <p class="text-muted">부채총액에 대한 자본의 비율로써 타인자본에 대한 회사 자체의 부담능력을 의미합니다. 일반적으로 100% 이하이면 건전하며 건설업종은 60%이하이면 공사입찰에 유리합니다.</p>
+                              </div>
+                            </div>
+                            <div class=" border-bottom">
+                              <div class="transaction-icon  mt-2">
+                                <i class="fe fe-chevrons-right  "></i> 유동자산비율 <img src=" {% static 'assets/images/icon/reorder-two-outline.svg' %} " style="width:20px;height:15px"/> 유동자산 ÷ 자산총액
+                              </div>
+                              <div class="media-body mt-1">
+                                <p class="text-muted">자산총액에서 유동자산이 차지하는 비율로써 유동자산이 충분하지 못하면 기업이 유동성 위기에 처할 수 있습니다. 유동자산비율이 높을 수록 기업의 안정성은 제고됩니다.</p>
+                              </div>
+                            </div>
+                            <div class=" border-bottom">
+                              <div class="transaction-icon mt-2 ms-0">
+                                <i class="fe fe-chevrons-right"></i>자기자본비율 <img src=" {% static 'assets/images/icon/reorder-two-outline.svg' %} " style="width:20px;height:15px"/> 자본총액 ÷ 자산총액
+                              </div>
+                              <div class="media-body mt-1">
+                                <p class="text-muted">자산총액 중 자기자본이 차지하는 비율로써 금융비용 부담없이 장기투자여력을 평가합니다. BIS비율이 높을 수록 기업의 재무구조는 건전합니다.</p>
+                              </div> 
+                            </div>     
+                            <div class=" border-bottom">
+                              <div class="transaction-icon mt-2 ms-0">
+                                <i class="fe fe-chevrons-right"></i>차입금의존도 <img src=" {% static 'assets/images/icon/reorder-two-outline.svg' %} " style="width:20px;height:15px"/> 장단기차입금 ÷ 자산총액
+                              </div>
+                              <div class="media-body mt-1">
+                                <p class="text-muted">회사가 조달한 전체 자본 중에서 이자를 지급하기로 계약을 맺고 조달한 차입금의 비중.  이를 이용하여 회사의 신용위험과 부채상환능력을 파악할 수 있습니다.</p>
+                              </div> 
+                            </div>         
+                            <div class=" border-bottom">
+                              <div class="transaction-icon mt-2 ms-0">
+                                <i class="fe fe-chevrons-right"></i>총자산증가율 <img src=" {% static 'assets/images/icon/reorder-two-outline.svg' %} " style="width:20px;height:15px"/> (당기-전기)자산 ÷ 전기자산총액
+                              </div>
+                              <div class="media-body mt-1">
+                                <p class="text-muted">전년도 대비 당기에 증가한 자산가액의 비율입니다.</p>
+                              </div> 
+                            </div>                   
+                          </div>
+                        </div>
+                      </div>  
+                    </div>
+                  </div>
+                  <div class="card bg-primary-transparent">
+										<div class="card-body upgrade-storage ">
+											<a href="javascript:void(0)">
+												<div class="upgrade-main text-center">
+                          <span class="demo-icon">
+                            <svg class="fe-spin text-primary" xmlns="http://www.w3.org/2000/svg"  style="width: 3rem;" viewBox="0 0 24 24"><path d="M11.5,7.9c-2.3,0-4,1.9-4,4.2s1.9,4,4.2,4c2.2,0,4-1.9,4-4.1c0,0,0-0.1,0-0.1C15.6,9.7,13.7,7.9,11.5,7.9z M14.6,12.1c0,1.7-1.5,3-3.2,3c-1.7,0-3-1.5-3-3.2c0-1.7,1.5-3,3.2-3C13.3,8.9,14.7,10.3,14.6,12.1C14.6,12,14.6,12.1,14.6,12.1z M20,13.1c-0.5-0.6-0.5-1.5,0-2.1l1.4-1.5c0.1-0.2,0.2-0.4,0.1-0.6l-2.1-3.7c-0.1-0.2-0.3-0.3-0.5-0.2l-2,0.4c-0.8,0.2-1.6-0.3-1.9-1.1l-0.6-1.9C14.2,2.1,14,2,13.8,2H9.5C9.3,2,9.1,2.1,9,2.3L8.4,4.3C8.1,5,7.3,5.5,6.5,5.3l-2-0.4C4.3,4.9,4.1,5,4,5.2L1.9,8.8C1.8,9,1.8,9.2,2,9.4l1.4,1.5c0.5,0.6,0.5,1.5,0,2.1L2,14.6c-0.1,0.2-0.2,0.4-0.1,0.6L4,18.8c0.1,0.2,0.3,0.3,0.5,0.2l2-0.4c0.8-0.2,1.6,0.3,1.9,1.1L9,21.7C9.1,21.9,9.3,22,9.5,22h4.2c0.2,0,0.4-0.1,0.5-0.3l0.6-1.9c0.3-0.8,1.1-1.2,1.9-1.1l2,0.4c0.2,0,0.4-0.1,0.5-0.2l2.1-3.7c0.1-0.2,0.1-0.4-0.1-0.6L20,13.1z M18.6,18l-1.6-0.3c-1.3-0.3-2.6,0.5-3,1.7L13.4,21H9.9l-0.5-1.6c-0.4-1.3-1.7-2-3-1.7L4.7,18l-1.8-3l1.1-1.3c0.9-1,0.9-2.5,0-3.5L2.9,9l1.8-3l1.6,0.3c1.3,0.3,2.6-0.5,3-1.7L9.9,3h3.5l0.5,1.6c0.4,1.3,1.7,2,3,1.7L18.6,6l1.8,3l-1.1,1.3c-0.9,1-0.9,2.5,0,3.5l1.1,1.3L18.6,18z"/></svg>
+                          </span>
+                          <h3 class="mb-1" id="uploadDate"></h3>
+													<span class="text-primary-lit mt-1">까지 회계처리 전표가 업로드 되었습니다. </span>
+												</div>
+											</a>
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-8 col-xl-9">
+									<div class="row">
+										<div class="col-xl-12 col-lg-12 col-md-12">
+											<div class="card custom-card overflow-hidden">
+												<div class="card-footer p-3  d-flex ">
+													<div class="breadcrumb-main">
+														<nav aria-label="breadcrumb">
+															<ol class="breadcrumb mb-0" id="selectedYear">
+															</ol>
+														</nav>
+													</div>
+                          <div class="btn-list  ms-auto">
+                            <!-- <button type="button" class="btn btn-primary mb-1" onclick="javascript:window.print();"><i class="fa fa-file-excel-o"></i> 엑셀다운</button> -->
+                            <button type="button" class="btn btn-info mb-1" onclick="printDiv('totalBody')"><i class="si si-printer"></i> 출력</button>
+                          </div>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div class="row">
+										<div class="col-xl-12 ">
+											<div class="card">
+												<div class="card-body h-100" id="totalBody" >
+                          <table class='table  table-sm mb-0 '>
+                            <thead>
+                              <tr>
+                                <th class=" text-center" style="vertical-align: middle;" rowSpan='2'>과목</th>
+                                <th class=" text-center" colSpan='2' id="thisYear"></th>
+                                <th class="text-center" colSpan='2' id="lastYear"></th>
+                              </tr>
+                              <tr>
+                                  <th class="text-center" colSpan='2' id="thisDuration"></th>
+                                  <th class="text-center" colSpan='2' id="lastDuration"></th>
+                              </tr>
+                            </thead>
+                            <tbody id="statmentBody"></tbody>
+                          </table>
+                        </div>
+											</div>
+										</div>
+									</div>
+									
+								</div>
+							</div>
+							<!-- End Row -->
+              <div class="modal fade" id="summitModal">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo">
+          
+                    <div class="modal-header ">
+                      <div id="summitModalTitle"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+          
+          
+                    <div class="modal-body p-0 border-top-0" >
+                      <!-- Tabs -->
+                      <div class="tabs-menu4 w-100">
+                        <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-1">
+                            일자별 거래내역
+                          </a>
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                            거래처별 거래내역
+                          </a>
+                          <!-- <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                            연도별 잔액
+                          </a> -->
+                        </nav>
+                      </div>
+                      
+                      <div class="tab-content w-100">
+                        <!-- 계정별원장 -->
+                        <div class="tab-pane active task-files-tab" id="task-1">
+                          <div class="row">
+                            <div class="col-xl-12 ">
+                              <div class="card">
+                                <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                                  <div class="d-flex flex-row justify-content-between ">
+                                    <div style='width:55%;text-align:center;'>집계월</div>
+                                    <div style='width:15%;text-align:center;'>차변</div>
+                                    <div style='width:15%;text-align:center;'>대변</div>
+                                    <div style='width:15%;text-align:center'>잔액</div>
+                                  </div>
+                                  <div id="accordionLedgr" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- 거래처원장 -->
+                        <div class="tab-pane" id="task-2">
+                          <div class="row">
+                            <div >
+                              <div class="card">
+                                <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                                  <div class="d-flex flex-row justify-content-between ">
+                                    <div style='width:40%;text-align:center;'>거래처명</div>
+                                    <div style='width:15%;text-align:right;margin-right:20px;'>기초</div>
+                                    <div style='width:15%;text-align:right;margin-right:20px;'>차변</div>
+                                    <div style='width:15%;text-align:right;margin-right:30px;'>대변</div>
+                                    <div style='width:15%;text-align:right;margin-right:30px;'>잔액</div>
+                                  </div>
+                                  <div id="accordionTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+													
+        {% endblock %}
+
+        {% block scripts %}
+        <script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+				<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet" />
+        <style>
+          #chartCurrentA {
+            width: 100%;
+            height: 150px;
+          }
+          </style>
+        <script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+				<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet"/>
+        <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+        <script>
+        am5.addLicense("AM5C372573951");
+				var leftArr = "{{leftArr|escapejs}}";
+        leftArr = JSON.parse(leftArr.replaceAll("'","\""));
+        // console.log(leftArr)
+				var biz_name = "{{ memuser.biz_name }}";
+				var selectedYear="";
+        var selectedKi="";
+				$(document).ready(function(){
+          selectedYear = "{{selectedYear}}"
+					setSelectedFolder("{{selectedYear}}년  >> 제조원가명세서");
+          gridLoad("{{selectedYear}}","{{selectedKi}}")
+          majorRatio(selectedYear)
+					// treeLoad(selectedYear);
+				});
+        function summitModal(acnt_cd,acnt_nm){
+          //계정별원장
+          $('#accordionLedgr').empty();
+          var ledgrData = [];
+          
+          $.ajax({
+						url:"{% url 'setLedgrGrid' %}",
+            data:{
+              selYear:selectedYear,
+              selAcntcd:acnt_cd
+            },
+						dataType:"Json",
+						success:async function(data){
+              var ledgrData=data.rows;
+              for(var i=0;i<ledgrData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","headerAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","headingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:55%;text-align:center'>"+ledgrData[i].Work_MM+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(ledgrData[i].TranAmt_Cr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(ledgrData[i].TranAmt_Dr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(ledgrData[i].TranAmt_Sum)+"</div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","ledgrAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#ledgrAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","ledgrAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionLedgr")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                if(i==0) {
+                  startNum = 0
+                } else {
+                  startNum = ledgrData[i-1].TranAmt_Sum
+                }
+                divBody2.innerHTML = await ledgrDetail(selectedYear,ledgrData[i].Real_MM,acnt_cd,startNum)
+                divBody.appendChild(divBody2)
+
+                document.getElementById('accordionLedgr').appendChild(divHeader);
+                document.getElementById('accordionLedgr').appendChild(divBody);
+              }
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+
+          //거래처원장
+          $('#accordionTrader').empty();
+          var gridData = [];
+          $.ajax({
+						url:"{% url 'getTraderGrid' %}",
+            data:{
+              selYear:selectedYear,
+              selAcntcd:acnt_cd
+            },
+						dataType:"Json",
+            //async:false,
+						success:async function(data){
+              gridData=data.rows;
+              for(var i=0;i<gridData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","headerAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","headingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:40%'>"+gridData[i].CompanyName+"</div>"
+								tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TStart)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TCr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TDr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TEnd)+"</div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","detailAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#detailAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","detailAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionTrader")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+                divBody2.innerHTML = await keraeDetail(selectedYear,acnt_cd,gridData[i].Trd_Cd)
+                divBody.appendChild(divBody2)
+
+                document.getElementById('accordionTrader').appendChild(divHeader);
+                document.getElementById('accordionTrader').appendChild(divBody);
+              }
+              
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+          //최종세팅
+          tmpHead = "<nav aria-label='breadcrumb'>"
+          tmpHead += "<ol class='breadcrumb breadcrumb-style'>"
+          tmpHead += "<li class='breadcrumb-item'>2022년</li>"
+          tmpHead += "<li class='breadcrumb-item'>재무상태표</li>"
+          tmpHead += "<li class='breadcrumb-item active'>"+acnt_nm+"</li>"
+          tmpHead += "</ol></nav>"
+          $('[id="summitModalTitle"]').html(tmpHead);
+			    $("#summitModal").modal('show');
+        }
+        function ledgrDetail(selYear2,selMM,selAcntcd,startNum){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getLedgrDetail' %}",
+              data:{
+                selYear2:selYear2,
+                selMonth:selMM,
+                selAcntcd:selAcntcd,
+                startNum:startNum
+              },
+              dataType:"Json",
+              success:function(data){
+                tmpHTML = "<table class='table  table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th>"
+                tmpHTML += "<th>적요(품목 등)</th>"
+                tmpHTML += "<th style='text-align:center'>거래처</th>"
+                tmpHTML +=  "<th style='text-align:center'>차변</th>"
+                tmpHTML +=  "<th style='text-align:center'>대변</th>"
+                tmpHTML +=  "<th style='text-align:center'>잔액</th>"
+                //tmpHTML +=  "<th style='text-align:center'>상세</th>"
+                tmpHTML +=  "</tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr class='hoverrow'><th style='text-align:center;width:55px' scope='row'>"+data.rows[j].Tran_Dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].Remk+"</td>"
+                  tmpHTML += "  <td style='text-align:center;width:15%'>"+data.rows[j].Trader_Name+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Sum)+"</td>"
+                  //tmpHTML += "  <td style='text-align:right;width:55px'><a href='#' class='btn btn-warning-light btn-square  br-50 ' data-bs-toggle='tooltip' title='' data-bs-original-title='상세보기'><i class='fa fa-commenting fs-13'></i></a></td></tr>"
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+        function keraeDetail(selYear,selAcntcd,trdCd){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getTraderDetailGrid' %}",
+              data:{
+                selYear:selYear,
+                selAcntcd:selAcntcd,
+                Trd_Cd:trdCd
+              },
+              dataType:"Json",
+              //async:false,
+              success:function(data){
+                tmpHTML = "<table class='table table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th><th>적요</th><th style='text-align:right'>기초</th>"
+                tmpHTML +=  "<th style='text-align:right'>차변</th>"
+                tmpHTML +=  "<th style='text-align:right'>대변</th>"
+                tmpHTML +=  "<th style='text-align:right'>잔액</th></tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr><th scope='row'>"+data.rows[j].tran_dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].remk+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].TStart)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Sum)+"</td></tr>"
+
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+        function majorRatio(selYear){
+          var thumsOup = "<i class='fa fa-thumbs-o-up'></i> "
+          var thumsUp = "<i class='fa fa-thumbs-up'></i> "
+          var thumsDown = "<i class='fa fa-thumbs-down'></i> "
+          var thumsOdown = "<i class='fa fa-thumbs-o-down'></i> "
+          var strPer = " <i class='fa fa-percent'></i>"
+          for(var i=0;i<leftArr.totalData.length;i++){
+            if(selYear == leftArr.totalData[i][0].year){
+              $('[id="currentA"]').html(leftArr.totalData[i][0].curRatioA+ strPer);
+              $('[id="currentR"]').html(leftArr.totalData[i][0].curRatioR+ strPer);
+              //유동자산비율
+              if(leftArr.totalData[i][0].curRatio1<10){
+                txtRatio1 = thumsDown + leftArr.totalData[i][0].curRatio1+ strPer
+                $('[id="ratio1"]').addClass("text-danger")
+              }else if(leftArr.totalData[i][0].curRatio1<30){
+                txtRatio1 = thumsOdown + leftArr.totalData[i][0].curRatio1+ strPer
+                $('[id="ratio1"]').addClass("text-warning")
+              }else if(leftArr.totalData[i][0].curRatio1<50){
+                txtRatio1 = thumsOup + leftArr.totalData[i][0].curRatio1 + strPer
+                $('[id="ratio1"]').addClass("text-info")
+              }else{
+                txtRatio1 = thumsUp + leftArr.totalData[i][0].curRatio1+ strPer
+                $('[id="ratio1"]').addClass("text-purple")
+              }
+              $('[id="ratio1"]').html(txtRatio1);
+              // 자기자본비율
+              if(leftArr.totalData[i][0].curRatio2<30){
+                txtRatio2 = thumsDown + leftArr.totalData[i][0].curRatio2+ strPer
+                $('[id="ratio2"]').addClass("text-danger")
+              }else if(leftArr.totalData[i][0].curRatio2<50){
+                txtRatio2 = thumsOdown + leftArr.totalData[i][0].curRatio2+ strPer
+                $('[id="ratio2"]').addClass("text-warning")
+              }else if(leftArr.totalData[i][0].curRatio2<150){
+                txtRatio2 = thumsOup + leftArr.totalData[i][0].curRatio2 + strPer
+                $('[id="ratio2"]').addClass("text-info")
+              }else{
+                txtRatio2 = thumsUp + leftArr.totalData[i][0].curRatio2+ strPer
+                $('[id="ratio2"]').addClass("text-purple")
+              }
+              $('[id="ratio2"]').html(txtRatio2);
+
+              if(leftArr.totalData[i][0].curRatio3<10){
+                txtRatio3 = thumsUp + leftArr.totalData[i][0].curRatio3+ strPer
+                $('[id="ratio3"]').addClass("text-purple")
+              }else if(leftArr.totalData[i][0].curRatio3<30){
+                txtRatio3 = thumsOup + leftArr.totalData[i][0].curRatio3 + strPer
+                $('[id="ratio3"]').addClass("text-info")
+              }else if(leftArr.totalData[i][0].curRatio3<50){
+                txtRatio3 = thumsOdown + leftArr.totalData[i][0].curRatio3+ strPer
+                $('[id="ratio3"]').addClass("text-warning")
+              }else{
+                txtRatio3 = thumsDown + leftArr.totalData[i][0].curRatio3+ strPer
+                $('[id="ratio3"]').addClass("text-danger")
+              }
+              $('[id="ratio3"]').html(txtRatio3);
+
+              if(leftArr.totalData[i][0].curRatio5<-10){
+                txtRatio5 = thumsDown + leftArr.totalData[i][0].curRatio5+ strPer
+                $('[id="ratio5"]').addClass("text-danger")
+              }else if(leftArr.totalData[i][0].curRatio5<0){
+                txtRatio5 = thumsOdown + leftArr.totalData[i][0].curRatio5+ strPer
+                $('[id="ratio5"]').addClass("text-warning")
+              }else if(leftArr.totalData[i][0].curRatio5<10){
+                txtRatio5 = thumsOup + leftArr.totalData[i][0].curRatio5 + strPer
+                $('[id="ratio5"]').addClass("text-info")
+              }else{
+                txtRatio5 = thumsUp + leftArr.totalData[i][0].curRatio5+ strPer
+                $('[id="ratio5"]').addClass("text-purple")
+              }
+              $('[id="ratio5"]').html(txtRatio5);
+
+              if(leftArr.totalData[i][0].curRatio6<-10){
+                txtRatio6 = thumsDown + leftArr.totalData[i][0].curRatio6+ strPer
+                $('[id="ratio6"]').addClass("text-danger")
+              }else if(leftArr.totalData[i][0].curRatio6<0){
+                txtRatio6 = thumsOdown + leftArr.totalData[i][0].curRatio6+ strPer
+                $('[id="ratio6"]').addClass("text-warning")
+              }else if(leftArr.totalData[i][0].curRatio6<10){
+                txtRatio6 = thumsOup + leftArr.totalData[i][0].curRatio6 + strPer
+                $('[id="ratio6"]').addClass("text-info")
+              }else{
+                txtRatio6 = thumsUp + leftArr.totalData[i][0].curRatio6+ strPer
+                $('[id="ratio6"]').addClass("text-purple")
+              }
+              $('[id="ratio6"]').html(txtRatio6);
+            }
+          }
+        }
+        function gridLoad(selectedYear,ki){
+          $.ajax({
+						url:"{% url 'getStatementList' %}",
+            data:{
+              selYear:selectedYear,
+              flag:'CS'
+            },
+						dataType:"Json",
+						success: function(data){
+              $('#statmentBody').empty();
+              $('[id="thisYear"]').html(selectedYear + " 년 (제 "+ki+" 기)");
+              $('[id="lastYear"]').html((selectedYear-1) + " 년 (제 "+(ki-1)+" 기)");
+              $('[id="thisDuration"]').html(data.rowDuration.start_dt + " ~ " + data.rowDuration.thisEndDate);
+              $('[id="lastDuration"]').html(data.rowDuration.start_dt + " ~ " + data.rowDuration.lastEndDate);
+              $('[id="uploadDate"]').html(selectedYear+"년 "+data.rowDuration.thisEndDate);
+              for(var i=0;i<data.rows.length;i++){
+                 StatementDetail(data.rows[i])
+              }
+              $('.table > tbody > tr').click(function() {
+                var tmpName=""
+                for(var i=0;i<data.rows.length;i++){
+                  if(data.rows[i].acnt_cd==this.id) {
+                    tmpName = data.rows[i].acnt_nm.replaceAll(" ","");
+                    break;
+                  }
+                }
+                if(isNumber(this.id)){
+                  summitModal(this.id,tmpName);
+                }
+              });
+              $('tr').hover(function() {
+                  $(this).css('background-color', 'lightgray');
+              }, function() {
+                  $(this).css('background-color', '');
+              });
+            },
+            beforeSend: function () {
+              var width = 0;
+              var height = 0;
+              var left = 0;
+              var top = 0;
+              width = 50;
+              height = 50;
+              top = ( $(window).height() - height ) / 2 + $(window).scrollTop()-20;
+              left = ( $(window).width() - width ) / 2 + $(window).scrollLeft();
+              if($("#div_ajax_load_image").length != 0) {
+                $("#div_ajax_load_image").css({
+                  "top": top+"px",
+                  "left": left+"px"
+                });
+                $("#div_ajax_load_image").show();
+              }
+              else {
+                $('[id="totalBody"]').append('<div id="div_ajax_load_image" class="dimmer active"><div class="lds-heart"><div></div></div></div>');
+              }
+            },
+            complete: function () {
+              $("#div_ajax_load_image").hide();
+            }            
+          });
+        }
+				const setSelectedFolder = (strFolder) => {
+          var innerHtml=""
+          var tmpArr = strFolder.split(">>")
+          for(var i=0;i<tmpArr.length;i++){
+            if(i<(tmpArr.length-1)){
+              innerHtml += "<li class='breadcrumb-item'>"+tmpArr[i]+"</li>"
+            }else{
+              innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>"+tmpArr[i]+"</a></li>"
+            }
+          }
+					$('[id="selectedYear"]').html(innerHtml);
+				}
+        var tmpAmt=0;
+        var tmpAmt_pre=0;
+        const StatementDetail = (props)=>{
+          var rightAmt = Number(props.amt_now);
+          var rightAmt_pre = Number(props.amt_bef);
+          var acnt_cd= props.acnt_cd;
+          var leftAmt=0;
+          var leftAmt_pre=0;
+          var isModAcc=0;
+          if(isNumber(props.acnt_cd)){
+            if( (acnt_cd >= 195 && acnt_cd <= 200) || (acnt_cd >= 202 && acnt_cd <= 217) || (acnt_cd >= 471 && acnt_cd <= 500) || (acnt_cd >= 401 && acnt_cd <= 430) || (acnt_cd >= 459 && acnt_cd <= 470) || (acnt_cd >= 901 && acnt_cd <= 997) || (acnt_cd >= 801 && acnt_cd <= 900) ){
+              leftAmt = Number(props.amt_now);
+              leftAmt_pre = Number(props.amt_bef);
+              rightAmt = 0;
+              rightAmt_pre = 0;
+              isModAcc = acnt_cd % 2;
+
+              //유형자산
+              //계정코드가 짝수이면 자산 / 홀수이면 누계액으로 인식 21.8.8
+              if( (acnt_cd >= 195 && acnt_cd <= 200) || (acnt_cd >= 215 && acnt_cd <= 216) || (acnt_cd >= 471 && acnt_cd <= 500) ){
+                if (isModAcc === 1 ) {
+                  tmpAmt = leftAmt;
+                  tmpAmt_pre = leftAmt_pre;                 
+                } else {
+                  //합계를 내지 않는 경우 : 매출원가							영업외손익											판관비
+                  if( !(acnt_cd >= 401 && acnt_cd <= 430) &&  !(acnt_cd >= 459 && acnt_cd <= 470) && !(acnt_cd >= 901 && acnt_cd <= 997) && !(acnt_cd >= 801 && acnt_cd <= 900) ){
+                    rightAmt = leftAmt + tmpAmt;
+                    rightAmt_pre = leftAmt_pre + tmpAmt_pre                                         
+                  }
+                }
+              } else {
+                if (isModAcc === 0 ) {
+                  tmpAmt = leftAmt
+                  tmpAmt_pre = leftAmt_pre
+                } else {
+                  //'합계를 내지 않는 경우 : 매출원가							영업외손익											판관비
+                  if(  !(acnt_cd >= 401 && acnt_cd <= 430) && !(acnt_cd >= 459 && acnt_cd <= 470) && !(acnt_cd >= 901 && acnt_cd <= 997) && !(acnt_cd >= 801 && acnt_cd <= 900) ){
+                    rightAmt = leftAmt + tmpAmt
+                    rightAmt_pre = leftAmt_pre + tmpAmt_pre
+                  }
+                }
+              }
+            }
+          }
+          if(leftAmt!="" || rightAmt!=0 || rightAmt_pre!=0 || leftAmt_pre!=""){
+            const tr = document.createElement("tr")
+            tr.setAttribute("class","hpx-10")
+            tr.setAttribute("id",props.acnt_cd)
+            tr.setAttribute("style",props.acnt_nm)
+            const td1 = document.createElement("td")
+            const td2 = document.createElement("td")
+            const td3 = document.createElement("td")
+            const td4 = document.createElement("td")
+            const td5 = document.createElement("td")
+            td1.innerHTML = props.acnt_nm
+            // isNumber(props.acnt_cd)?td1.setAttribute("class","editable-pre-wrapped ps-5"):td1.setAttribute("class","editable-pre-wrapped h5 text-gray-500")
+            isNumber(props.acnt_cd)?td1.setAttribute("class","editable-pre-wrapped ps-7"):props.acnt_nm.substr(4,1)=="("?td1.setAttribute("class","editable-pre-wrapped  h5 text-gray-500 ps-5"):td1.setAttribute("class","editable-pre-wrapped h5 text-gray-500")
+
+            leftAmt<0?td2.setAttribute("style","text-align:right;color:red;"):td2.setAttribute("style","text-align:right;")
+            leftAmt<0?td2.innerText = "("+numberWithCommas(leftAmt*-1)+")":td2.innerText = numberWithCommas(leftAmt)
+            if(leftAmt==0){td2.innerText = ""}
+
+            isNumber(props.acnt_cd)?rightAmt<0?td3.setAttribute("style","text-align:right;color:red;"):td3.setAttribute("style","text-align:right;"):td3.setAttribute("style","text-align:right;color: #949eb7 !important;")
+            rightAmt<0?td3.innerText = "("+numberWithCommas(rightAmt*-1)+")":td3.innerText = numberWithCommas(rightAmt)
+
+            leftAmt_pre<0?td4.setAttribute("style","text-align:right;color:red;"):td4.setAttribute("style","text-align:right;")
+            leftAmt_pre<0?td4.innerText = "("+numberWithCommas(leftAmt_pre*-1)+")":td4.innerText = numberWithCommas(leftAmt_pre)
+            if(leftAmt_pre==0){td4.innerText = ""}
+            isNumber(props.acnt_cd)?rightAmt_pre<0?td5.setAttribute("style","text-align:right;color:red;"):td5.setAttribute("style","text-align:right;"):td5.setAttribute("style","text-align:right;color: #949eb7 !important;")
+            rightAmt_pre<0?td5.innerText = "("+numberWithCommas(rightAmt_pre*-1)+")":td5.innerText = numberWithCommas(rightAmt_pre)
+            tr.appendChild(td1)
+            tr.appendChild(td2)
+            tr.appendChild(td3)
+            tr.appendChild(td4)
+            tr.appendChild(td5)
+            document.getElementById('statmentBody').appendChild(tr);
+          }
+        }
+
+				const handleButtonClose = (work_yy,ki) => {
+					const btnElement  = document.getElementById('btn_selectedYear');
+  				btnElement.innerHTML = work_yy+" 년";
+					selectedYear = work_yy;
+          selectedKi = ki;
+					setSelectedYear(work_yy,ki);
+					setSelectedFolder(selectedYear+" 년" + " >> 제조원가명세서")
+          majorRatio(work_yy)
+				};  
+
+				const setSelectedYear = (selYear,selKi) => {
+          selectedYear = selYear;
+          // treeLoad(selectedYear);
+					gridLoad(selYear,selKi);
+
+				}
+        function isNumber(s) {
+          s += ''; // 문자열로 변환
+          s = s.replace(/^\s*|\s*$/g, ''); // 좌우 공백 제거
+          if (s === '' || isNaN(s)) return false;
+          return true;
+        }
+        function printDiv(divName) {
+          var printContents = document.getElementById(divName).innerHTML;
+          var originalContents = document.body.innerHTML;
+          document.body.innerHTML = printContents;
+          window.print();
+          document.body.innerHTML = originalContents;
+        }
+
+        // amcharts.com - piechart
+        am5.ready(function() {
+          //유동비율
+          var chartData = leftArr.currentRatioA;
+          var root = am5.Root.new("chartCurrentA");
+          
+        }); // end am5.ready()
+        </script>
+
+        {% endblock %}
+

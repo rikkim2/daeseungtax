@@ -1,0 +1,326 @@
+{% extends 'components/mobile-base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+
+							<!-- Pricing -->
+							<div class="section bg-white" id="features">
+								<div class="container px-5 px-md-0">
+									<div class="row text-center">
+
+										<div class="col-lg-4 col-sm-8">
+											<div class="card p-3 border-primary pricing-card advanced">
+												<div class="card-header d-block text-justified pt-2">
+													<p class="text-18 font-weight-semibold mb-1 pe-0">{{biz_name}}<span
+															class="float-end badge bg-primary text-white text-12-f pt-3">{{titlePeriod}}</span></p>
+													  <p class="text-center font-weight-semibold mb-1 float-center"> 
+                              <span class="text-24">
+                                <span class="op-0-5 text-muted text-20 ">[신용·직불카드 내역] </span> 
+                                <span class="text-30 me-1 " id="TotalSum">0</span>
+                                <span class="op-0-5 text-muted text-20 ">원 </span> 
+                              </span>
+                            </p>
+													<p class="text-13 mb-2 ">{{commentCard}}</p>
+													<p class="text-13 mb-1 text-primary font-weight-">{{napbuDate2}}</p>
+												</div>
+												<div class="card-body pt-2">
+													<ul class="text-justify pricing-body ps-0">
+														<li class="mb-4">
+															<span	class="text-primary me-2 p-1 bg-primary-transparent rounded-pill text-10-f"><i	class="fa fa-check"></i></span> 
+															<strong> 홈택스 공제 </strong>
+															<span class="float-end" id="Htx_TotSum_ddct">0</span> </li>
+														<li class="mb-4">
+															<span	class="text-primary me-2 p-1 bg-primary-transparent rounded-pill text-10-f"><i class="fa fa-check"></i></span> 
+															<strong> 홈택스 불공제 </strong>
+															<span class="float-end" id="Htx_TotSum_Nddct">0</span> </li>
+														<li class="mb-4">
+															<span	class="text-primary me-2 p-1 bg-primary-transparent rounded-pill text-10-f"><i class="fa fa-check"></i></span> 
+															<strong> 신고예정 공제 </strong>
+															<span class="float-end" id="issue_TotSum_ddct">0</span> </li>
+														<li class="mb-4">
+															<span class="text-primary me-2 p-1 bg-primary-transparent rounded-pill text-10-f"><i class="fa fa-check"></i></span> 
+															<strong> 신고예정 불공제</strong> 
+															<span class="float-end" id="issue_TotSum_Nddct">0</span> </li>
+														<li class="mb-4">
+															<span class="text-primary me-2 p-1 bg-primary-transparent rounded-pill text-10-f"><i class="fa fa-check"></i></span> 
+															<strong> 차 이 </strong>
+															<span class="float-end" id="diff_TotSum_Tot">0</span> </li>																																							
+													</ul>
+												</div>
+											</div>
+										</div>
+
+
+										<div class="col-lg-12 ps-3">
+											<h3 class="header-family">사업용 신용카드·직불카드</h3>
+											<p class="text-default sub-text"><b>{{biz_name}}</b> - {{titlePeriod}}</p>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-xl-12">
+											<div class="pricing-tabs">
+												<div class="tab-content">
+													<div class="tab-pane pb-0 active show" id="card">
+														<div class="row d-flex align-items-center justify-content-center">
+															<!-- <div class="col-lg-4 col-sm-8">
+																<div class="card p-3 border-primary pricing-card advanced"> -->
+																	<div class="card-body h-100">
+																		<div class="d-flex flex-row justify-content-between ">
+																			<div style='width:35%;text-align:center;'>카드번호</div>
+																			<div style='width:15%;text-align:center;'>카드사</div>
+																			<div style='width:15%;text-align:center;'>건수</div>
+																			<div style='width:35%;text-align:center'>사용금액</div>
+																		</div>
+																		<div id="accordionTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+																	</div>
+																<!-- </div>
+															</div> -->
+														</div>
+													</div>
+													
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- Pricing close -->
+
+							<!-- Contact-->
+							<div class="bg-image-landing bg-white section" id="Contact">
+								<div class="container px-5 px-md-0">
+									<div class="row text-center justify-content-center">
+										<div class="col-lg-8">
+											<h3 class="header-family">Contact us</h3>
+											<p class="text-default sub-text">아래 연락처로 전화 또는 문의메일을 남겨주시기 바랍니다.</p>
+										</div>
+									</div>
+									<div class="row">
+										<div class="card mt-3 mb-0">
+											<div class="card-body text-dark px-0 pb-0">
+												<div class="statistics-info">
+													<div class="col-xl-12 col-12">
+														<div class="row">
+															<div class="col-xl-6 col-md-12 col-sm-12">
+																<div class="services-statistics">
+																	<div class="row">
+																		<div class="col-6">
+																			<div class="card p-0">
+																				<div class="card-body p-0">
+																					<div class="row">
+																						<div class="col-xl-3 col-md-3 col-sm-3">
+																							<div
+																								class="counter-icon border border-primary text-primary">
+																								<i class="fe fe-map-pin"></i>
+																							</div>
+																						</div>
+																						<div class="col-xl-9 col-md-9 px-0 mb-1 col-sm-9">
+																							<h5 class="mb-1 fw-semibold">강남지점</h5>
+																							<p class="mb-0  fs-13 text-muted">강남대로 84길 15, 206호</p>
+																							<p class="fs-13 text-muted">강남역효성해링턴타워더퍼스트</p>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-6">
+																			<div class="card p-0">
+																				<div class="card-body p-0">
+																					<div class="row">
+																						<div class="col-xl-3 col-md-3 col-sm-3">
+																							<div
+																								class="counter-icon border border-primary text-primary">
+																								<i class="fe fe-headphones"></i>
+																							</div>
+																						</div>
+																						<div class="col-xl-6 col-md-9 px-0 mb-1 col-sm-9">
+																							<h5 class="mb-1 fw-semibold">직통번호</h5>
+																							<p class="mb-0 fs-13 text-muted">{{admin_tel}}</p>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-6">
+																			<div class="card p-0">
+																				<div class="card-body p-0">
+																					<div class="row">
+																						<div class="col-xl-3 col-md-3 col-sm-3">
+																							<div
+																								class="counter-icon border border-primary text-primary">
+																								<i class="fe fe-mail"></i>
+																							</div>
+																						</div>
+																						<div class="col-xl-6 col-md-9 px-0 mb-1 col-sm-9">
+																							<h5 class="mb-1 fw-semibold">이메일</h5>
+																							<p class="mb-0 fs-13 text-muted">daeseung23</p>
+																							<p class="fs-13 text-muted">@gmail.com</p>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																		<div class="col-6">
+																			<div class="card p-0">
+																				<div class="card-body p-0">
+																					<div class="row">
+																						<div class="col-xl-3 col-md-3 col-sm-3">
+																							<div
+																								class="counter-icon border border-primary text-primary">
+																								<i class="fe fe-airplay"></i>
+																							</div>
+																						</div>
+																						<div class="col-xl-6 col-md-9 px-0 mb-1 col-sm-9">
+																							<h5 class="mb-1 fw-semibold">근무시간</h5>
+																							<p class="mb-0 fs-13 text-muted">월 - 금: 9am
+																								- 6pm</p>
+																							<p class="fs-13 text-muted">토 - 일: 공휴일
+																							</p>
+																						</div>
+																					</div>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!--Contact close-->
+
+
+		{% endblock %}
+
+	{% block scripts %}
+	<script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+	<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet"/>
+	<script>
+    var biz_name = "{{ biz_name }}";
+    var seq_no = "{{ seq_no }}";
+    var TotalSum = "{{TotalSum}}";
+    var Htx_CntSum_ddct = "{{Htx_CntSum_ddct}}", Htx_CntSum_Nddct ="{{Htx_CntSum_Nddct}}", issue_CntSum_ddct = "{{issue_CntSum_ddct}}", issue_CntSum_Nddct = "{{issue_CntSum_Nddct}}", diff_CntSum_Tot = "{{diff_CntSum_Tot}}"
+		var Htx_TotSum_ddct = "{{Htx_TotSum_ddct}}", Htx_TotSum_Nddct = "{{Htx_TotSum_Nddct}}", issue_TotSum_ddct = "{{issue_TotSum_ddct}}", issue_TotSum_Nddct = "{{issue_TotSum_Nddct}}", diff_TotSum_Tot = "{{diff_TotSum_Tot}}"
+
+    $(document).ready(function() {
+				document.getElementById('TotalSum').innerHTML = numberWithCommas(TotalSum);
+				document.getElementById('Htx_TotSum_ddct').innerHTML = numberWithCommas(Htx_TotSum_ddct);
+				document.getElementById('Htx_TotSum_Nddct').innerHTML = numberWithCommas(Htx_TotSum_Nddct);			
+				document.getElementById('issue_TotSum_ddct').innerHTML = numberWithCommas(issue_TotSum_ddct);
+				document.getElementById('issue_TotSum_Nddct').innerHTML = numberWithCommas(issue_TotSum_Nddct);
+				document.getElementById('diff_TotSum_Tot').innerHTML = numberWithCommas(diff_TotSum_Tot);	
+
+        gridLoad("{{work_yy}}", "{{work_qt}}", seq_no);
+    });
+
+    const gridLoad = async(work_yy, work_qt, seq_no) => {
+        $('#accordionTrader' ).empty();
+        var gridData = [];
+
+        $.ajax({
+            url: "{% url 'getCardTrderSumGrid' %}",
+            data: {
+                work_yy: work_yy,
+                work_qt: work_qt,
+                sqno: seq_no
+            },
+            dataType: "Json",
+            success: async function(data) {
+                gridData = data.rows;
+                for (var i = 0; i < gridData.length; i++) {
+                    // 디테일거래내역
+                    const divHeader = document.createElement("div")
+                    divHeader.setAttribute("class", "mt-2")
+                    divHeader.setAttribute("id", "headerAccord" + i)
+                    const divHeader2 = document.createElement("div")
+                    divHeader2.setAttribute("class", "accor")
+                    divHeader2.setAttribute("id", "headingOne" + i)
+                    const h4 = document.createElement("h4")
+                    h4.setAttribute("class", "m-0")
+                    const anchorHead = document.createElement("a")
+                    var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                    tmpHtml2 += "<div style='width:35%'>" + gridData[i].Card_No + "</div>"
+                    tmpHtml2 += "<div style='width:15%;text-align:center'>" + gridData[i].CompanyName + "</div>"
+                    tmpHtml2 += "<div style='width:15%;text-align:center'>" + numberWithCommas(gridData[i].Count) + "건</div>"
+                    tmpHtml2 += "<div style='width:35%;text-align:right;" + (gridData[i].TotalAmt < 0 ? "color:red" : "") + "'>" + numberWithCommas(gridData[i].TotalAmt) + "</div>"
+                    tmpHtml2 += "</div>"
+                    anchorHead.innerHTML = tmpHtml2;
+                    anchorHead.setAttribute("class", "active")
+                    anchorHead.setAttribute("data-bs-toggle", "collapse")
+                    anchorHead.setAttribute("data-bs-controls", "detailAccord" + i)
+                    anchorHead.setAttribute("aria-expanded", "false")
+                    anchorHead.href = "#detailAccord" + i
+                    h4.appendChild(anchorHead)
+                    divHeader2.appendChild(h4)
+                    divHeader.appendChild(divHeader2)
+
+                    const divBody = document.createElement("div")
+                    divBody.setAttribute("class", "collapse mb-2")
+                    divBody.setAttribute("id", "detailAccord" + i)
+                    divBody.setAttribute("aria-labelledby", "headingOne" + i)
+                    divBody.setAttribute("data-bs-parent", "#accordionTrader")
+                    const divBody2 = document.createElement("div")
+                    divBody2.setAttribute("class", "border p-3 br-bottom-radius-5")
+
+                    divBody2.innerHTML = await CardSumDetail(seq_no, work_yy, data.read_qt, gridData[i].Card_No)
+                    divBody.appendChild(divBody2)
+
+                    document.getElementById('accordionTrader').appendChild(divHeader);
+                    document.getElementById('accordionTrader').appendChild(divBody);
+                }
+
+            },
+            error: function(request, status, error) {
+                console.log('fail:' + error);
+            }
+        })
+    }
+
+    function CardSumDetail(seq_no, work_yy, read_qt, Card_No) {
+        return new Promise((resolve, reject) => {
+            var tmpHTML = "";
+            $.ajax({
+                url: "{% url 'getCardDetailGrid' %}",
+                data: {
+                    work_yy: work_yy,
+                    read_qt: read_qt,
+                    sqno: seq_no,
+                    Card_No: Card_No
+                },
+                dataType: "Json",
+                success: function(data) {
+							
+                    tmpHTML = "<table class='table table-sm mb-0 '>"
+                    tmpHTML += "<thead><tr>"
+                    tmpHTML += "<th>거래일</th>"
+                    tmpHTML += "<th  style='text-align:center'>업체명</th>"
+                    tmpHTML +="<th style='text-align:right'>공급가액</th>"
+                    tmpHTML += "<th style='text-align:center'>세액</th>"
+                    tmpHTML += "</tr></thead>"
+                    tmpHTML += "<tbody>"
+                    for (var j = 0; j < data.rows.length; j++) {
+                        tmpHTML += "<tr><th scope='row' style='" + (data.rows[j].DdctGb == '공제' ? "color:blue" : "color:red") + "'>" + data.rows[j].tran_dt + "</th>"
+                        tmpHTML += "  <td style='text-align:left;width:35%;" + (data.rows[j].DdctGb == '공제' ? "color:blue" : "color:red") + "'>" + data.rows[j].trdName + "</td>"
+                        tmpHTML += "  <td style='text-align:right;width:30%;" + (data.rows[j].DdctGb == '공제' ? "color:blue" : "color:red") + "'>" + numberWithCommas(data.rows[j].KKKE) + "</td>"
+                        tmpHTML += "  <td style='text-align:right;width:20%;" + (data.rows[j].DdctGb == '공제' ? "color:blue" : "color:red") + "'>" + numberWithCommas(data.rows[j].Tax) + "</td>"
+                    }
+                    tmpHTML += "</tbody></table>"
+                    resolve(tmpHTML)
+                },
+                error: function(request, status, error) {
+                    console.log('fail:' + error);
+                }
+            });
+        });
+    }
+	</script>
+	{% endblock %}

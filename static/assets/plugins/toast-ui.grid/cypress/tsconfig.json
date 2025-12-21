@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["src/*"],
+      "@t/*": ["types/*"]
+    },
+    "types": ["cypress", "node", "tui-pagination"]
+  },
+  "include": ["../src/**/*.ts", "../src/**/*.tsx", "../types/**/*", "**/*.ts"]
+}

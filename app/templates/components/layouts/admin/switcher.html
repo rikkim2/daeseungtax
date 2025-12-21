@@ -1,0 +1,303 @@
+{% load static %}
+    <!-- Switcher -->
+    <div class="switcher-wrapper">
+        <div class="demo_changer">
+            <div class="form_holder sidebar-right1">
+                <div class="row">
+                    <div class="predefined_styles">
+                        <div class="swichermainleft">
+                            <h4>메뉴바</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">좌측수직</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch15"
+                                                id="myonoffswitch34" class="onoffswitch2-checkbox" checked>
+                                            <label for="myonoffswitch34" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">상단수평</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch15"
+                                                id="myonoffswitch35" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch35" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">수평메뉴</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch15"
+                                                id="myonoffswitch111" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch111" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft">
+                            <h4>좌우위치설정</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">왼쪽으로</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch7"
+                                                id="myonoffswitch23" class="onoffswitch2-checkbox" checked>
+                                            <label for="myonoffswitch23" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">오른쪽으로</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch7"
+                                                id="myonoffswitch24" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch24" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft">
+                            <h4>밝은테마</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">밝기 테마</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch1"
+                                                id="myonoffswitch1" class="onoffswitch2-checkbox" checked>
+                                            <label for="myonoffswitch1" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">밝기 강조</span>
+                                        <div class="">
+                                            <input class="wpx-30 h-30 input-color-picker color-primary-light"
+                                                value="#8FBD56" id="colorID" oninput="changePrimaryColor()" type="color"
+                                                data-id="bg-color" data-id1="bg-hover" data-id2="bg-border"
+                                                data-id7="transparentcolor" name="lightPrimary">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft">
+                            <h4>어두운테마</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+									<div class="switch-toggle d-flex mt-2">
+										<span class="me-auto">어둡기</span>
+										<p class="onoffswitch2"><input type="radio" name="onoffswitch1"
+												id="myonoffswitch2" class="onoffswitch2-checkbox">
+											<label for="myonoffswitch2" class="onoffswitch2-label"></label>
+										</p>
+									</div>
+									<div class="switch-toggle d-flex mt-2">
+										<span class="me-auto">어둡기 강조</span>
+										<div class="">
+											<input class="wpx-30 h-30 input-dark-color-picker color-primary-dark"
+												value="#8FBD56" id="darkPrimaryColorID" oninput="darkPrimaryColor()"
+												type="color" data-id="bg-color" data-id1="bg-hover" data-id2="bg-border"
+												data-id3="primary" data-id8="transparentcolor" name="darkPrimary">
+										</div>
+									</div>
+									<div class="switch-toggle d-flex mt-2">
+										<span class="me-auto">어둡기 배경</span>
+										<div class="">
+											<input class="wpx-30 h-30 input-transparent-color-picker color-bg-transparent"
+												value="#3D571E" id="transparentBgColorID" oninput="transparentBgColor()"
+												type="color" data-id5="body" data-id6="boxed-theme" name="transparentBackground">
+										</div>
+									</div>
+									<div class="switch-toggle">
+										<span class="">배경이미지</span>
+										<div class="mt-1">
+											<a class="bg-img1" href="javascript:void(0);" onclick="bgImage(this)"><img
+													src="{% static 'assets/images/media/bg-img1.jpg' %}" alt="Bg-Image" id="bgimage1"></a>
+											<a class="bg-img2" href="javascript:void(0);" onclick="bgImage(this)"><img
+													src="{% static 'assets/images/media/bg-img2.jpg' %}" alt="Bg-Image" id="bgimage2"></a>
+											<a class="bg-img3" href="javascript:void(0);" onclick="bgImage(this)"><img
+													src="{% static 'assets/images/media/bg-img3.jpg' %}" alt="Bg-Image" id="bgimage3"></a>
+											<a class="bg-img4" href="javascript:void(0);" onclick="bgImage(this)"><img
+													src="{% static 'assets/images/media/bg-img4.jpg' %}" alt="Bg-Image" id="bgimage4"></a>
+										</div>
+									</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft menu-styles">
+                            <h4>메뉴스타일</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle lightMenu d-flex">
+                                        <span class="me-auto">밝기 메뉴</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch2"
+                                                id="myonoffswitch3" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch3" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle colorMenu d-flex mt-2">
+                                        <span class="me-auto">컬러 메뉴</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch2"
+                                                id="myonoffswitch4" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch4" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle darkMenu d-flex mt-2">
+                                        <span class="me-auto">어둡기 메뉴</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch2"
+                                                id="myonoffswitch5" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch5" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle gradientMenu d-flex mt-2">
+                                        <span class="me-auto">점점 메뉴</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch2"
+                                                id="myonoffswitch19" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch19" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft header-styles">
+                            <h4>헤더 스타일</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle lightHeader d-flex">
+                                        <span class="me-auto">밝을때헤더</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch3"
+                                                id="myonoffswitch6" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch6" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle  colorHeader d-flex mt-2">
+                                        <span class="me-auto">색깔헤더</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch3"
+                                                id="myonoffswitch7" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch7" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle darkHeader d-flex mt-2">
+                                        <span class="me-auto">어두울때헤더</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch3"
+                                                id="myonoffswitch8" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch8" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+
+                                    <div class="switch-toggle darkHeader d-flex mt-2">
+                                        <span class="me-auto">점점헤더</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch3"
+                                                id="myonoffswitch20" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch20" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft">
+                            <h4>폭 정하기</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">전체</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch4"
+                                                id="myonoffswitch9" class="onoffswitch2-checkbox" checked>
+                                            <label for="myonoffswitch9" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">상자</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch4"
+                                                id="myonoffswitch10" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch10" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft">
+                            <h4>레이아웃</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">고정</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch5"
+                                                id="myonoffswitch11" class="onoffswitch2-checkbox" checked>
+                                            <label for="myonoffswitch11" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">스크롤</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch5"
+                                                id="myonoffswitch12" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch12" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft leftmenu-styles">
+                            <h4>사이드메뉴스타일</h4>
+                            <div class="skin-body">
+                                <div class="switch_section">
+                                    <div class="switch-toggle d-flex">
+                                        <span class="me-auto">기본메뉴</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch6"
+                                                id="myonoffswitch13" class="onoffswitch2-checkbox default-menu" checked>
+                                            <label for="myonoffswitch13" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">글자아이콘</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch6"
+                                                id="myonoffswitch14" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch14" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">아이콘 겹치기</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch6"
+                                                id="myonoffswitch15" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch15" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">사이드닫힐때</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch6"
+                                                id="myonoffswitch16" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch16" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">서브메뉴 호버</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch6"
+                                                id="myonoffswitch17" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch17" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                    <div class="switch-toggle d-flex mt-2">
+                                        <span class="me-auto">호버스타일 1</span>
+                                        <p class="onoffswitch2"><input type="radio" name="onoffswitch6"
+                                                id="myonoffswitch18" class="onoffswitch2-checkbox">
+                                            <label for="myonoffswitch18" class="onoffswitch2-label"></label>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swichermainleft">
+                            <h4>처음으로</h4>
+                            <div class="skin-body">
+                                <div class="switch_section my-4">
+                                    <button class="btn btn-danger btn-block" onclick="localStorage.clear();
+										document.querySelector('html').style = '';
+										names() ;
+                                        resetData() ;" type="button">리셋
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Switcher -->

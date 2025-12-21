@@ -1,0 +1,387 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">Empty</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item"><a href="javascript:void(0);">Pages</a></li>
+										<li class="breadcrumb-item active" aria-current="page">Empty</li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- ROW-1 OPEN -->
+							<div class="row">
+								<div class="card">
+									<div class="card-body">
+										<div class="card card-blog-overlay2 op-0-8 h-100 ">
+                      <div class="card-body  text-white pt-xl-10">
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Issue_Vat()"> 부가세신고서 저장(홈택스)</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('10')"> 종소세신고안내1(Json 저장)</Button> 
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('2')"> 종소세신고안내2(400.pdf저장)</Button>                          
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('9')"> 종소세-지급명세서저장</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('5')"> 종소세사대보험저장</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('11')"> 종소세사대보험저장2</Button> 
+
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('1')"> 법인세신고안내(98.pdf)</Button>
+                          
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('3')"> 부가세신고안내(300.pdf)</Button>        
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('6')"> 종소세예정고지(204.pdf)</Button>          
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Report('7')"> 부가세예정고지(200.pdf)</Button>            
+                        </div>                           
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Corptax('1')"> 법인세신고서</Button>
+                          <!-- <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Corptax('2')"> 종소세신고서</Button> -->
+                            <!-- <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Corptax('5')"> 종소 지방세신고</Button> -->
+                          <!-- <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Corptax('3')"> 법인세-전체</Button> -->
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MagamEwall('1')"> 마감이월-회계</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MagamEwall('2')"> 마감이월-인사</Button>
+                        </div>
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Elec_Issue('1')"> 전자-법인세</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Elec_Issue('2')"> 전자-법인지방세</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Elec_Issue('3')"> 전자-소득세</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Elec_Issue('4')"> 전자-소득지방세</Button>                            
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('9')"> 전자-부가세</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MakePayDaejang('3')"> 전자-원천세</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MakePayDaejang('4')"> 전자-원천지방세</Button>
+                        </div>   
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_SlipLedgr('709-81-00580','2','')">분개장-루키</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_SlipLedgr('220-88-58104','2','')">분개장-혜솔</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_SlipLedgr('288-86-01904','2','')">분개장-스톤</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_SlipLedgr('339-81-03210','2','')">분개장-BXF</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_SlipLedgr('569-88-03047','2','')">분개장-ENO</Button>
+                        </div>                                              
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_SlipLedgr('144-81-27161','1','')">분개장</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Ibotax_Report('1')"> 기장보고서</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Ibotax_Report('2')"> 법인세무조정표지</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="File_Manage('2')"> 조정반복사(99.pdf)</Button>
+                        </div>                                                
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="MyWork('1')">로그인</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="MyWork('2')">세무포털조회</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="MyWork('3')">세무대리</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="MyWork('4')">키보드반복(거래처원장)</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Bank_Scrap('0081')">하나은행</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Bank_Scrap('0011')">농협은행</Button>
+                        </div> 
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('1')">스크랩-카드 현영 매출/매입</Button>
+                          
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('3')">증명원-부가세과표</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('4')">증명원-재무제표</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('5')">증명원-소득금액</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('6')">증명원-국세완납</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('7')">증명원-지방세완납</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('8')">고지내역조회</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('9')">체납내역조회</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('10')">수임동의</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('11')">현금영수증가맹현황</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('12')">사업용계좌개설여부</Button>
+                        </div>                      
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('1')"> 1.전자세금계산서 합계표</Button>
+                          <!-- <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Htx_Scrap('21')">1. 홈택스-TI합계표</Button> -->
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('2')"> 2.전자세금계산서</Button>
+                          <!-- <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('6')"> 3.신용카드매출조회</Button> -->
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('7')"> 4.수출신고필증</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('8')"> 5.부가세통합조회</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('3')"> 6.세사 TI업로드</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('4')"> 7.세사 신/현(매출/입)업로드</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="TaxInvoice('5')"> 8.세사 VAT신고서</Button>
+                        </div> 
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MakeAccount_MonthlyPay()"> 회계처리-인사</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Payroll('1')">급여지급현황</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Payroll('2')">연말정산명단등록</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Payroll('3')">연말정산동의조회</Button>
+                            <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Payroll('4')">간소화동의자료저장</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MakePayDaejang('1')"> 급여대장=>접수</Button>
+                          <!-- <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_MakePayDaejang('2')"> 이행상황신고서</Button> -->
+                        </div>                          
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Total_Employ('0')">토탈-사무수임사업장저장</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Total_Employ('1')">토탈-근로자고용정보</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Total_Employ('2')">토탈-총액신고대상자저장</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Total_Employ('3')">총액신고대상파일수정(세사)</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="Total_Employ('4')">토탈-총액신고대상업로드</Button>
+                        </div>
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Kani('2')">간이지급-사업</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Kani('3')">간이지급-일용</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_Kani('1')">간이지급-근로</Button>
+                        </div>
+                        <div class="d-flex flex-row justify-content-center" style="margin-top: 1rem !important;">
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_ZZMS('01')"> 지급명세-근로</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_ZZMS('20')"> 지급명세-퇴직</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_ZZMS('30')"> 지급명세-사업</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_ZZMS('40')"> 지급명세-기타</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_ZZMS('50')"> 지급명세-이자</Button>
+                          <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="SS_ZZMS('60')"> 지급명세-배당</Button>
+                        </div>
+                      </div>
+                    </div>
+									</div>
+								</div>
+							</div>
+        {% endblock %}
+    {% block scripts %}
+    <!-- THEMECOLORS JS -->
+    <script src="{% static 'assets/js/themeColors.js'%}"></script>
+    <script>
+      const Htx_Scrap =(flag)=>{
+        $.ajax({
+          url:"{% url 'Htx_Scrap' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }        
+      const SS_MagamEwall =(flag)=>{
+        $.ajax({
+          url:"{% url 'SS_MagamEwall' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }         
+      const Elec_Issue =(flag)=>{
+        $.ajax({
+          url:"{% url 'Elec_Issue' %}",
+          data:{'flag':flag,'loginID':'daeseung21'},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }        
+      const Htx_Report =(flag)=>{
+        $.ajax({
+          url:"{% url 'Htx_Report' %}",
+          data:{'flag':flag,'loginID':'daeseung25'},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }      
+      const File_Manage =(flag)=>{
+        $.ajax({
+          url:"{% url 'File_Manage' %}",
+          data:{'flag':flag,'loginID':'daeseung25'},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }           
+      const Ibotax_Report =(flag)=>{
+        $.ajax({
+          url:"{% url 'Ibotax_Report' %}",
+          data:{'flag':flag,'loginID':'daeseung25'},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }     
+      const SS_MakePayDaejang =(flag)=>{
+        $.ajax({
+          url:"{% url 'SS_MakePayDaejang' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }        
+      const SS_MakeAccount_MonthlyPay =()=>{
+        $.ajax({
+          url:"{% url 'SS_MakeAccount_MonthlyPay' %}",
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }       
+      const SS_Payroll =(flag)=>{
+        $.ajax({
+          url:"{% url 'SS_Payroll' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            // var pyJson = JSON.parse(data);
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      } 
+      const SS_SlipLedgr =(bizno,flag,work_yy)=>{
+        $.ajax({
+          url:"{% url 'SS_SlipLedgr' %}",
+          data:{'bizNo':bizno,'flag':flag,'work_yy':work_yy},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      } 
+      const Total_Employ =(flag)=>{
+        $.ajax({
+          url:"{% url 'Total_Employ' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }  
+      const SS_Corptax =(flag)=>{
+        $.ajax({
+          url:"{% url 'SS_Corptax' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            // var pyJson = JSON.parse(data);
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }        
+      const SS_ZZMS =(flag)=>{
+        $.ajax({
+          url:"{% url 'SS_ZZMS' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            // var pyJson = JSON.parse(data);
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }  
+      const SS_Kani =(flag)=>{
+        $.ajax({
+          url:"{% url 'SS_Kani' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }  
+      const MyWork =(flag)=>{
+        $.ajax({
+          url:"{% url 'MyWork' %}",
+          data:{'flag':flag},
+          dataType:"text",
+          success:function(data){
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }          
+      const Bank_Scrap =(flag)=>{
+        $.ajax({
+          url:"{% url 'Bank_Scrap' %}",
+          data:{'bankCode':flag},
+          dataType:"text",
+          success:function(data){
+            // var pyJson = JSON.parse(data);
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }      
+      const TaxInvoice =(flag)=>{
+        $.ajax({
+          url:"{% url 'TaxInvoice' %}",
+          data:{'loginID':'daeseung25','flag':flag},
+          dataType:"text",
+          success:function(data){
+            // var pyJson = JSON.parse(data);
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }
+      const Issue_Vat =()=>{
+        $.ajax({
+          url:"{% url 'Issue_Vat' %}",
+          data:{'loginID':'daeseung25'},
+          dataType:"text",
+          success:function(data){
+            // var pyJson = JSON.parse(data);
+            console.log(data)
+          },
+          error:function(request,status,error){
+            console.log('fail:'+error);
+          }
+        })
+      }
+    </script>
+    {% endblock %}
+

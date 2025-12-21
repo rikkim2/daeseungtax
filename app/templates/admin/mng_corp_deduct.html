@@ -1,0 +1,318 @@
+{% load static %}
+
+<style>
+    .icon-refresh { color: white; }
+    /* Bootstrap 간섭 방지 */
+    .ext-grid-wrapper .x-table { width: auto !important; margin: 0 !important; }
+    .ext-grid-wrapper { width: 100%; /* 높이는 JS 설정 */ }
+</style>  
+
+<div class="ext-grid-wrapper"></div>
+
+<script>
+(function() {
+    // 1. 그리드 변수
+    var mainGrid;
+
+    // ───────────── [1] DOM 요소 확보 ─────────────
+    var renderTarget = $('.ext-grid-wrapper').filter(function() {
+        return $(this).children().length === 0;
+    }).last()[0];
+
+    if (!renderTarget) {
+        renderTarget = $('div.tab-pane.active .ext-grid-wrapper')[0];
+    }
+    
+    if (!renderTarget) {
+        console.error("❌ [공제감면] 그리드 타겟을 찾을 수 없습니다.");
+        return;
+    }
+
+    // ───────────── [2] 높이 계산 함수 ─────────────
+    function getGridHeight() {
+        var height = window.innerHeight - 180;
+        return height > 300 ? height : 300;
+    }
+
+    // ───────────── [3] 변수 설정 ─────────────
+    var adminBizLevel = '{{ admin_biz_level }}'.trim();
+    const isSuperuser = '{{ admin_grade }}' === 'SA';
+    var ADID = '{{ ADID }}'.trim();        
+    var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+    var flag = '{{ flag }}';
+    var work_YY = '{{ request.session.workyear }}';
+    
+    if(!work_YY && window.getWorkYearAndMonth){
+        work_YY = window.getWorkYearAndMonth('mng_corp').work_YY;
+    }
+    const currentYear = work_YY;
+    // ───────────── [4] 전역 함수 정의 ─────────────
+    
+    // 체크박스 업데이트 함수 (target: 0~13 -> YN_1~YN_14)
+    window.check = function(seq_no, target, wYY, val){
+        $.ajax({
+            url: "{% url 'tbl_mng_jaroe_update' %}",
+            type: "POST",
+            data: {
+                seq_no: seq_no,
+                target : target,
+                work_YY: wYY,
+                work_MM: '', // 공제감면은 보통 연간 데이터이므로 월은 비움
+                val : val,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function (data) {},
+            error: function (jqXHR) {
+                Swal.fire("전송 실패", "오류: " + jqXHR.responseJSON.message, "error");
+            }
+        });
+    };
+
+    var checkboxRender = function(value) { 
+        return "<input type='checkbox'" + (value ? "checked='checked'" : "") + ">"; 
+    };
+    
+    // 상단 담당자 선택 핸들러
+    function onItemClickHandler(item) {
+        ADID = item;
+        const data = { flag: flag, ADID: item, work_YY: work_YY };
+        
+        var targetComponent = mainGrid ? mainGrid.body : Ext.getBody();
+        var loadMask = new Ext.LoadMask({ msg: '조회중...', target: targetComponent });
+        loadMask.show();
+
+        Ext.Ajax.request({
+            url: '{% url "mng_corp_deduct" %}',
+            method: 'GET',
+            params: data, 
+            success: function (response) {
+                try {
+                    const jsonResponse = Ext.decode(response.responseText); 
+                    store.loadData(jsonResponse); 
+                    if (item=="전체") store.reload();
+                } catch (e) {
+                    console.error('Parse Error:', e);
+                } finally{
+                  loadMask.hide();
+                }
+            },
+            failure: function () { loadMask.hide(); }
+        });
+        updateScrollMenuText(item);        
+    }
+    // ───────────── [5] Store 및 Grid 생성 ─────────────
+    var store = Ext.create('Ext.data.Store', {
+    storeId: 'memberStore', // 고유 Store ID (옵션)
+    autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+    proxy: {
+        type: 'ajax', // Ajax를 통해 서버와 통신
+        url: '{% url "mng_corp_deduct" %}', // 데이터를 가져올 API URL
+        extraParams: {
+            ADID:ADID,
+            work_YY:work_YY
+        },        
+        reader: {
+            type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+            rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+            totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+        },
+    },   
+    fields: [ // 필드 정의 (데이터의 각 열)
+        {name: 'groupManager',type: 'string'},
+        {name: 'seq_no', type: 'int' },
+        {name: 'biz_name', type: 'string'},
+        {name: 'YN_1',type: 'bool'},
+        {name: 'YN_2',type: 'bool'},
+        {name: 'YN_3',type: 'bool'},
+        {name: 'YN_4',type: 'bool'},
+        {name: 'YN_5',type: 'bool'},
+        {name: 'YN_6',type: 'bool'},
+        {name: 'YN_7',type: 'bool'},
+        {name: 'YN_8',type: 'bool'},
+        {name: 'YN_9',type: 'bool'},
+        {name: 'YN_10',type: 'bool'},
+        {name: 'YN_11',type: 'bool'},
+        {name: 'YN_12',type: 'bool'},
+        {name: 'YN_13',type: 'bool'},
+        {name: 'bigo',type: 'string'}
+    ],
+    ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+});
+    var comboDataStore = Ext.create('Ext.data.Store', { fields: ['id', 'name'], data: [] });
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}', method: 'GET',
+            success: function (response) { comboDataStore.loadData(Ext.decode(response.responseText)); }
+        });
+    }
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+    
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+          edit: function (editor, e) {
+              var field = e.field; 
+              var value = e.value; 
+              if (field === "bigo" && value === null) value = "";
+              
+              var target = field === "bigo" ? "bigo" : field.replace("YN_", "");
+
+              Ext.Ajax.request({
+                  url: "{% url 'tbl_mng_jaroe_update' %}",
+                  method: "POST",
+                  params: {
+                      seq_no: e.record.get('seq_no'),
+                      target: target,
+                      work_YY: work_YY,
+                      work_MM: '', // 공제감면은 월 정보 없음
+                      val: value,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                  },
+                  success: function () {},
+                  failure: function () { Swal.fire("오류", "전송오류", "error"); }
+              });
+          }
+      }
+    });
+    mainGrid = Ext.create('Ext.grid.Panel', {
+      renderTo: renderTarget,
+      title: '{{ gridTitle }}',
+      tools: [  //최상단 오른쪽 툴바
+          {
+              xtype: 'textfield',
+              emptyText: '검색어 입력',
+              width: 200,
+              listeners: {
+                  change: function (field, newValue) {
+                      const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                      if (!newValue || newValue.trim() === '') {
+                          store.clearFilter(); // 필터 제거
+                      } else {
+                          store.clearFilter(true); // 기존 필터 제거
+                          const searchValue = newValue.trim().toLowerCase();
+                          store.filterBy(record => {
+                              const bizName = record.get('biz_name')?.toLowerCase() || '';
+                              const ceoName = record.get('ceo_name')?.toLowerCase() || '';
+                              return (
+                                  bizName.includes(searchValue) || ceoName.includes(searchValue)
+                              );
+                          });
+                      }
+                  }
+              }
+              
+          },
+          {
+              xtype: 'button',
+              iconCls: 'icon icon-refresh',
+              handler: function (btn) {
+                  location.reload();
+              },
+              style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },
+      ],            
+      width:'100%',
+      height: getGridHeight(), // 초기 높이 설정
+      scrollable: 'y', // 세로 스크롤 활성화
+      store: store,
+      columnLines: true,
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),        
+      plugins: [cellEditing],
+      columns: [
+          {   xtype: 'rownumberer',width: 30,	sortable: false}, 
+          {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0},  
+          {   header: 'SEQ', dataIndex: 'seq_no',width: 50            }, 
+          {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',  width: 160           }, 
+          {   header: '<center>1월</center>', dataIndex: 'YN_1',   xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+			        listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'1',checked);	}}
+          }, {
+            header: '<center>2월</center>', dataIndex: 'YN_2',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'2',checked);	}}
+          }, {
+            header: '<center>3월</center>', dataIndex: 'YN_3',   xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'3',checked);	}}
+          }, {
+            header: '<center>4월</center>', dataIndex: 'YN_4',   xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'4',checked);	}}
+          }, {
+            header: '<center>5월</center>', dataIndex: 'YN_5',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'5',checked);	}}
+          }, {
+            header: '<center>6월</center>', dataIndex: 'YN_6',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'6',checked);	}}
+          }, {
+            header: '<center>7월</center>', dataIndex: 'YN_7',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'7',checked);	}}
+          }, {
+            header: '<center>8월</center>', dataIndex: 'YN_8',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'8',checked);	}}
+          }, {
+            header: '<center>9월</center>', dataIndex: 'YN_9',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'9',checked);	}}
+          }, {
+            header: '<center>10월</center>', dataIndex: 'YN_10',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'10',checked);	}}
+          }, {
+            header: '<center>11월</center>', dataIndex: 'YN_11',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'11',checked);	}}
+          }, {
+            header: '<center>12월</center>', dataIndex: 'YN_12',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'12',checked);	}}
+          }, {
+            header: '<center>결산<br>분개</center>', dataIndex: 'YN_13',  xtype: 'checkcolumn',renderer : checkboxRender, width: 50,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'8',work_YY,'13',checked);	}}
+          }, {
+            header: '<center>비고</center>', dataIndex: 'bigo',  flex:1, editor: { allowBlank: true }
+          }
+      ],                       
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+          items: [
+            ...dockedItemsConfig,
+            {
+                xtype: 'buttongroup', columns: 5, frame: false,
+                defaults: { enableToggle: true, toggleGroup: 'yearGroup', margin: '0 5 0 0', style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } },
+                items: Array.from({ length: 5 }, (_, i) => ({
+                  text: `${currentYear - i}년`,
+                  pressed: currentYear - i === parseInt(work_YY, 10),
+                  handler: function () {
+                    var grid = this.up('grid');
+                    work_YY = parseInt(this.text.replace('년', ''));
+                    grid.getStore().getProxy().extraParams.work_YY = work_YY;
+                    grid.getStore().reload();
+                  }
+                }))
+            }
+          ]
+        } 
+      ],
+      listeners: {
+        afterrender: function(grid) {
+             Ext.EventManager.onWindowResize(function() {
+                 if(grid && !grid.isDestroyed) {
+                     grid.setHeight(getGridHeight());
+                     grid.doLayout();
+                 }
+             });
+             setTimeout(function(){ grid.updateLayout(); }, 200);
+        }
+      }
+    });
+    if (mainGrid) {
+        attachGridToolTip(mainGrid, '{% url "kijang_member_popup" %}?seq_no={seq_no}');
+    }
+});
+
+</script>

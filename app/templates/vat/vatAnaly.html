@@ -1,0 +1,1059 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+{% block styles %}
+<!-- Styles -->
+<style>
+  #chartdiv {
+    width: 100%;
+    height: 500px;
+  }
+
+</style>
+{% endblock %}
+    
+{% block content %}
+<!-- PAGE-HEADER -->
+<div class="page-header">
+  <div id="divH1"> </div>  
+  <!-- <div>
+    <h1 class="page-title" id="maintitle"></h1>
+  </div> -->
+  <div class="ms-auto pageheader-btn">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">신고현황</li>
+      <li class="breadcrumb-item">부가가치세</li>
+      <li class="breadcrumb-item active" aria-current="page"><a href="javascript:void(0);">신고내역 분석</a></li>
+    </ol>
+  </div>
+</div>
+<!-- PAGE-HEADER END -->        
+<!-- ROW-2 -->
+<div class="row">
+  <div class="col-sm-12 col-md-12 col-xl-4 col-lg-6">
+    <div class="row">
+      <div class="col-lg-12 col-xl-12 col-md-6 col-sm-12">
+        <div class="card">
+          <div class="panel panel-primary tab-style-underline">
+            <div class="title-head mb-0" id="divTitleHead">
+              <div class=" tab-menu-heading border-bottom-0 ms-3" style="border-left:0px">
+                <div class="tabs-menu1 ">
+                  <ul class="nav panel-tabs">
+                    <li><a id="anchor1" href="#tab1" data-bs-toggle="tab" class="active me-1 text-default my-1" >매출내역</a></li>
+                    <li><a id="anchor2" href="#tab2" data-bs-toggle="tab" class="me-1 text-default my-1">매입내역</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="panel-body tabs-menu-body border-1  mb-0">
+                <div class="tab-content" id="tabContent"></div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-12 col-lg-12 col-md-6 col-sm-12">
+        <div class="card overflow-hidden">
+          <div class="card-header border-bottom">
+            <h4 class="card-title fw-semibold">점검사항</h4>
+            <a href="#" class="ms-auto" id="anchor3"></a>
+          </div>
+          
+          <div class="card-body p-0 customers mt-1" id="divListGroup">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 막대그래프 -->
+  <div class="col-sm-12 col-md-12 col-lg-6 col-xl-8">
+    <div class="card">
+      <!-- <div class="card-header border-bottom">
+        <h3 class="card-title">Sales</h3> 
+        <div class="ms-auto">
+          <div class="btn-group p-0 ms-auto">
+            <button class="btn btn-primary-light btn-sm disabled" type="button">2021</button>
+            <button class="btn btn-primary-light btn-sm" type="button">2022</button>
+            <button class="btn btn-primary-light btn-sm disabled" type="button">2023</button>
+           </div>
+        </div>
+      </div>  -->
+      <div class="card-body">
+        <div class="sales-stats d-flex">
+          <div>
+            <div class="text-muted fs-13">
+              <span class="p-2 br-5 text-success ms-3"><i class="fe fe-alert-circle"></i></span>
+              막대그래프를 클릭하시면 해당 기수별 상세내역을 확인할 수 있습니다.
+            </div>
+          </div>
+        </div>
+        <div id="chartdiv"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ROW-2 END -->
+<!-- ROW-3 -->
+<div class="row">
+  <div class="col-xl-4 col-md-12">
+    <div class="card"  style="overflow: visible;">
+      <div class="card-header border-bottom">
+        <h4 class="card-title fw-semibold">매출 거래처</h4>
+        <a href="#" class="ms-auto" id="anchor4"></a>
+      </div>
+      <div class="card-body" style=" overflow: visible;">
+        <table class="table">
+          <tbody id="tbody_sale"></tbody>
+        </table>
+        <nav aria-label="Page navigation example">		
+          <ul id="sale_ul" class="pagination" style="justify-content: center;">
+          </ul>
+        </nav>
+        <div id="donut_sale" style="width: 100%; height: 250px; margin-top:10px;"></div>  
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4 col-md-12">
+    <div class="card overflow-hidden">
+      <div class="card-header border-bottom">
+        <h3 class="card-title  fw-semibold">매입 거래처</h3>
+        <a href="#" class="ms-auto" id="anchor5"></a>
+      </div>
+      <div class="card-body" style=" overflow: visible;">
+        <table class="table">
+          <tbody id="tbody_cost"></tbody>
+        </table>
+        <nav aria-label="Page navigation example">		
+          <ul id="cost_ul" class="pagination" style="justify-content: center;">
+          </ul>
+        </nav>
+        <div id="donut_cost" style="width:100%; height:250px; margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4 col-md-12">
+    <div class="card overflow-hidden">
+      <div class="card-header title-submenu border-bottom">
+        <h3 class="card-title">카드공제 사용내역</h3>
+        <a href="#" class="ms-auto" id="anchor6"></a>
+      </div>
+      <div class="card-body">
+        <table class="table">
+          <tbody id="tbody_card"></tbody>
+        </table>
+        <nav aria-label="Page navigation example">		
+          <ul id="card_ul" class="pagination" style="justify-content: center;">
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="traderModal" tabindex="-1" aria-hidden="true"></div>
+<!-- ROW-3 END -->
+     
+{% endblock %}
+
+{% block scripts %}        
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script> <!-- 도넛차트용 -->
+<script>
+var totIssueList = "{{totIssueList|escapejs}}";
+totIssueList = JSON.parse(totIssueList.replaceAll("'","\""));
+const reversedList = [...totIssueList].reverse();
+
+$(document).ready(function(){
+  console.log(totIssueList)
+  if (Array.isArray(totIssueList)) {
+    if (totIssueList.length > 0) changeAll(totIssueList[0]);
+  } else if (totIssueList) {
+    changeAll(totIssueList);
+  }
+})
+am5.ready(function() {
+  var root = am5.Root.new("chartdiv");
+  var data = reversedList;
+  root.setThemes([
+    am5themes_Animated.new(root)
+  ]);
+  root.numberFormatter.setAll({
+    numberFormat: "#a",
+    bigNumberPrefixes: [
+      { "number": 1e+4, "suffix": "만" },
+      { "number": 1e+6, "suffix": "백만" },
+      { "number": 1e+8, "suffix": "억" }
+    ],
+    smallNumberPrefixes: []
+  });
+  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+    panX: true,
+    panY: false,
+    wheelX: "panX",
+    wheelY: "zoomX",
+    layout: root.verticalLayout
+  }));
+
+  //상단스크롤바
+  // chart.set("scrollbarX", am5.Scrollbar.new(root, {
+  //   orientation: "horizontal"
+  // }));
+  var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+    categoryField: "과세기간",
+    renderer: am5xy.AxisRendererX.new(root, {}),
+    tooltip: am5.Tooltip.new(root, {
+      themeTags: ["axis"],
+      animationDuration: 200
+    })
+  }));
+  xAxis.data.setAll(data);
+
+  var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+    min: 0,
+    renderer: am5xy.AxisRendererY.new(root, {})
+  }));
+  var zAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+    min: 0,
+    renderer: am5xy.AxisRendererY.new(root, {})
+  }));
+
+  var series0 = chart.series.push(am5xy.ColumnSeries.new(root, {
+    name: "매입합계",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "매입합계",
+    categoryXField: "과세기간",
+    clustered: false,
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "매입합계: {valueY}"
+    })
+  }));
+  series0.columns.template.setAll({
+    width: am5.percent(80),
+    tooltipY: 0
+  });
+  series0.data.setAll(data);
+  
+  var series1 = chart.series.push(am5xy.ColumnSeries.new(root, {
+    name: "매출합계",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "매출합계",
+    categoryXField: "과세기간",
+    clustered: false,
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "매출합계: {valueY}"
+    })
+  }));
+  series1.columns.template.setAll({
+    width: am5.percent(50),
+    tooltipY: 0
+  });
+  series1.data.setAll(data);
+
+  var series2 = chart.series.push(am5xy.LineSeries.new(root, {
+    name: "납부세액",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "납부세액",
+    categoryXField: "과세기간",
+    clustered: false,
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "납부세액: {valueY}"
+    })
+  }));
+  series2.strokes.template.setAll({ strokeWidth: 2 });
+  series2.bullets.push(function() {
+    return am5.Bullet.new(root, {
+      sprite: am5.Circle.new(root, {
+        strokeWidth: 3,
+        stroke: series2.get("stroke"),
+        radius: 5,
+        fill: root.interfaceColors.get("background")
+      })
+    });
+  });
+  series2.data.setAll(data);  
+
+  //색상
+  series0.set("fill", am5.color(0xFF9E9B));   //매입액
+  series1.set("fill", am5.color(0x87cefa));   //매출액
+  series2.set("fill", am5.color(0x50b300));   //납부세액
+
+  series1.columns.template.events.on("click", function(ev) {
+    const ctx = (ev.target.dataItem && ev.target.dataItem.dataContext) ||
+                (ev.target._dataItem && ev.target._dataItem.dataContext);
+    changeAll(ctx);
+  });
+  series0.columns.template.events.on("click", function(ev) {
+    const ctx = (ev.target.dataItem && ev.target.dataItem.dataContext) ||
+                (ev.target._dataItem && ev.target._dataItem.dataContext);
+    changeAll(ctx);
+  });
+  var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+  chart.appear(1000, 100);
+  series0.appear();
+  series1.appear();
+}); // end am5.ready()
+am5.addLicense("AM5C372573951");
+const setDivInspect = (tmpIssueList) => {
+  var costCard = tmpIssueList.신용카드수취기타카드*1 + tmpIssueList.신용카드수취현금영수증*1 + tmpIssueList.신용카드수취화물복지*1 + tmpIssueList.신용카드수취사업용카드*1;
+  $("#divListGroup").empty();
+  var tmpHtml="";
+  tmpHtml += "            <div class='list-group py-1'>"
+  tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+  tmpHtml += "                <div class='list-group-item border-0'>"
+  tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+  tmpHtml += "                    <div class='transaction-icon'><i class='fe fe-chevrons-right'></i>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                    <div class='media-body'>"
+  tmpHtml += "                      <div class='d-flex align-items-center'>"
+  tmpHtml += "                        <div class='mt-0'>"
+  tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>부가율</h5>"
+  tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>(납부세액+고정자산매입세액)/매출세액</p>"
+  tmpHtml += "                        </div>"
+  tmpHtml += "                        <span class='ms-auto fs-13'>"
+  tmpHtml += "                          <span class='float-end text-dark'>"+((tmpIssueList.납부환급세액+tmpIssueList.매입세금계산서수취고정자산세액)/tmpIssueList.산출세액*100).toFixed(2)+" %</span>"
+  tmpHtml += "                        </span>"
+  tmpHtml += "                      </div>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                  </div>"
+  tmpHtml += "                </div>"
+  tmpHtml += "              </a>"
+  tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+  tmpHtml += "                <div class='list-group-item border-0'>"
+  tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+  tmpHtml += "                    <div class='transaction-icon'>"
+  tmpHtml += "                      <i class='fe fe-scissors'></i>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                    <div class='media-body'>"
+  tmpHtml += "                      <div class='d-flex align-items-center'>"
+  tmpHtml += "                        <div class='mt-0'>"
+  tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>매입세액 <span class='fs-13 fw-semibold ms-1'>불공제</span></h5>"
+  tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>승용차관련·접대비·토지관련 등</p>"
+  tmpHtml += "                        </div>"
+  tmpHtml += "                        <span class='ms-auto fs-13'>"
+  tmpHtml += "                          <span class='float-end text-dark'>"+numberWithCommas(tmpIssueList.불공제)+"</span>"
+  tmpHtml += "                        </span>"
+  tmpHtml += "                      </div>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                  </div>"
+  tmpHtml += "                </div>"
+  tmpHtml += "              </a>"
+  tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+  tmpHtml += "                <div class='list-group-item border-0'>"
+  tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+  tmpHtml += "                    <div class='transaction-icon'><i class='fe fe-briefcase'></i>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                    <div class='media-body'>"
+  tmpHtml += "                      <div class='d-flex align-items-center'>"
+  tmpHtml += "                        <div class='mt-0'>"
+  tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>신용카드 <span class='fs-13 fw-semibold ms-1'>매입세액 공제율</span></h5>"
+  tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>총 카드사용액 "+numberWithCommas(tmpIssueList.카드현영사용총액)+"</p>"
+  tmpHtml += "                        </div>"
+  tmpHtml += "                        <span class='ms-auto fs-13'>"
+  tmpHtml += "                          <span class='float-end text-dark'>"+(costCard/tmpIssueList.카드현영사용총액*100).toFixed(2)+" %</span>"
+  tmpHtml += "                        </span>"
+  tmpHtml += "                      </div>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                  </div>"
+  tmpHtml += "                </div>"
+  tmpHtml += "              </a>"
+  tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+  tmpHtml += "                <div class='list-group-item border-0'>"
+  tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+  tmpHtml += "                    <div class='transaction-icon'><i class='fe fe-file-text'></i>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                    <div class='media-body'>"
+  tmpHtml += "                      <div class='d-flex align-items-center'>"
+  tmpHtml += "                        <div class='mt-0'>"
+  tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>부가가치세 <span class='fs-13 fw-semibold ms-1'>가산세</span></h5>"
+  tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>전자세금계산서관련·불성실 등</p>"
+  tmpHtml += "                        </div>"
+  tmpHtml += "                        <span class='ms-auto fs-13'>"
+  tmpHtml += "                          <span class='float-end text-dark'>"+numberWithCommas(tmpIssueList.가산세액계)+"</span>"
+  tmpHtml += "                        </span>"
+  tmpHtml += "                      </div>"
+  tmpHtml += "                    </div>"
+  tmpHtml += "                  </div>"
+  tmpHtml += "                </div>"
+  tmpHtml += "              </a>"
+  tmpHtml += "            </div>"
+  document.getElementById('divListGroup').innerHTML = tmpHtml;
+}
+const setDivTitle = (tmpIssueList) => {  
+  $("#divH1").empty();
+  var divH1 = document.getElementById('divH1');
+  var h1 = document.createElement('h1');
+  h1.setAttribute("class","page-title")
+  h1.innerText = "부가가치세 신고내역 분석 :: " + tmpIssueList.과세기간;
+  divH1.appendChild(h1);
+
+  var anchor3 = document.getElementById("anchor3")
+  var anchor4 = document.getElementById("anchor4")
+  var anchor5 = document.getElementById("anchor5")
+  var anchor6 = document.getElementById("anchor6")
+  anchor3.innerText = tmpIssueList.과세기간.substring(0,5)+" "+tmpIssueList.startDt + " ~ " + tmpIssueList.endDt
+  anchor4.innerText = tmpIssueList.과세기간.substring(0,5)+" "+tmpIssueList.startDt + " ~ " + tmpIssueList.endDt
+  anchor5.innerText = tmpIssueList.과세기간.substring(0,5)+" "+tmpIssueList.startDt + " ~ " + tmpIssueList.endDt
+  anchor6.innerText = tmpIssueList.과세기간.substring(0,5)+" "+tmpIssueList.startDt + " ~ " + tmpIssueList.endDt
+}
+const setTabContent = (tmpIssueList) => {
+  var totalSale = tmpIssueList.매출합계;
+  var saleTI = tmpIssueList.매출세금계산서;
+  var saleNonTI = tmpIssueList.면세매출;
+  var saleZeroTI = tmpIssueList.영세율매출;
+  var saleCard = tmpIssueList.카드매출;
+  var saleKita = tmpIssueList.기타매출;
+  var anchor1 = document.getElementById("anchor1")
+  var anchor2 = document.getElementById("anchor2")  
+  anchor1.setAttribute("class","active me-1 text-default my-1");
+  anchor2.setAttribute("class","me-1 text-default my-1");  
+  $("#tabContent").empty();
+  var tmpHtml="";
+  tmpHtml += "<div class='tab-pane active' id='tab1'>"
+  tmpHtml += "	<div class='storage-percent'>"
+  tmpHtml += "	  <div class='progress fileprogress h-auto ps-0 shadow1'>"
+  if (Math.round(saleTI / totalSale *100)>0 ) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(saleTI / totalSale *100)+" bg-primary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  if (Math.round((saleNonTI+saleZeroTI) / totalSale *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round((saleNonTI+saleZeroTI) / totalSale *100)+" bg-secondary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  if (Math.round(saleCard / totalSale *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(saleCard / totalSale *100)+" bg-custom-yellow' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  if (Math.round(saleKita / totalSale *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(saleKita / totalSale *100)+" bg-teritary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  tmpHtml += "	  </div>"
+  tmpHtml += "	  <div class='remaining-storage'>"
+  tmpHtml += "		<div class='text-muted fs-13 mb-1 mt-3'>매출 공급가액</div>"
+  tmpHtml += "		<div class='fw-semibold fs-14 mb-1 mt-3'>"+numberWithCommas(totalSale)+"</div>"
+  tmpHtml += "	  </div>"
+  tmpHtml += "	</div>"
+  tmpHtml += "	<div class='content-main mt-5'>"
+  tmpHtml += "	  <ul class='task-list1 row mx-auto'>"
+  tmpHtml += "		<li class='col-xl-6'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-primary me-3'></i>세금계산서</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(saleTI)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "		<li class='col-xl-6'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-secondary'></i>영세율·계산서</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(saleZeroTI+saleNonTI)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "		<li class='col-xl-6'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-custom-yellow'></i>카드·현금영수증</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(saleCard)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "		<li class='col-xl-6 mb-xl-0'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-teritary'></i>기타(온라인·현금)</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(saleKita)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "	  </ul>"
+  tmpHtml += "	</div>"
+  tmpHtml += "</div>"
+
+  //var totalCost = tmpIssueList.매입합계;
+  var costTI = tmpIssueList.매입세금계산서 - tmpIssueList.불공제;
+  var costNonTI = tmpIssueList.면세매입;
+  var costBulgong = tmpIssueList.불공제;
+  var costCard = tmpIssueList.신용카드수취기타카드*1 + tmpIssueList.신용카드수취현금영수증*1 + tmpIssueList.신용카드수취화물복지*1 + tmpIssueList.신용카드수취사업용카드*1;
+  var costRevive = tmpIssueList.의제매입세액공제*1 + tmpIssueList.재활용폐자원등매입세액*1
+  var costGongje = tmpIssueList.경감공제세액;
+  var totalCost = costTI + costNonTI + costCard + costRevive
+
+  tmpHtml += "<div class='tab-pane ' id='tab2'>"
+  tmpHtml += "	<div class='storage-percent'>"
+  tmpHtml += "	  <div class='progress fileprogress h-auto ps-0 shadow1'>"
+  if (Math.round(costTI / totalCost *100)>0 ) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costTI / totalCost *100)+" bg-primary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  if (Math.round(costNonTI / totalCost *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costNonTI / totalCost *100)+" bg-secondary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  if (Math.round(costCard / totalCost *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costCard / totalCost *100)+" bg-custom-yellow' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  if (Math.round(costRevive / totalCost *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costRevive / totalCost *100)+" bg-teritary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+  tmpHtml += "	  </div>"
+  tmpHtml += "	  <div class='remaining-storage'>"
+  tmpHtml += "		<div class='text-muted fs-13 mb-1 mt-3'>매입 공급가액</div>"
+  tmpHtml += "		<div class='fw-semibold fs-14 mb-1 mt-3'>"+numberWithCommas(totalCost)+"</div>"
+  tmpHtml += "	  </div>"
+  tmpHtml += "	</div>"
+  tmpHtml += "	<div class='content-main mt-5'>"
+  tmpHtml += "	  <ul class='task-list1 row mx-auto'>"
+  tmpHtml += "		<li class='col-xl-6'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-primary me-3'></i>세금계산서</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(costTI)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "		<li class='col-xl-6'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-secondary'></i>계산서</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(costNonTI)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "		<li class='col-xl-6'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-custom-yellow'></i>카드·현금영수증</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(costCard)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "		<li class='col-xl-6 mb-xl-0'>"
+  tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-teritary'></i>의제·재활용매입</span>"
+  tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+  tmpHtml += "			<span class=''>"+numberWithCommas(costRevive)+"</span>"
+  tmpHtml += "		  </span>"
+  tmpHtml += "		</li>"
+  tmpHtml += "	  </ul>"
+  tmpHtml += "	</div>"
+  tmpHtml += "</div>"
+  document.getElementById('tabContent').innerHTML = tmpHtml;
+}
+const changeAll = (tmpIssueList)=>{
+  // changeAll expects a single issue object; guard against arrays/empty values.
+  console.debug('[vatAnaly] changeAll input:', tmpIssueList);
+  if (Array.isArray(tmpIssueList)) tmpIssueList = tmpIssueList[0];
+  if (!tmpIssueList) {
+    console.warn('[vatAnaly] changeAll aborted: empty input');
+    return;
+  }
+  waitingDialog.show('부가가치세 신고데이터를 로딩중입니다.',{
+    progressType: 'success',
+    onShow: function () {
+      $.ajax({
+        url:"{% url 'getTraderList' %}",
+        type: "GET",
+        data:{
+          seq_no: tmpIssueList.seq_no,
+          work_YY: tmpIssueList.work_YY,          
+          period:tmpIssueList.과세기간,
+          youhyung:tmpIssueList.과세유형
+        },
+        dataType:"json",
+        success:function(data){
+          try {
+            setDivInspect(tmpIssueList);    //점검사항
+            setDivTitle(tmpIssueList);      //신고기간 타이틀 설정
+            setTabContent(tmpIssueList);    //매출/매입내역
+
+            const saleList = Array.isArray(data.sale) ? data.sale : [];
+            const costList = Array.isArray(data.cost) ? data.cost : [];
+            const cardList = Array.isArray(data.card) ? data.card : [];
+
+            pageInsert(saleList,1,"sale");
+            pageInsert(costList,1,"cost");
+            pageInsert(cardList,1,"card");
+
+            createDonut("donut_sale", saleList, "매출",tmpIssueList.work_YY+"년 "+tmpIssueList.work_QT, "#87CBF4")
+            createDonut("donut_cost", costList, "매입",tmpIssueList.work_YY+"년 "+tmpIssueList.work_QT, "#F3A1A1")          
+          } catch (e) {
+            console.error('[vatAnaly] changeAll render error:', e, { tmpIssueList, data });
+          }
+          if (window.waitingDialog && typeof waitingDialog.hide === 'function') waitingDialog.hide();
+        },
+        error:function(request,status,error){
+          console.log('fail:'+error);
+          if (window.waitingDialog && typeof waitingDialog.hide === 'function') waitingDialog.hide();
+        }
+      })
+
+    }
+  });
+  
+  // ✅ 공통 도넛차트 생성 함수
+  function createDonut(divId, sourceData, MainText,SubText, baseColor) {
+    // 데이터 정리 (Top5 + 기타)
+    var sortedData = sourceData.sort((a, b) => Number(b.금액) - Number(a.금액));
+    var top5 = sortedData.slice(0, 5);
+    var others = sortedData.slice(5);
+    if (others.length > 0) {
+      var otherSum = others.reduce((acc, cur) => acc + Number(cur.금액), 0);
+      top5.push({ 거래처명: "기타", 금액: otherSum });
+    }
+
+    var chartData = top5.map(item => ({
+      category: item.거래처명,
+      value: Number(item.금액) || 0
+    }));
+
+    am5.ready(function() {
+      am5.registry.rootElements.forEach(root => {
+        if (root.dom.id === divId) root.dispose();
+      });
+
+      var root = am5.Root.new(divId);
+      root.setThemes([am5themes_Animated.new(root)]);
+
+      // ✅ 도넛 크기 고정
+      var chart = root.container.children.push(
+        am5percent.PieChart.new(root, {
+          layout: root.verticalLayout,
+          innerRadius: am5.percent(50),  // 도넛 두께
+          radius: am5.percent(70)        // ✅ 도넛 크기 일정하게 유지
+        })
+      );
+
+      var series = chart.series.push(
+        am5percent.PieSeries.new(root, {
+          valueField: "value",
+          categoryField: "category"
+        })
+      );
+
+      var colorSet = am5.ColorSet.new(root, {
+        colors: [am5.color(baseColor)]
+      });
+      series.set("colors", colorSet);
+
+      series.data.setAll(chartData);
+
+      // ✅ 메인 라벨 (큰 글씨)
+      series.children.push(
+        am5.Label.new(root, {
+          text: MainText,
+          fontSize: 22,       // ✅ 크게
+          fontWeight: "bold",
+          centerX: am5.p50,
+          centerY: am5.p50,
+          textAlign: "center"
+        })
+      );
+
+      // ✅ 서브 라벨 (작은 글씨, 아래쪽으로 살짝 이동)
+      series.children.push(
+        am5.Label.new(root, {
+          text: SubText,
+          fontSize: 14,       // ✅ 작게
+          centerX: am5.p50,
+          centerY: am5.p50,
+          dy: 18,             // ✅ 아래쪽으로 18px 내려서 배치
+          textAlign: "center"
+        })
+      );
+
+      // ✅ 범례 (차트 아래쪽 배치)
+      var legend = chart.children.push(
+        am5.Legend.new(root, {
+          centerX: am5.p50,
+          x: am5.p50,
+          marginTop: 10,
+          maxHeight: 100,
+          scrollable: true
+        })
+      );
+      legend.data.setAll(series.dataItems);
+    });
+  }
+  am5.addLicense("AM5C372573951");
+
+}//const changeAll
+
+var tmpSaleList; 
+var tmpCostList; 
+var tmpCardList; 
+const pageList = 5; // 한개의 페이지에 보여질 목록 개수
+const pageMax = 3; // 최대 생성될 페이지 개수  	
+
+
+function pageInsert(tableList,newIndex,flagName){
+  if(flagName=="sale")    tmpSaleList = tableList;
+  if(flagName=="cost")    tmpCostList = tableList;
+  if(flagName=="card")    tmpCardList = tableList;
+  
+
+  $("#"+flagName+"_ul").empty();
+  var startIndex = newIndex;  // 생성 시작 페이지    		
+  var endIndex = tableList.length;
+  var pageCount = 0;
+  var pagePlus = 0;
+  if(endIndex > pageList){ // tr 행 개수가 5 이상인 경우 (임의로 설정)
+    pageCount = Math.floor(endIndex / pageList); //생성될 페이지 수 (소수점 버림)
+    pagePlus = endIndex % pageList; //추가 나머지 자식 수
+    if(pagePlus > 0){ //추가 자식수가 있는경우 >> 페이지 추가
+      pageCount = pageCount + 1;
+    }
+  }
+  if(startIndex > pageCount){ //길이 초과 시 기존꺼로 다시 저장
+    startIndex = newIndex;
+  }
+  else if(startIndex < 0){ //길이 미만 시 기존꺼로 다시 저장
+    startIndex = newIndex;
+  }
+  else {
+    page = startIndex;
+  }
+  if(pageCount == 1){ //생성해야할 페이지
+    var insertUl = "<li class='page-item'>"; 
+    insertUl += insertUl + "<a class='page-link' href='javascript:void(0)' onclick = 'newPage(1,\""+flagName+"\");'>";
+    insertUl += insertUl + i;
+    insertUl += insertUl + "</a></li>";
+    $("#"+flagName+"_ul").append(insertUl);
+  }
+  else if(pageCount >= 2){ 
+    // 이전 페이지 추가 실시 
+    var insertSTR = "<li class='page-item'>";
+    insertSTR = insertSTR + "<a class='page-link' href='javascript:void(0)' onclick = 'newPage("+"-1"+",\""+flagName+"\");'>";
+    insertSTR = insertSTR + "<i class='fe fe-chevron-left'></i>";
+    insertSTR = insertSTR + "</a></li>";
+    $("#"+flagName+"_ul").append(insertSTR);     			
+    // 특정 1, 2, 3 .. 페이지 추가 
+    var count = 1;
+    for(var i=startIndex; i<=pageCount; i++){
+      if(count > pageMax){ //최대로 생성될 페이지 개수 
+        page = i - pageMax; //생성된 페이지 초기값
+        break; 
+      }
+      var insertUl = "<li class='page-item'>"; 
+      insertUl = insertUl + "<a class='page-link' href='javascript:void(0)' onclick = 'newPage("+i+",\""+flagName+"\");'>";
+      insertUl = insertUl + String(i);
+      insertUl = insertUl + "</a></li>";
+      $("#"+flagName+"_ul").append(insertUl); 
+      count ++;
+    }
+    // 다음 페이지 추가 
+    var insertEND = "<li class='page-item'>"; 
+    insertEND = insertEND + "<a class='page-link' href='javascript:void(0)' onclick = 'newPage("+"0"+",\""+flagName+"\");'>";
+    insertEND = insertEND + "<i class='fe fe-chevron-right'></i>";
+    insertEND = insertEND + "</a></li>";
+    $("#"+flagName+"_ul").append(insertEND); 
+  }
+  $("#tbody_"+flagName).empty(); //tbody tr 전체 삭제 
+  // [새롭게 페이지 목록 리스트 처리 ]
+  newPage(startIndex,flagName);
+};
+
+function newPage(pageCurrent,flagName){
+  var tmpList;
+  if(flagName=="sale")    tmpList = tmpSaleList;
+  if(flagName=="cost")    tmpList = tmpCostList;
+  if(flagName=="card")    tmpList = tmpCardList;
+  
+  if(pageCurrent == -1){ // 이전 페이지
+    $("#tbody_"+flagName).empty();
+    var newIdx = page - pageMax;
+    
+    pageInsert(tmpList,newIdx,flagName); 
+  } 
+  else if(pageCurrent == 0){ 
+    $("#tbody_"+flagName).empty(); 
+    var newIdx = page + pageMax;
+    pageInsert(tmpList,newIdx,flagName); 
+  }
+  else { // 일반 테이블 목록 리스트 갱신
+    $("#tbody_"+flagName).empty();
+    idx = (pageCurrent * pageList) - pageList;
+    var checkCount = 1;
+
+    for (var i = idx; i < tmpList.length; i++) {
+      if (checkCount > pageList) { // 한페이지에 표시될 목록을 초과한 경우
+        return;
+      }
+      // json 데이터 파싱 실시
+      var jsonObject = JSON.parse(JSON.stringify(tmpList[i])); //각 배열에 있는 jsonObject 참조
+      idx = i + 1;
+      var trader_code = jsonObject.거래처코드;
+      var name = jsonObject.거래처명;
+      var amt = jsonObject.금액;
+
+      var insertTr = ""; // 변수 선언
+      insertTr += "<tr style='cursor:pointer' onclick=\"openTraderModal('" + trader_code + "', '" + flagName + "', '" + name + "')\">";  
+      insertTr += "<th scope='row'>" + idx + "</th>";
+      insertTr += "<td>" + name + "</td>";
+      insertTr += "<td style='text-align:right'>" + numberWithCommas(Math.round(amt)) + "</td>";
+      insertTr += "</tr>";
+
+      $("#tbody_" + flagName).append(insertTr);
+      checkCount++;
+    }						
+  }
+};
+
+function openTraderModal(trader_code, trader_flag, name) {
+  var tmpHtml = `
+    <div class="modal-dialog modal-dialog-centered modal-xl task-view-modal" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">${name}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- ✅ 차트 #1: 최근 5개년 분기별 매출 -->
+          <h6 class="fw-bold mt-2">📊 최근 5개년 분기별 매출</h6>
+          <div id="chartdiv_quartered" style="width:100%; height:400px;"></div>
+          
+          <hr>
+
+          <!-- ✅ 차트 #2: 작년 동월 대비 -->
+          <h6 class="fw-bold mt-3">📈 작년 동월 대비</h6>
+          <div id="chartdiv_comparison" style="width:100%; height:400px;"></div>
+        </div>
+        <div class="modal-footer w-100 text-end">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // ✅ 모달 전체 HTML 교체
+  document.getElementById('traderModal').innerHTML = tmpHtml;
+
+  // ✅ Bootstrap 모달 띄우기
+  var modal = new bootstrap.Modal(document.getElementById('traderModal'));
+  modal.show();
+
+  // ✅ 데이터 로드 & 차트 호출
+  loadQuarter(trader_code, trader_flag);        // ✅ 기존 분기별 매출 차트 함수
+  loadComparisonChart(trader_code, trader_flag);          // ✅ "작년 동월 대비" 함수 (새로 만든 함수)
+}
+function loadQuarter(trader_code,trader_flag) {
+  $.ajax({
+    url: "{% url 'get_QuarteredGraph' %}",
+    type: "GET",
+    data: { 
+      trader_code: trader_code,
+      trader_flag: trader_flag 
+    },
+    dataType: "json",
+    success: function(response) {
+      drawQuarterChart(response);
+    }
+  });
+}
+
+function drawQuarterChart(data) {
+  am5.ready(function() {
+    am5.registry.rootElements.forEach(root => {
+      if (root.dom.id === "chartdiv_quartered") {
+        root.dispose();
+      }
+    });
+
+    var root = am5.Root.new("chartdiv_quartered");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(am5xy.XYChart.new(root, {
+      layout: root.verticalLayout,
+      panX: false,
+      panY: false
+    }));
+
+    var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+      categoryField: "year",
+      renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 20 })
+    }));
+    xAxis.data.setAll(data);
+
+    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererY.new(root, {})
+    }));
+
+    var colors = {
+      "Q1": am5.color(0xA3D8F4),
+      "Q2": am5.color(0x91C7B1),
+      "Q3": am5.color(0xF9D39B),
+      "Q4": am5.color(0xF7AFAF)
+    };
+
+    let lastSeries = null;
+
+    // ✅ Q1 ~ Q4 시리즈 생성
+    ["Q1", "Q2", "Q3", "Q4"].forEach(function(quarter) {
+      var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+        name: quarter,
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: quarter,
+        categoryXField: "year",
+        stacked: true,
+        tooltip: am5.Tooltip.new(root, { labelText: "{name}: {valueY}" })
+      }));
+
+      series.columns.template.setAll({
+        fill: colors[quarter],
+        stroke: colors[quarter],
+        width: am5.percent(80)
+      });
+
+      // ✅ 각 분기별 라벨
+      series.bullets.push(function(root, series, dataItem) {
+        return am5.Bullet.new(root, {
+          locationY: 0.5,
+          sprite: am5.Label.new(root, {
+            text: dataItem.dataContext[quarter].toLocaleString(),
+            centerX: am5.p50,
+            centerY: am5.p50,
+            fill: am5.color(0xffffff),
+            fontSize: 13,
+            fontWeight: "bold"
+          })
+        });
+      });
+
+      series.data.setAll(data);
+      lastSeries = series; // ✅ 마지막 series(Q4) 저장
+    });
+
+    // ✅ Q4 시리즈 위에 “전체 합계 라벨” 추가
+    lastSeries.bullets.push(function(root, series, dataItem) {
+      // ✅ 총합 계산
+      var total = (dataItem.dataContext.Q1 || 0)
+                + (dataItem.dataContext.Q2 || 0)
+                + (dataItem.dataContext.Q3 || 0)
+                + (dataItem.dataContext.Q4 || 0);
+
+      return am5.Bullet.new(root, {
+        locationY: 1,  // ✅ 막대 꼭대기
+        sprite: am5.Label.new(root, {
+          text: total.toLocaleString() + "원",
+          centerX: am5.p50,
+          centerY: am5.p100,
+          dy: -10,
+          fontSize: 15,
+          fontWeight: "bold",
+          fill: am5.color(0x000000)
+        })
+      });
+    });
+
+    var legend = chart.children.push(am5.Legend.new(root, {
+      centerX: am5.p50,
+      x: am5.p50
+    }));
+    legend.data.setAll(chart.series.values);
+
+    chart.appear(1000, 100);
+  });
+}
+
+function loadComparisonChart(trader_code, trader_flag) {
+  $.ajax({
+    url: "{% url 'get_monthly_comparison' %}",
+    type: "GET",
+    data: { trader_flag: trader_flag, trader_code: trader_code },
+    success: function(response) {
+      drawComparisonChart(response);
+    }
+  });
+}
+
+function drawComparisonChart(data) {
+  am5.ready(function() {
+    // ✅ 기존 Root 제거
+    am5.registry.rootElements.forEach(root => {
+      if (root.dom.id === "chartdiv_comparison") {
+        root.dispose();
+      }
+    });
+
+    var root = am5.Root.new("chartdiv_comparison");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    // ✅ 차트 생성
+    var chart = root.container.children.push(am5xy.XYChart.new(root, {
+      layout: root.verticalLayout,
+      panX: false,
+      panY: false     
+    }));
+
+    // ✅ 숫자 포맷 함수 (억/만 단위 변환)
+    function formatToKoreanUnit(value) {
+      if (value >= 100000000) {
+        return (value / 100000000).toFixed(1) + "억"; // 억 단위
+      } else if (value >= 10000) {
+        return (value / 10000).toFixed(1) + "만"; // 만 단위
+      }
+      return value.toLocaleString(); // 그 외는 콤마 처리
+    }
+
+    // ✅ X축 (1월~12월)
+    var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+      categoryField: "month",
+      renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 20 })
+    }));
+    xAxis.data.setAll(data);
+
+
+    // ✅ Y축
+    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererY.new(root, {})
+    }));
+
+    // ✅ 올해 / 작년 시리즈 색상
+    var colors = {
+      "thisYear": am5.color(0x62C1DD), // 올해: 파스텔 블루
+      "lastYear": am5.color(0x9370DB)  // 작년: 파스텔 퍼플
+    };
+
+    // ✅ 올해 데이터 시리즈
+    var thisYearSeries = chart.series.push(am5xy.ColumnSeries.new(root, {
+      name: "올해",
+      xAxis: xAxis,
+      yAxis: yAxis,
+      valueYField: "thisYear",
+      categoryXField: "month",
+      clustered: true,
+      tooltip: am5.Tooltip.new(root, { labelText: "올해: {valueY}" })
+    }));
+    thisYearSeries.columns.template.setAll({
+      fill: colors.thisYear,
+      stroke: colors.thisYear,
+      width: am5.percent(40)
+    });
+
+    // ✅ 작년 데이터 시리즈
+    var lastYearSeries = chart.series.push(am5xy.ColumnSeries.new(root, {
+      name: "작년",
+      xAxis: xAxis,
+      yAxis: yAxis,
+      valueYField: "lastYear",
+      categoryXField: "month",
+      clustered: true,
+      tooltip: am5.Tooltip.new(root, { labelText: "작년: {valueY}" })
+    }));
+    lastYearSeries.columns.template.setAll({
+      fill: colors.lastYear,
+      stroke: colors.lastYear,
+      width: am5.percent(40)
+    });
+
+    // ✅ **막대 위에 억/만 단위 Label 표시**
+    function addLabels(series, field) {
+      series.bullets.push(function(root, series, dataItem) {
+        var value = dataItem.dataContext[field];
+        return am5.Bullet.new(root, {
+          locationY: 1,  // ✅ 막대의 끝을 기준점으로
+          sprite: am5.Label.new(root, {
+            text: formatToKoreanUnit(value),   // ✅ "2.7억" 형태로 변환
+            centerX: am5.p50,
+            centerY: am5.p100,
+            dy: -2,            // ✅ 막대보다 35px 위 → 여유 있게 띄움
+            fontSize: 14,
+            fontWeight: "bold",
+            fill: am5.color(0x000000)  // ✅ 검정색 글자
+          })
+        });
+      });
+    }
+
+    addLabels(thisYearSeries, "thisYear");
+    addLabels(lastYearSeries, "lastYear");
+
+    // ✅ 데이터 적용
+    thisYearSeries.data.setAll(data);
+    lastYearSeries.data.setAll(data);
+
+    // ✅ 범례
+    var legend = chart.children.push(am5.Legend.new(root, {
+      centerX: am5.p50,
+      x: am5.p50
+    }));
+    legend.data.setAll(chart.series.values);
+
+    chart.appear(1000, 100);
+  });
+}
+
+
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        <div id="ext-grid-container"></div>
+        {% endblock %}
+
+    {% block scripts %}
+
+
+
+        <!-- extjs422 -->
+        <link rel="stylesheet" href="{% static 'assets/plugins/ext422/extjs-build/resources/ext-theme-neptune/ext-theme-neptune-all.css'%}">
+
+        
+        <script src="{% static 'assets/plugins/ext422/extjs-build/ext-all.js'%}"></script>        
+        <!-- Extjs 422 -->
+        <script>
+  
+        Ext.onReady(function () {
+            // 데이터 스토어 정의
+            const store = Ext.create('Ext.data.Store', {
+                fields: ['admin_id', 'admin_pwd'], // JSON 필드와 매칭
+                proxy: {
+                    type: 'ajax',
+                    url: '{% url "mem_admin" %}', // Django URL
+                    reader: {
+                        type: 'json', // JSON 데이터를 읽음
+                        rootProperty: '' // JSON 배열이므로 root 설정 필요 없음
+                    }
+                },
+                autoLoad: true // 페이지 로드 시 데이터 자동 로드
+            });
+
+            // ExtJS 그리드 생성
+            Ext.create('Ext.grid.Panel', {
+                renderTo: 'ext-grid-container', // HTML 컨테이너 ID
+                title: 'Mem Admin List',
+                width: 800,
+                height: 400,
+                store: store,
+                columns: [
+                    { text: 'Admin ID', dataIndex: 'admin_id', flex: 1 },
+                    { text: 'Password', dataIndex: 'admin_pwd', flex: 1 }
+                ],
+                bbar: {
+                    xtype: 'pagingtoolbar',
+                    displayInfo: true,
+                    store: store
+                }
+            });
+        });
+      </script>
+
+
+{% endblock %}

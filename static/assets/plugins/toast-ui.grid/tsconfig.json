@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "commonJS",
+    "strict": true,
+    "importHelpers": true,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "baseUrl": ".",
+    "paths": {
+      "@t/*": ["types/*"]
+    },
+    "noEmit": true,
+    "typeRoots": ["./types"],
+    "types": ["node", "tui-pagination"],
+    "lib": ["esnext", "dom", "dom.iterable"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "types/**/*"],
+  "exclude": ["node_modules"]
+}

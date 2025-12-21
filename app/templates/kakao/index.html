@@ -1,0 +1,45 @@
+{% extends 'components/mobile-base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+                
+        <div id="email_content"></div>
+        {% endblock %}
+
+        {% block scripts %}
+
+<script>
+var seq_no = "{{seq_no}}"
+var work_YY = "{{work_yy}}"
+var work_MM = "{{work_mm}}"
+var flag = "{{flag}}"
+
+console.log(seq_no)
+console.log(work_YY)
+console.log(flag)
+$.ajax({
+  url: "{% url 'getMailContent' %}",
+  type: "POST",
+  data: {
+    seq_no: seq_no,
+    work_YY: work_YY,
+    work_MM: work_MM,
+    flag:flag,
+    csrfmiddlewaretoken: "{{ csrf_token }}"
+  },
+  dataType: "json",
+  success: function (data) {
+    var email_content = data.email_content
+  
+    $('[id="email_content"]').html(email_content);
+  },
+  error: function (request, status, error) {
+    console.log('fail: ' + error);
+  }
+});
+</script>
+	{% endblock %}

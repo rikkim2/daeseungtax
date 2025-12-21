@@ -120,6 +120,7 @@ dump.rdb
 
 # Compiled static files
 /static/cert_DS/
+/noa/static/cert_DS/
 /static/CACHE/
 /static/.webassets-cache
 

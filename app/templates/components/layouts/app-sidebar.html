@@ -1,0 +1,154 @@
+            {% load static %}
+                
+            <!--APP-SIDEBAR-->
+            <div class="sticky">
+                <div class="app-sidebar__overlay" data-bs-toggle="sidebar"></div>
+				<div class="app-sidebar">
+					<div class="side-header">
+						<a class="header-brand1" href="dashboard">
+							<img src="{% static 'assets/images/brand/DS_LOGO_full_white.png' %}" class="header-brand-img desktop-logo wpx-200 hpx-30" alt="logo"> 
+							<img src="{% static 'assets/images/brand/DS_LOGO.png' %}" class="header-brand-img toggle-logo wpx-30 hpx-25" alt="logo">
+							<img src="{% static 'assets/images/brand/DS_LOGO.png' %}" class="header-brand-img light-logo wpx-30 hpx-25" alt="logo">
+							<img src="{% static 'assets/images/brand/DS_LOGO_full.svg' %}" class="header-brand-img light-logo1 wpx-200  hpx-30" alt="logo"> 
+						</a><!-- LOGO -->
+					</div>
+					<div class="main-sidemenu">
+                        <div class="slide-left disabled" id="slide-left"><svg xmlns="http://www.w3.org/2000/svg"
+                                fill="#7b8191" width="24" height="24" viewBox="0 0 24 24">
+                                <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z" />
+                            </svg>
+						</div>
+						<ul class="side-menu">
+							<li>
+								<h3>회사정보</h3>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item has-link" data-bs-toggle="slide" href="companyInfo">
+									<i  class="fe fe-home side-menu__icon" ></i>
+									<span class="side-menu__label">{{memuser.biz_name}}</span>
+								</a>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="proofSheet" >
+									<i  class="fe fe-inbox side-menu__icon" ></i>
+									<span class="side-menu__label">증빙서류 보관현황</span>
+									<!-- <span class="badge badge-sm bg-secondary badge-hide">new</span> -->
+								</a>
+							</li>							
+							<li>
+								<h3>신고현황</h3>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="icon icon-briefcase side-menu__icon" ></i>
+									<!-- <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,21h-19C2.223877,21,2,21.223877,2,21.5S2.223877,22,2.5,22h19c0.276123,0,0.5-0.223877,0.5-0.5S21.776123,21,21.5,21z M4.5,18.0888672h5c0.1326294,0,0.2597656-0.0527344,0.3534546-0.1465454l10-10c0.000061,0,0.0001221-0.000061,0.0001831-0.0001221c0.1951294-0.1952515,0.1950684-0.5117188-0.0001831-0.7068481l-5-5c0-0.000061-0.000061-0.0001221-0.0001221-0.0001221c-0.1951904-0.1951904-0.5117188-0.1951294-0.7068481,0.0001221l-10,10C4.0526733,12.3291016,4,12.4562378,4,12.5888672v5c0,0.0001831,0,0.0003662,0,0.0005493C4.0001831,17.8654175,4.223999,18.0890503,4.5,18.0888672z M14.5,3.2958984l4.2930298,4.2929688l-2.121582,2.121582l-4.2926025-4.293396L14.5,3.2958984z M5,12.7958984l6.671814-6.671814l4.2926025,4.293396l-6.6713867,6.6713867H5V12.7958984z"/></svg> -->
+									<span class="side-menu__label">부가가치세</span><i class="angle fa fa-angle-right"></i>
+								</a>
+								<ul class="slide-menu">
+									<li><a href="vatSingo" class="slide-item">신고·납부서</a></li>
+									<li><a href="vatAnaly" class="slide-item">신고내역분석<span class="badge badge-sm bg-secondary badge-hide ms-auto">new</span></a></li> 
+									
+								</ul>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="fe fe-users side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"></i>
+									<!-- <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M19,2H9C7.3438721,2.0018311,6.0018311,3.3438721,6,5v1H5C3.3438721,6.0018311,2.0018311,7.3438721,2,9v10c0.0018311,1.6561279,1.3438721,2.9981689,3,3h10c1.6561279-0.0018311,2.9981689-1.3438721,3-3v-1h1c1.6561279-0.0018311,2.9981689-1.3438721,3-3V5C21.9981689,3.3438721,20.6561279,2.0018311,19,2z M17,19c-0.0014038,1.1040039-0.8959961,1.9985962-2,2H5c-1.1040039-0.0014038-1.9985962-0.8959961-2-2v-8h14V19z M17,10H3V9c0.0014038-1.1040039,0.8959961-1.9985962,2-2h10c1.1040039,0.0014038,1.9985962,0.8959961,2,2V10z M21,15c-0.0014038,1.1040039-0.8959961,1.9985962-2,2h-1V9c-0.0008545-0.7719116-0.3010864-1.4684448-0.7803345-2H21V15z M21,6H7V5c0.0014038-1.1040039,0.8959961-1.9985962,2-2h10c1.1040039,0.0014038,1.9985962,0.8959961,2,2V6z"/></svg> -->
+									<span class="side-menu__label">인건비</span><i class="angle fa fa-angle-right"></i></a>
+								<ul class="slide-menu">
+									<li><a href="payrollSingo" class="slide-item">급여대장·신고·납부서</a></li>
+									<!-- <li><a href="payrollAnaly" class="slide-item">인건비분석</a></li> -->
+								</ul>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="icon icon-note side-menu__icon" ></i>
+									<!-- <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,21H20V4.5C20,4.223877,19.776123,4,19.5,4S19,4.223877,19,4.5V21h-3v-8.5c0-0.276123-0.223877-0.5-0.5-0.5S15,12.223877,15,12.5V21h-3V8.5C12,8.223877,11.776123,8,11.5,8S11,8.223877,11,8.5V21H8v-4.5C8,16.223877,7.776123,16,7.5,16S7,16.223877,7,16.5V21H3V2.5C3,2.223877,2.776123,2,2.5,2S2,2.223877,2,2.5v19.0005493C2.0001831,21.7765503,2.223999,22.0001831,2.5,22h19c0.276123,0,0.5-0.223877,0.5-0.5S21.776123,21,21.5,21z"/></svg> -->
+									{% if isCorp %}
+										<span class="side-menu__label">법인세</span><i class="angle fa fa-angle-right"></i></a>
+									{% else %}
+										<span class="side-menu__label">종합소득세</span><i class="angle fa fa-angle-right"></i></a>
+									{% endif %}
+								<ul class="slide-menu">
+									<li><a href="corpSingo" class="slide-item">신고·납부서</a></li>
+									<!-- <li><a href="corpAnaly" class="slide-item">신고현황 분석</a></li> -->
+								</ul>
+							</li>
+							<li>
+								<h3>재무제표</h3>
+							</li>							
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="icon icon-diamond side-menu__icon" ></i>
+									<!-- <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M12,2C6.4771729,2,2,6.4771729,2,12s4.4771729,10,10,10c5.5201416-0.0064697,9.9935303-4.4798584,10-10C22,6.4771729,17.5228271,2,12,2z M19.7819214,7.5h-9.2255249l2.5594482-4.4225464C15.9681396,3.4337769,18.4015503,5.1206055,19.7819214,7.5z M14.0211182,8.5l2.0198364,3.503479L14.0192871,15.5H9.9798584l-2.0228882-3.5084229L9.9776611,8.5H14.0211182z M12,3c0.0019531,0,0.0038452,0.0003052,0.0057983,0.0003052L7.380249,10.991272L4.8326416,6.5727539C6.4761353,4.4058838,9.0706177,3,12,3z M3,12c0-1.6405029,0.4459839-3.1737671,1.2128296-4.49823L8.8244019,15.5H3.7061157C3.2515259,14.4241333,3,13.2414551,3,12z M4.2138672,16.5h9.2272339l-2.5576782,4.423584C8.0288696,20.5695801,5.5935059,18.8815918,4.2138672,16.5z M12,21c-0.0021362,0-0.0041504-0.0003052-0.0062866-0.0003052l4.6235962-7.996582l2.550354,4.4237671C17.524231,19.5939941,14.9295654,21,12,21z M15.1746826,8.5h5.1159668C20.7460938,9.5758057,20.9986572,10.7584839,21,12c0,1.6407471-0.446106,3.1741943-1.2131348,4.4987183L15.1746826,8.5z"/></svg> -->
+									<span class="side-menu__label">주요원장</span><i class="angle fa fa-angle-right"></i></a>
+								<ul class="slide-menu">
+									<li><a href="statementBS" class="slide-item">재무상태표</a></li>
+									<li><a href="statementIS" class="slide-item">손익계산서</a></li>
+									<li><a href="statementMC" class="slide-item">제조원가명세서</a></li>
+									{%if isCorp%}
+									<li><a href="statementRE" class="slide-item">이익잉여금처분계산서</a></li>
+									{%endif%}
+								</ul>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="icon icon-star side-menu__icon" ></i>
+									<span class="side-menu__label">보조원장</span><i class="angle fa fa-angle-right"></i></a>
+								<ul class="slide-menu">
+									<li><a href="slipLedgr" class="slide-item">계정별원장</a></li>
+									<li><a href="traderLedgr" class="slide-item">거래처원장</a></li>
+								</ul>
+							</li>
+							<li>
+								<h3>업무현황</h3>
+							</li>
+							<!-- <li class="slide">
+								<a class="side-menu__item has-link" data-bs-toggle="slide" href="bizMail">
+									<i  class="icon icon-envelope-letter side-menu__icon" ></i>
+									<span class="side-menu__label">업무메일</span>
+								</a>
+							</li> -->
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="statementReport" >
+									<i  class="icon icon-calculator side-menu__icon" ></i>
+									<!-- <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M2.25,8.4521484l9.5,5.4804688C11.8259277,13.9767456,11.9121704,14,12,14s0.1740723-0.0232544,0.25-0.0673828l9.5-5.4804688c0.0759888-0.0438843,0.1390381-0.1069946,0.1829224-0.1829224C22.071106,8.0300293,21.9891968,7.7241211,21.75,7.5859375l-9.5-5.4755859c-0.1550903-0.0878906-0.3449097-0.0878906-0.5,0l-9.5,5.4755859C2.1740112,7.6298218,2.1109619,7.6929321,2.0670776,7.7688599C1.928894,8.0080566,2.0108032,8.3139648,2.25,8.4521484z M12,3.1210938l8.4990234,4.8984375L12,12.9228516L3.5009766,8.0195312L12,3.1210938z M21.2479858,15.5263672L12,20.9208984l-9.2481079-5.3945312c-0.2384033-0.1391602-0.5444336-0.0587158-0.6835938,0.1796875s-0.0587158,0.5444336,0.1796875,0.6835938l9.5,5.5419922C11.8244019,21.9765015,11.911377,22.0001221,12,22c0.088562,0.0001221,0.1755371-0.0234985,0.2518921-0.0683594l9.5-5.5419922c0.2384033-0.1391602,0.3188477-0.4451904,0.1796875-0.6835938S21.4863892,15.387207,21.2479858,15.5263672z M21.2479858,11.5263672L12,16.9208984l-9.2481079-5.3945312c-0.2384033-0.1391602-0.5444336-0.0587158-0.6835938,0.1796875s-0.0587158,0.5444336,0.1796875,0.6835938l9.5,5.5419922C11.8244019,17.9765015,11.911377,18.0001221,12,18c0.088562,0.0001221,0.1755371-0.0234985,0.2518921-0.0683594l9.5-5.5419922c0.2384033-0.1391602,0.3188477-0.4451904,0.1796875-0.6835938S21.4863892,11.387207,21.2479858,11.5263672z"/></svg> -->
+									<span class="side-menu__label">기장보고서</span>
+									<!-- <span class="badge badge-sm bg-secondary badge-hide">new</span> -->
+								</a>
+							</li>			
+
+							<!-- <li>
+								<h3>고객지원</h3>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="icon icon-docs side-menu__icon" ></i>
+									<span class="side-menu__label">서식</span><i class="angle fa fa-angle-right"></i>
+								</a>
+								<ul class="slide-menu">
+									<li><a href="sheetContract" class="slide-item">계약서</a></li>
+									<li><a href="sheetEtc" class="slide-item">기타</a></li>
+								</ul>
+							</li>
+							<li class="slide">
+								<a class="side-menu__item" data-bs-toggle="slide" href="#">
+									<i  class="icon icon-cup side-menu__icon" ></i>
+									<span class="side-menu__label">FAQ</span><i class="angle fa fa-angle-right"></i></a>
+								<ul class="slide-menu">
+									<li><a href="faqAI" class="slide-item">인건비 발생</a></li>
+									<li><a href="faqMan" class="slide-item">인건비 발생</a></li>
+									<li><a href="faqLabor" class="slide-item">성실신고사업자</a></li>
+									<li><a href="faqElec" class="slide-item">전자세금계산서</a></li>
+								</ul>
+							</li> -->
+						</ul>
+						<div class="slide-right" id="slide-right"><svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191"
+								width="24" height="24" viewBox="0 0 24 24">
+								<path d="M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z" />
+							</svg>
+						</div>
+					</div>
+				</div>
+            </div>
+			<!--/APP-SIDEBAR-->

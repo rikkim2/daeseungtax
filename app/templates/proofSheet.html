@@ -1,0 +1,400 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">증빙서류 보관현황</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">회사정보</li>
+										<li class="breadcrumb-item"><a href="javascript:void(0);">증빙서류 보관현황</a></li>
+										<!-- <li class="breadcrumb-item active" aria-current="page">증빙서류 보관현황</li> -->
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+ 
+							<!-- row -->
+							<div class="row">
+								<div class="col-lg-4 col-xl-3">
+									<div class="card mb-4">
+										<div class="card-header border-bottom d-flex flex-row-reverse">
+                
+
+                      <div class="btn-group">
+                        <button id="btn_selectedYear"  type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                           {{selectedYear}} 년<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li class="dropdown-plus-title">
+                            작업연도
+                            <b class="fa fa-angle-up" aria-hidden="true"></b>
+                          </li>
+													<div class="list-group">
+														{% for node in proofYears %}
+															<li class='list-group-item list-group-item-action'><a href='javascript:handleButtonClose({{node}})' >{{node}}년</a></li>
+														{% endfor %}
+													</div>
+                        </ul>
+                      </div>
+                  
+										</div>
+										<div class="card-body">
+											<div id="tree2"></div>
+										</div>
+                  </div>
+                  <div class="card custom-card mt-0 p-2 pb-0 mb-0 shadow-none storage-card">
+                    <div class="card-header font-weight-bold px-3 pb-2 border-bottom-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-inner-icn me-2" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M17.5,16c-0.8284302,0-1.5,0.6715698-1.5,1.5s0.6715698,1.5,1.5,1.5c0.828064-0.0009155,1.4990845-0.671936,1.5-1.5C19,16.6715698,18.3284302,16,17.5,16z M17.5,18c-0.276123,0-0.5-0.223877-0.5-0.5s0.223877-0.5,0.5-0.5c0.2759399,0.0005493,0.4994507,0.2240601,0.5,0.5C18,17.776123,17.776123,18,17.5,18z M21.9910889,15.4124756c-0.0004272-0.0222778,0.0065308-0.0431519,0.0030518-0.0657959l-0.0283203-0.1831055c-0.0103149-0.0753784-0.0178223-0.151001-0.034729-0.2241211L20.2558594,4.1181641C20.0731201,2.8966064,19.0212402,1.9945068,17.7861328,2H6.2138672C4.9787598,1.9945068,3.9268799,2.8966064,3.7441406,4.1181641L2.0689087,14.9394531c-0.0169067,0.0731201-0.0244141,0.1487427-0.034729,0.2241211l-0.0283203,0.1831055c-0.0031128,0.0215454,0.0036621,0.0413818,0.0033569,0.0626221C2.0080566,15.4400635,2,15.4689331,2,15.5v4c0.0012817,1.380188,1.119812,2.4987183,2.5,2.5h15c1.380188-0.0012817,2.4987183-1.119812,2.5-2.5v-4C22,15.4700317,21.9921875,15.4421997,21.9910889,15.4124756z M4.7324219,4.2705078C4.8417358,3.5376587,5.4729004,2.9963989,6.2138672,3h11.5722656c0.7409668-0.0036011,1.3721313,0.5376587,1.4814453,1.2705078l1.3981323,9.0314331C20.3162231,13.1159058,19.9234619,13.0003662,19.5,13h-15c-0.4234619,0.0003662-0.8162231,0.1159058-1.1657104,0.3019409L4.7324219,4.2705078z M21,19.5c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15c-0.828064-0.0009155-1.4990845-0.671936-1.5-1.5v-4c0.000061-0.0388184,0.008606-0.0753174,0.0115356-0.1134033l0.0391235-0.2528076C3.215332,14.4837646,3.7990112,14.0007935,4.5,14h15c0.7009888,0.0007935,1.284668,0.4837646,1.4493408,1.1337891l0.0391235,0.2528076C20.991394,15.4246826,20.999939,15.4611816,21,15.5V19.5z"/></svg>
+                      저장공간
+                    </div>
+                    <div class="card-body pt-0 pb-0 px-3">
+                      <div class="storage-percent">
+                        <div class="progress   fileprogress h-auto ps-0 mb-2">
+                          <div class="progress-bar progress-bar-xs wd-15p" role="progressbar" style="width: {{bizSize}}%"  aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="text-muted font-weight-semibold tx-13 mb-1">100GB 중 {{bizSize}}GB 사용 </div>
+                      </div>
+                    </div>
+                  </div>
+
+									<div class="card">
+										<div class="card-body upgrade-storage bg-primary-transparent">
+											<a href="javascript:void(0)">
+												<div class="upgrade-main text-center">
+													<svg class="mb-1" xmlns="http://www.w3.org/2000/svg" style="width: 3rem;" data-name="Layer 1" viewBox="0 0 24 24"><path fill="#67a719" d="M19.97586,10V9a3,3,0,0,0-3-3H10.69678l-.31622-.94868A3,3,0,0,0,7.53451,3H3.97586a3,3,0,0,0-3,3V19a2,2,0,0,0,2,2H3.3067a2,2,0,0,0,1.96774-1.64223l1.40283-7.71554A2,2,0,0,1,8.645,10Z"/><path fill="#a3ca75" d="M22.02386,10H8.645a2,2,0,0,0-1.96777,1.64221L5.27441,19.35773A2,2,0,0,1,3.3067,21H19.55292a2,2,0,0,0,1.96771-1.64227l1.48712-8.17884A1,1,0,0,0,22.02386,10Z"/></svg>
+													<h4 class="mb-1">저장공간 업그레이드</h4>
+													<span class="text-primary-lit mt-1">저장공간이 부족한 경우 추가비용이 청구될 수 있습니다.</span>
+												</div>
+											</a>
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-8 col-xl-9">
+									<div class="row">
+										<div class="col-xl-12 col-lg-12 col-md-12">
+											<div class="card custom-card overflow-hidden">
+												<div class="card-body p-3">
+													<div class="breadcrumb-main">
+														<nav aria-label="breadcrumb">
+															<ol class="breadcrumb mb-0" id="selectedYear">
+															</ol>
+														</nav>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- 파일리스트 -->
+									<div class="row">
+										<div class="col-xl-12 ">
+											<div class="card">
+												<!-- <div class="card-header border-bottom">
+													<p class="mb-0 tx-16">Recent Files</p>
+												</div> -->
+												<div class="card-body ">
+													<div class="table-responsive">
+														<table id="fileGrid" class="table table-condensed table-hover ">
+															<thead>
+																<tr>
+																	<th data-column-id="유형"   data-formatter="fileImg" >유형</th>
+																	<th data-column-id="파일명" data-formatter="link" data-width="80%">이름</th>
+																	<th data-column-id="날짜"  data-header-align="center" data-width="90px" data-align="center">날짜</th>
+																	<th data-column-id="크기"  data-formatter="fileSize" data-header-align="center" data-align="center">크기</th>
+																</tr>
+															</thead>
+														</table>
+														<!-- <table class="table  border text-nowrap text-md-nowrap recent-files-container">
+																	<td>
+																		<div class="float-end ms-auto">
+																			<a href="#" class="option-dots" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+																			<div class="dropdown-menu dropdown-menu-start recent-files-options">
+																				<a class="dropdown-item" href="#"><i class="fe fe-edit me-2"></i> Edit</a>
+																				<a class="dropdown-item" href="#"><i class="fe fe-share me-2"></i> Share</a>
+																				<a class="dropdown-item" href="#"><i class="fe fe-download me-2"></i> Download</a>
+																				<a class="dropdown-item" href="#"><i class="fe fe-info me-2"></i> Info</a>
+																				<a class="dropdown-item" href="#"><i class="fe fe-trash me-2"></i> Delete</a>
+																			</div>
+																		</div>
+																	</td>
+																</tr>
+														</table> -->
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									
+									<!-- 확장자 안내 -->
+									<div class="row">
+										<div class="col-xl-3 col-md-6 col-sm-12">
+											<div class="card">
+													<div class="card-body">
+														<div class="file-type tx-16 my-1">
+															<svg class="file-manager-icon w-icn me-2"  xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path fill="#c8e4a6" d="M13.5,9C12.67157,9,12,8.32843,12,7.5S12.67157,6,13.5,6S15,6.67157,15,7.5C14.9991,8.32805,14.32805,8.9991,13.5,9z"/><path fill="#add679" d="M19,2H5C3.34515,2.00483,2.00483,3.34515,2,5v8.86l3.88-3.88c1.18747-1.13,3.05253-1.13,4.24,0l2.87139,2.887l0.88752-0.88751c1.17344-1.16662,3.06874-1.16662,4.24218,0L22,15.8584V5C21.99517,3.34515,20.65485,2.00483,19,2z M13.5,9C12.67157,9,12,8.32843,12,7.5S12.67157,6,13.5,6S15,6.67157,15,7.5C14.9991,8.32805,14.32805,8.9991,13.5,9z"/><path fill="#77bc21" d="M10.12,9.98c-1.18747-1.13-3.05253-1.13-4.24,0L2,13.86V19c0.00484,1.65484,1.34516,2.99516,3,3h14c0.81512-0.00034,1.59497-0.3325,2.16-0.92L10.12,9.98z"/><path fill="#c8e4a6" d="M22,15.8584l-3.87891-3.87891c-1.17345-1.1666-3.06873-1.1666-4.24218,0L12.99139,12.867l8.16425,8.20856C21.69776,20.5208,22.00089,19.77567,22,19V15.8584z"/></svg>
+															Image
+															<div class="float-end tx-13 text-muted">지원가능</div>
+														</div>
+													</div>
+											</div>
+										</div>
+										<div class="col-xl-3 col-md-6 col-sm-12">
+											<div class="card">
+													<div class="card-body">
+														<div class="file-type tx-16 my-1">
+															<svg class="file-manager-icon w-icn me-2" viewBox="-64 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M181.9 256.1c-5-16-4.9-46.9-2-46.9 8.4 0 7.6 36.9 2 46.9zm-1.7 47.2c-7.7 20.2-17.3 43.3-28.4 62.7 18.3-7 39-17.2 62.9-21.9-12.7-9.6-24.9-23.4-34.5-40.8zM86.1 428.1c0 .8 13.2-5.4 34.9-40.2-6.7 6.3-29.1 24.5-34.9 40.2zM248 160h136v328c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V24C0 10.7 10.7 0 24 0h200v136c0 13.2 10.8 24 24 24zm-8 171.8c-20-12.2-33.3-29-42.7-53.8 4.5-18.5 11.6-46.6 6.2-64.2-4.7-29.4-42.4-26.5-47.8-6.8-5 18.3-.4 44.1 8.1 77-11.6 27.6-28.7 64.6-40.8 85.8-.1 0-.1.1-.2.1-27.1 13.9-73.6 44.5-54.5 68 5.6 6.9 16 10 21.5 10 17.9 0 35.7-18 61.1-61.8 25.8-8.5 54.1-19.1 79-23.2 21.7 11.8 47.1 19.5 64 19.5 29.2 0 31.2-32 19.7-43.4-13.9-13.6-54.3-9.7-73.6-7.2zM377 105L279 7c-4.5-4.5-10.6-7-17-7h-6v128h128v-6.1c0-6.3-2.5-12.4-7-16.9zm-74.1 255.3c4.1-2.7-2.5-11.9-42.8-9 37.1 15.8 42.8 9 42.8 9z"/></svg>
+															PDF
+															<div class="float-end tx-13 text-muted">지원가능</div>
+														</div>
+													</div>
+											</div>
+										</div>
+										<div class="col-xl-3 col-md-6 col-sm-12">
+											<div class="card">
+													<div class="card-body">
+														<div class="file-type tx-16 my-1">
+															<svg class="file-manager-icon w-icn me-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="9" height="9" x="2" y="2" fill="#e6647f" rx="1"/><rect width="9" height="9" x="2" y="13" fill="#f0a2b2" rx="1"/><rect width="9" height="9" x="13" y="2" fill="#f0a2b2" rx="1"/><rect width="9" height="9" x="13" y="13" fill="#f0a2b2" rx="1"/></svg>
+															오피스파일
+															<div class="float-end tx-13 text-muted">지원불가</div>
+														</div>
+													</div>
+											</div>
+										</div>										
+										<div class="col-xl-3 col-md-6 col-sm-12">
+											<div class="card">
+													<div class="card-body">
+														<div class="file-type tx-16 my-1">
+															<svg class="file-manager-icon w-icn me-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#a6b2ed" d="M20,9,13,2H7A3,3,0,0,0,4,5V19a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3Z"/><path fill="#6b80e2" d="M20 9H15a2 2 0 0 1-2-2V2zM12 18.00031a.99943.99943 0 0 1-1-1v-5a1 1 0 1 1 2 0v5A.99943.99943 0 0 1 12 18.00031z"/><path fill="#6b80e2" d="M12,18.00031a.99676.99676,0,0,1-.707-.293l-2-2A.99989.99989,0,1,1,10.707,14.29328L12,15.58625l1.293-1.293A.99989.99989,0,1,1,14.707,15.70734l-2,2A.99676.99676,0,0,1,12,18.00031Z"/></svg>
+															기타파일
+															<div class="float-end tx-13 text-muted">지원불가</div>
+														</div>
+													</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- End Row -->
+							<div class="modal fade"  id="modalFile">
+								<div class="modal-dialog modal-lg" role="document">
+									<div class="modal-content modal-content-demo">
+										<div class="modal-header">
+											<h6 class="modal-title" id="modalTitle">증빙서류 파일보기</h6><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+										</div>
+										<div class="modal-body">
+											<iframe src = "" width="100%" height="720" frameborder="0" border="0" scrolling="yes" bgcolor=#EEEEEE bordercolor="#FF000000" marginwidth="0" marginheight="0" name="main_frame" id="main_frame"></iframe> 
+										</div>
+										<div class="modal-footer">
+											<!-- <button class="btn btn-primary" id="prtBtn">출력</button>  -->
+											<button class="btn btn-light" data-bs-dismiss="modal" >닫기</button>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="modal fade"  id="modalFile2">
+								<div class="modal-dialog modal-lg" role="document">
+									<div class="modal-content modal-content-demo">
+										<div class="modal-header">
+											<h6 class="modal-title" id="modalTitle2">증빙서류 파일보기</h6><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+										</div>
+										<div class="modal-body">
+											<img src = "" width="500" height="500"  id="main_frame2"></img> 
+										</div>
+										<div class="modal-footer">
+											<!-- <button class="btn btn-primary" id="prtBtn">출력</button>  -->
+											<button class="btn btn-light" data-bs-dismiss="modal" >닫기</button>
+										</div>
+									</div>
+								</div>
+							</div>							
+							<div class="modal fade"  id="modalFile3">
+								<div class="modal-dialog modal-lg" role="document">
+									<div class="modal-content modal-content-demo">
+										<div class="modal-header">
+											<h6 class="modal-title" id="modalTitle3">증빙서류 파일보기</h6><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+										</div>
+										<div class="modal-body">
+											<h6>보기가 지원되지 않는 양식입니다.  </h6>
+											<p>하단의 다운로드된 파일을 열어서 사용하시기 바랍니다.</p>
+											<iframe src = "" width="0" height="0" name="main_frame3" id="main_frame3"></iframe> 
+										</div>
+										<div class="modal-footer">
+											<button class="btn btn-light" data-bs-dismiss="modal" >닫기</button>
+										</div>
+									</div>
+								</div>
+							</div>								
+        {% endblock %}
+
+        {% block scripts %}
+				<!-- Internal Treeview js -->
+				<script src=" {% static 'assets/plugins/treeview/treeview.js' %} "></script>
+        <script src="{% static 'assets/js/themeColors.js'%}"></script>
+				<script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+				<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet" />
+				<script src=" {% static 'assets/plugins/bootstrap-treeview/bootstrap-treeview.js' %} "></script>	
+
+        <script>
+				var pyJson = JSON.parse("{{selectedJson|escapejs}}");
+				var rootPath = 'static/cert_DS/';
+				var biz_name = "{{ memuser.biz_name }}";
+				var selectedYear;
+				
+				$(document).ready(function(){
+					setSelectedFolder("{{ memuser.biz_name }}  >> {{selectedYear}}년");
+					treeLoad();
+					gridLoad(rootPath + biz_name + '/{{selectedYear}}')
+				});
+
+				const setSelectedFolder = (strFolder) => {
+					var innerHtml=""
+          var tmpArr = strFolder.split(">>")
+          for(var i=0;i<tmpArr.length;i++){
+            if(i<(tmpArr.length-1)){
+              innerHtml += "<li class='breadcrumb-item'>"+tmpArr[i]+"</li>"
+            }else{
+              innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>"+tmpArr[i]+"</a></li>"
+            }
+          }
+					$('[id="selectedYear"]').html(innerHtml);
+				}
+				const treeLoad =()=>{
+					$('#tree2').treeview({
+						data: pyJson.nodes,
+						selectedIcon: '',
+						emptyIcon: '',
+						nodeIcon: '',
+						collapseIcon:'si si-folder-alt',
+						expandIcon:'si si-folder'
+					}).on('nodeSelected', function(e, node){
+							if (typeof node['nodes'] != "undefined") {
+								gridLoad(node.totalPath)
+								setSelectedFolder(node.totalPath.replace("static/cert_DS/","").replace("/"," >> ").replaceAll("\\"," >> "));
+								//노드 전체 선택효과
+								// var children = node['nodes'];
+								// for (var i=0; i<children.length; i++) {
+								// 	$('#tree2').treeview('selectNode', [children[i].nodeId, { silent: true } ]);
+								// }
+							}
+					});
+				} 
+				const gridLoad = (tmpPath) => {
+					$("#fileGrid").bootgrid('destroy');
+					$("#fileGrid").bootgrid({
+						ajax:true,
+						url:"{% url 'setFileGrid' %}",
+						selection: true,
+						multiSelect: true,
+						rowSelect: true,
+						keepSelection: true,
+						post:function(){
+							return{
+								path:tmpPath,
+							}
+						},
+						formatters:{
+							"link":function(column,row){
+								return "<a   href=\"javascript:changeIframeUrl('"+row.totalPath+"','"+row.파일명+"','"+row.유형+"')\" >" + row.파일명 + "</a>";
+							},
+							"fileImg":function(column,row){
+								if(row.유형=="doc" || row.유형=="docx"){
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path fill=\"#b6dfff\" d=\"M20,8.99969l-7-7H7a3,3,0,0,0-3,3v14a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3Z\"/><path fill=\"#86cbff\" d=\"M20 8.99969H15a2 2 0 0 1-2-2v-5zM19 22a.99974.99974 0 0 1-1-1V19a1 1 0 0 1 2 0v2A.99974.99974 0 0 1 19 22zM19 17a1.03391 1.03391 0 0 1-.71-.29.99108.99108 0 0 1-.21045-1.08984A1.14883 1.14883 0 0 1 18.29 15.29a1.02673 1.02673 0 0 1 .32959-.21.91433.91433 0 0 1 .76025 0 1.03418 1.03418 0 0 1 .33008.21 1.15772 1.15772 0 0 1 .21.33008A.98919.98919 0 0 1 19.71 16.71a1.15384 1.15384 0 0 1-.33008.21A.9994.9994 0 0 1 19 17zM15 18H9a1 1 0 0 1 0-2h6a1 1 0 0 1 0 2zM15 14H9a1 1 0 0 1 0-2h6a1 1 0 0 1 0 2zM10 10H9A1 1 0 0 1 9 8h1a1 1 0 0 1 0 2z\"/></svg>";
+								}else if(row.유형=="hwp" ) {
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><g><path fill=\"none\" d=\"M0 0h24v24H0z\"/><path d=\"M16 2l5 5v13.993A1 1 0 0 1 20.007 22H3.993A1 1 0 0 1 3 21.008V2.992C3 2.444 3.447 2 3.999 2H16zM9.333 14.667H8V18h8v-1.333l-6.667-.001v-2zM12 14.333a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM12 9a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm0 1.333a1.167 1.167 0 1 1 0 2.334 1.167 1.167 0 0 1 0-2.334zM12.667 6h-1.334v1.333H8v1.334h8V7.333h-3.334V6z\"/></g></svg>"
+								}else if(row.유형=="pdf"){
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\" viewBox=\"-64 0 512 512\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M181.9 256.1c-5-16-4.9-46.9-2-46.9 8.4 0 7.6 36.9 2 46.9zm-1.7 47.2c-7.7 20.2-17.3 43.3-28.4 62.7 18.3-7 39-17.2 62.9-21.9-12.7-9.6-24.9-23.4-34.5-40.8zM86.1 428.1c0 .8 13.2-5.4 34.9-40.2-6.7 6.3-29.1 24.5-34.9 40.2zM248 160h136v328c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V24C0 10.7 10.7 0 24 0h200v136c0 13.2 10.8 24 24 24zm-8 171.8c-20-12.2-33.3-29-42.7-53.8 4.5-18.5 11.6-46.6 6.2-64.2-4.7-29.4-42.4-26.5-47.8-6.8-5 18.3-.4 44.1 8.1 77-11.6 27.6-28.7 64.6-40.8 85.8-.1 0-.1.1-.2.1-27.1 13.9-73.6 44.5-54.5 68 5.6 6.9 16 10 21.5 10 17.9 0 35.7-18 61.1-61.8 25.8-8.5 54.1-19.1 79-23.2 21.7 11.8 47.1 19.5 64 19.5 29.2 0 31.2-32 19.7-43.4-13.9-13.6-54.3-9.7-73.6-7.2zM377 105L279 7c-4.5-4.5-10.6-7-17-7h-6v128h128v-6.1c0-6.3-2.5-12.4-7-16.9zm-74.1 255.3c4.1-2.7-2.5-11.9-42.8-9 37.1 15.8 42.8 9 42.8 9z\"/></svg>"
+								}else if(row.유형=="xls" ){
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\" viewBox=\"-64 0 512 512\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M369.9 97.9L286 14C277 5 264.8-.1 252.1-.1H48C21.5 0 0 21.5 0 48v416c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V131.9c0-12.7-5.1-25-14.1-34zM332.1 128H256V51.9l76.1 76.1zM48 464V48h160v104c0 13.3 10.7 24 24 24h104v288H48zm212-240h-28.8c-4.4 0-8.4 2.4-10.5 6.3-18 33.1-22.2 42.4-28.6 57.7-13.9-29.1-6.9-17.3-28.6-57.7-2.1-3.9-6.2-6.3-10.6-6.3H124c-9.3 0-15 10-10.4 18l46.3 78-46.3 78c-4.7 8 1.1 18 10.4 18h28.9c4.4 0 8.4-2.4 10.5-6.3 21.7-40 23-45 28.6-57.7 14.9 30.2 5.9 15.9 28.6 57.7 2.1 3.9 6.2 6.3 10.6 6.3H260c9.3 0 15-10 10.4-18L224 320c.7-1.1 30.3-50.5 46.3-78 4.7-8-1.1-18-10.3-18z\"/></svg>"
+								}else if(row.유형=="xlsx"){
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\" viewBox=\"-64 0 512 512\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z\"/></svg>"
+								}else if(row.유형=="png" || row.유형=="jpg" || row.유형=="jpeg"){
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\"  xmlns=\"http://www.w3.org/2000/svg\" enable-background=\"new 0 0 24 24\" viewBox=\"0 0 24 24\"><path fill=\"#c8e4a6\" d=\"M13.5,9C12.67157,9,12,8.32843,12,7.5S12.67157,6,13.5,6S15,6.67157,15,7.5C14.9991,8.32805,14.32805,8.9991,13.5,9z\"/><path fill=\"#add679\" d=\"M19,2H5C3.34515,2.00483,2.00483,3.34515,2,5v8.86l3.88-3.88c1.18747-1.13,3.05253-1.13,4.24,0l2.87139,2.887l0.88752-0.88751c1.17344-1.16662,3.06874-1.16662,4.24218,0L22,15.8584V5C21.99517,3.34515,20.65485,2.00483,19,2z M13.5,9C12.67157,9,12,8.32843,12,7.5S12.67157,6,13.5,6S15,6.67157,15,7.5C14.9991,8.32805,14.32805,8.9991,13.5,9z\"/><path fill=\"#77bc21\" d=\"M10.12,9.98c-1.18747-1.13-3.05253-1.13-4.24,0L2,13.86V19c0.00484,1.65484,1.34516,2.99516,3,3h14c0.81512-0.00034,1.59497-0.3325,2.16-0.92L10.12,9.98z\"/><path fill=\"#c8e4a6\" d=\"M22,15.8584l-3.87891-3.87891c-1.17345-1.1666-3.06873-1.1666-4.24218,0L12.99139,12.867l8.16425,8.20856C21.69776,20.5208,22.00089,19.77567,22,19V15.8584z\"/></svg>"
+								}else {
+									return "<svg data-row-id=\"" + row.id + "\" class=\"file-manager-icon w-icn me-2\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path fill=\"#a6b2ed\" d=\"M20,9,13,2H7A3,3,0,0,0,4,5V19a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3Z\"/><path fill=\"#6b80e2\" d=\"M20 9H15a2 2 0 0 1-2-2V2zM12 18.00031a.99943.99943 0 0 1-1-1v-5a1 1 0 1 1 2 0v5A.99943.99943 0 0 1 12 18.00031z\"/><path fill=\"#6b80e2\" d=\"M12,18.00031a.99676.99676,0,0,1-.707-.293l-2-2A.99989.99989,0,1,1,10.707,14.29328L12,15.58625l1.293-1.293A.99989.99989,0,1,1,14.707,15.70734l-2,2A.99676.99676,0,0,1,12,18.00031Z\"/></svg>"
+								}
+							},
+							"fileSize":function(column,row){
+								if(row.크기<10240) {
+									return row.크기+"b"
+								}else if(row.크기<1024000){
+									return (row.크기/1024).toFixed(0) +"kb"
+								}else if(row.크기<1024000000){
+									return (row.크기/1024000).toFixed(2) +"mb"
+								}else if(row.크기<1000000000000){
+									return (row.크기/1024000000).toFixed(2) +"gb"								
+								}
+							}
+						},
+						labels:{
+							noResults:"좌측의 폴더를 선택해 주세요"
+						},
+						// 검색기능 페이징기능 숨기기
+						templates: {
+							header: "",
+							footer:""
+						}
+					});
+
+				}
+				function changeIframeUrl(url,strTitle,fileType)			{
+				// console.log(url)
+					if(fileType=="pdf"||fileType=="jpg"||fileType=="jpeg"||fileType=="png"){
+						document.getElementById("main_frame").src = url;
+						$('[id="modalTitle"]').html(strTitle)
+						$("#modalFile").modal('show');
+					}else if(fileType=="jpg"||fileType=="jpeg"||fileType=="png"){
+						document.getElementById("main_frame2").src = url;
+						$('[id="modalTitle2"]').html(strTitle)
+						$("#modalFile2").modal('show');							
+					}else{
+						$('[id="modalTitle3"]').html("("+fileType+") "+strTitle)
+						$("#modalFile3").modal('show');
+						document.getElementById("main_frame3").src = url;
+					}
+
+				}
+
+				const handleButtonClose = (ev) => {
+					const btnElement  = document.getElementById('btn_selectedYear');
+  				btnElement.innerHTML = ev+" 년";
+					selectedYear = ev;
+					setSelectedYear(ev);
+					setSelectedFolder(biz_name + " >> " + selectedYear+" 년")
+				};  
+
+				const setSelectedYear = (selYear) => {
+					$.ajax({
+						url:"{% url 'setSelectedProofYear' %}",
+						data:{root_dir:rootPath + biz_name + '/' + selYear},
+						dataType:"Json",
+						success:function(data){
+							var result = "";
+							selectedYear = data.selectYear;
+							var selectedFolderPath = 'static/cert_DS/' + biz_name + '/'+selectedYear
+							
+							for(var i=0;i<data.proofYears.length;i++){
+								result += "<a href='#' class='list-group-item list-group-item-action'>"+data.proofYears[i]+"년</a>"
+							}
+							$('[id="selectYears"]').html(result)
+
+							pyJson = JSON.parse(data.selectedJson);
+							treeLoad();	
+							gridLoad(rootPath + biz_name + '/'+data.selectedYear);
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+				}
+        </script>
+
+        {% endblock %}
+

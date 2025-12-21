@@ -1,0 +1,110 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+
+        {% block styles %}
+        <!-- <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-grid.css" />
+        <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-alpine.css" /> -->
+        <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.0/styles/ag-grid.css" />
+
+        <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.0/styles/ag-theme-quartz.css" />
+        {% endblock %}
+    
+        {% block content %}
+        <!-- <div id="myGrid" class="ag-theme-alpine" style="height: 500px; width:100%;"></div> -->
+        <div id="myGrid"  class="ag-theme-quartz" style="height:100%;"></div>></div>
+        {% endblock %}
+
+    {% block scripts %}
+
+<!-- Include Ag-Grid library -->
+<!-- <style>
+.ag-theme-alpine .ag-cell {
+    /*padding: 4px;  패딩 조정 */
+    font-size: 13px; /* 폰트 크기 조정 */
+}
+  /* Optional: If you want to adjust the header row height and font size as well */
+  .ag-theme-alpine .ag-header-cell {
+      line-height: 13px; /* Adjust line height to match row height if desired */
+      font-size: 13px; /* Adjust header font size as needed */
+  }
+</style> -->
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+<script>
+    function setGridHeight() {
+        const gridElement = document.getElementById('myGrid');
+        const windowHeight = window.innerHeight;
+        gridElement.style.height = (windowHeight - 100) + 'px'; // 100px은 헤더나 기타 요소를 위한 공간을 뺀 값입니다.
+    }
+
+    window.addEventListener('resize', setGridHeight);
+    document.addEventListener('DOMContentLoaded', function() {
+        setGridHeight();
+
+        const gridOptions = {
+            rowData: [
+                { make: "Tesla", model: "Model Y", price: 64950, electric: true },
+                { make: "Ford", model: "F-Series", price: 33850, electric: false },
+                { make: "Toyota", model: "Corolla", price: 29600, electric: false },
+            ],
+            columnDefs: [
+                { field: "make" },
+                { field: "model" },
+                { field: "price" },
+                { field: "electric" }
+            ]
+        };
+
+        const myGridElement = document.querySelector('#myGrid');
+        agGrid.createGrid(myGridElement, gridOptions);
+    });
+
+
+
+
+
+
+
+
+// let gridOptions;
+
+// $(document).ready(function() {
+//   gridLoad();
+
+//   // Row height를 변경하는 버튼 클릭 이벤트
+//   $('#updateRowHeightBtn').click(function() {
+//     const newHeight = parseInt($('#rowHeightInput').val(), 10);
+//     if (!isNaN(newHeight) && newHeight > 0) {
+//       gridOptions.rowHeight = newHeight;
+//       gridOptions.api.resetRowHeights();
+//     }
+//   });
+// });
+
+// function gridLoad() {
+//   $.ajax({
+//     url: "{% url 'mem_admin' %}",
+//     cache: false,
+//     dataType: "json",
+//     success: function(data) {
+//       gridOptions = {
+//         rowData: data,
+//         rowHeight: 25, // 초기 행 높이
+//         columnDefs: [
+//           { headerName: "Admin ID", field: "admin_id" },
+//           { headerName: "Password", field: "admin_pwd" }
+//         ]
+//       };
+
+//       const myGridElement = document.querySelector('#myGrid');
+//       agGrid.createGrid(myGridElement, gridOptions);
+//     }
+//   });
+// }
+
+</script>
+
+{% endblock %}

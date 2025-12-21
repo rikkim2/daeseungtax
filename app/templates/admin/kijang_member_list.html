@@ -1,0 +1,789 @@
+{% load static %}
+<style>
+  .icon-refresh {
+    color: white;
+  }
+
+  /* 모달 폭 크게 */
+  .modal-dialog.modal-xl {
+    max-width: 1200px;
+    width: 95%;
+  }
+
+  /* 세로 스크롤 확실히 활성화 */
+  .modal-dialog-scrollable .modal-body {
+    max-height: calc(100vh - 180px) !important;
+    overflow-y: auto !important;
+  }
+  /* 모달 헤더를 스크롤 시 상단 고정 (옵션) */
+  #memberModal .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }  
+</style>
+
+<div class="ext-grid-wrapper" style="width:100%; height:100%;"></div>
+
+<!-- 회원 등록/수정 모달 -->
+<div class="modal fade" id="memberModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <!-- ★ 헤더에 타이틀 + 저장/취소 버튼 + 닫기 X -->
+      <div class="modal-header justify-content-between align-items-center">
+        <h5 class="modal-title mb-0" id="memberModalTitle">회원 정보</h5>
+
+        <div class="d-flex align-items-center gap-2">
+          <!-- 저장 버튼 (기존 JS에서 #btnMemberSave 사용하므로 id 유지) -->
+          <button type="button"
+                  class="btn btn-sm btn-primary"
+                  id="btnMemberSave">
+            <i class="fe fe-check-circle me-1"></i> 저장
+          </button>          
+          <!-- 취소 버튼 (모달 닫기) -->
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary me-1"
+                  data-bs-dismiss="modal">
+            <i class="fe fe-x-circle me-1"></i> 취소
+          </button>
+
+          <!-- 오른쪽 끝 X 아이콘 -->
+          <button type="button"
+                  class="btn-close ms-2"
+                  data-bs-dismiss="modal"
+                  aria-label="닫기"></button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- 여기 안에 폼 HTML이 ajax로 주입됨 -->
+        <div class="text-center p-5 text-muted">로딩중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src=" {% static 'assets/plugins/input-mask/jquery.mask.min.js' %} "></script>
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+// 3. [중요] Ext.onReady 대신 즉시 실행 함수(IIFE) 사용
+(function() {
+    
+    // 탭 내부에서 현재 스크립트가 속한 컨테이너(wrapper)를 찾습니다.
+    var renderTarget = document.currentScript.parentElement.querySelector('.ext-grid-wrapper');
+    if (!renderTarget) {
+        renderTarget = $('div.tab-pane.active .ext-grid-wrapper')[0];
+    }
+    // ★ [핵심 수정] 높이 계산 함수
+    // 전체창 높이 - (헤더 + 탭높이 + 패딩 등 여유분 약 160px)
+    function getGridHeight() {
+        return window.innerHeight - 160; 
+    }
+    //document.title = "회원관리 : 회원리스트";
+    var adminBizLevel = '{{ admin_biz_level }}';
+    const isSuperuser = '{{ admin_grade }}' === 'SA';
+    var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+    var flag = '{{ flag }}';
+    var ADID = '{{ ADID }}';            
+
+    var store = Ext.create('Ext.data.Store', {
+        storeId: 'memberStore', // 고유 Store ID (옵션)
+        autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+        //pageSize: 50, // 한 번에 로드할 데이터 개수 (페이징 시 사용)
+        proxy: {
+            type: 'ajax', // Ajax를 통해 서버와 통신
+            url: '{% url "kijang_member_list" %}', // 데이터를 가져올 API URL
+            extraParams: {
+                flag: flag // 전달할 파라미터
+            },        
+            reader: {
+                type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+                rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+                totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+            },
+        },
+        fields: [ // 필드 정의 (데이터의 각 열)
+            {name: 'groupManager',type: 'string'},
+            { name: 'seq_no', type: 'int' },
+            {name: 'biz_name', type: 'string'},
+            {name: 'duzon_id',type: 'string'},
+            {name: 'biz_type',type: 'string'},
+            {name: 'uptae',type: 'string'},
+            {name: 'jongmok',type: 'string'},
+            {name: 'kijang_yn',type: 'string'},
+            {name: 'hometaxAgree',type: 'string'},
+            {name: 'goyoung_jungkyu',type: 'string'},
+            {name: 'goyoung_ilyoung', type: 'string'},
+            {name: 'goyoung_sayoup', type: 'string'},
+            {name: 'goyoung_banki',type: 'string'},
+            {name: 'biz_zipcode', type: 'string'},
+            {name: 'biz_addr',type: 'string'},
+            {name: 'reg_date', type: 'date', dateFormat: 'Y-m-d'},   
+            {name: 'biz_manager',type: 'string'},
+            {name: 'keeping_yn',type: 'string'},
+            {name: 'ceo_name',type: 'string'},
+        ],
+        ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+    });
+
+    //이건 공통으로 뺄수없다
+    var comboDataStore = Ext.create('Ext.data.Store', {
+        fields: ['id', 'name'],
+        data: [] // 초기 데이터는 비워둠
+    });
+    var keepingYnStore = Ext.create('Ext.data.Store', {
+        fields: ['id', 'name'],
+        data: [
+            { id: 'Y', name: '계속' },
+            { id: 'N', name: '해임' }
+        ]
+    });
+    
+    //상단 담당자 선택 도커
+    function onItemClickHandler(item) {
+        const data = {
+            flag: "{{ flag }}",
+            ADID: item
+        };
+        // 그리드 로딩 마스크
+        const maskTarget = (typeof grid !== 'undefined' && grid && grid.getEl) ? grid : Ext.getBody();
+        if (maskTarget) {
+            if (!maskTarget.__memberLoadMask) {
+                maskTarget.__memberLoadMask = new Ext.LoadMask(maskTarget, { msg: '로딩중...' });
+            }
+            maskTarget.__memberLoadMask.show();
+        }
+
+        Ext.Ajax.request({
+            url: '{% url "kijang_member_list" %}',
+            method: 'GET',
+            params: data, // 데이터를 GET 파라미터로 전달
+            success: function (response) {
+                if (maskTarget && maskTarget.__memberLoadMask) maskTarget.__memberLoadMask.hide();
+                try {
+                    const jsonResponse = Ext.decode(response.responseText); // JSON 파싱
+                    store.loadData(jsonResponse); // 데이터 로드
+                    if (item=="전체"){
+                        store.reload(); // location.reload() 대신 스토어 리로드 사용
+                    }
+                } catch (e) {
+                    console.error('Failed to parse response:', e, response.responseText);
+                }
+            },
+            failure: function (response) {
+                if (maskTarget && maskTarget.__memberLoadMask) maskTarget.__memberLoadMask.hide();
+                console.error('Request failed:', response);
+            }
+        });
+        // 선택된 메뉴 버튼 텍스트 업데이트
+        updateScrollMenuText(item);        
+    }
+
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}', // 동적으로 데이터를 가져올 API URL
+            method: 'GET',
+            success: function (response) {
+                const data = Ext.decode(response.responseText); // 응답 데이터를 파싱
+                comboDataStore.loadData(data); // store에 데이터 로드
+            },
+            failure: function () {
+                Ext.Msg.alert('오류', '데이터를 불러오는 데 실패했습니다.');
+            }
+        });
+    }
+    
+    // Docked Items Config 생성
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+        clicksToEdit: 1,
+        listeners: { edit: function(editor, e){
+                var record = e.record;
+                if (e.field === "biz_manager" || e.field === "keeping_yn") {
+                    
+                    
+                }else{
+                    Ext.Ajax.request({
+                        url: '{% url "kijang_member_edit" %}',
+                        method: 'GET',
+                        params: {
+                            ADID            :ADID,
+                            seq_no			: record.get('seq_no'),
+                            target			: e.field,
+                            val				: record.get(e.field)
+                        },
+                        success: function (response) {
+                            Swal.fire('성공', '변경이 완료되었습니다.', 'success');
+                        },
+                        failure: function (response) {
+                            Swal.fire('오류', '변경에 실패했습니다.', 'error');
+                            record.reject();
+                        }
+                    });
+                }
+
+            }
+        }
+    });
+    var grid = Ext.create('Ext.grid.Panel', {
+        renderTo: renderTarget,
+        title: '{{ gridTitle }}',
+        tools: [
+            {
+                xtype: 'textfield',
+                emptyText: '검색어 입력',
+                width: 200,
+                listeners: {
+                    change: function (field, newValue) {
+                        const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                        if (!newValue || newValue.trim() === '') {
+                            store.clearFilter(); // 필터 제거
+                        } else {
+                            store.clearFilter(true); // 기존 필터 제거
+                            const searchValue = newValue.trim().toLowerCase();
+                            store.filterBy(record => {
+                                const bizName = record.get('biz_name')?.toLowerCase() || '';
+                                const ceoName = record.get('ceo_name')?.toLowerCase() || '';
+                                return (
+                                    bizName.includes(searchValue) || ceoName.includes(searchValue)
+                                );
+                            });
+                        }
+                    }
+                }
+                
+            },
+            {
+                xtype: 'button',
+                iconCls: 'icon icon-refresh',
+                handler: function (btn) {
+                    store.reload();
+                },
+                style: 'margin-right: 10px;' // 오른쪽 간격 추가
+            },
+            ...(flag !== 'Can' ? [
+                {
+                    xtype: 'button',
+                    text: '신규등록',
+                    iconCls: 'mdi mdi-account-plus',
+                    handler: function (btn) {
+                        openMemberModal(null);   // ★ 모달로 신규등록
+                    }
+                }
+            ] : []) // flag 값이 'Can'이 아닌 경우에만 버튼 추가
+        ],            
+        // layout: 'fit', // 부모 컨테이너에 맞게 자동 크기 조정
+        width:'100%',
+        height: getGridHeight(), // 초기 높이 설정
+        scrollable: 'y', // 세로 스크롤 활성화
+        store: store,
+        columnLines: false,
+        ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),    
+        plugins: [cellEditing],
+        columns: [
+            {   dataIndex: 'groupManager',width: 0            }, 
+            {   xtype: 'rownumberer',width: 30,	sortable: false}, 
+            {   header: 'SEQ', dataIndex: 'seq_no',width: 50            }, 
+            {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',flex:1 ,
+                renderer: function (value, meta, record) {
+                    const name = Ext.String.htmlEncode(value || '');
+                    const seq  = record.get('seq_no');
+                    return `<a href="#" class="member-link" data-seq="${seq}">${name}</a>`;
+                }                
+            }, 
+            {   header: '<center>세무사랑<br>코드</center>', dataIndex: 'duzon_id',  width: 50, align:'center', editor: { allowBlank: false }            }, 
+            {   header: '<center>유형</center>', dataIndex: 'biz_type',  width: 80,align:'center'  ,      
+                renderer: function (value) {
+                    if (value === '1') {
+                        return '<i class="mdi mdi-domain" style="color: green;"></i>';
+                    } else if  (value === '2') {
+                        return '<i class="mdi mdi-domain" style="color: red;">면세</i>';
+                    } else if  (value === '3') {
+                        return '<i class="mdi mdi-domain" style="color: red;">비영리</i>';
+                    } else if  (value === '4') {
+                        return '<i class="mdi mdi-account" style="color: green;"></i>';
+                    } else if  (value === '5') {
+                        return '<i class="mdi mdi-account-outline" style="color: blue;">간이</i>';
+                    } else if  (value === '6') {
+                        return '<i class="mdi mdi-account-outline" style="color: red;">면세</i>';
+                    } else if  (value === '7') {
+                        return '<i class="mdi mdi-account-off" style="color: red;">비사업</i>';
+                    }
+                }   
+            },{   
+                header: '<center>업태</center>', dataIndex: 'uptae',  width: 90,align:'left'            }, 
+            {   header: '<center>종목</center>', dataIndex: 'jongmok',  width: 140,align:'left'            }, 
+            {   header: '<center>기장</center>', dataIndex: 'kijang_yn',  width: 40,align:'center' ,          
+                renderer: function (value) {
+                    if (value === 'Y') {
+                        return '<i class="fa fa-circle" style="color: green;"></i>';
+                    } else {
+                        return '<i class="icon icon-close" style="color: red;"></i>';
+                    }
+                }                
+            }, {   header: '<center>수임<br>동의</center>', dataIndex: 'hometaxAgree',  width: 40,align:'center',    
+                renderer: function (value) {
+                    if (value === 'Y') {
+                        return '<i class="fa fa-circle" style="color: green;"></i>';
+                    } else {
+                        return '<i class="icon icon-close" style="color: red;"></i>';
+                    }
+                }       
+            }, {   header: '<center>정규</center>', dataIndex: 'goyoung_jungkyu',  width: 35,align:'center',    
+                renderer: function (value) {
+                    if (value === 'Y') {
+                        return '<i class="fa fa-circle" style="color: green;"></i>';
+                    } else {
+                        return '<i class="icon icon-close" style="color: red;"></i>';
+                    }
+                }       
+            }, {   header: '<center>일용</center>', dataIndex: 'goyoung_ilyoung',  width: 35,align:'center' ,    
+                renderer: function (value) {
+                    if (value === 'Y') {
+                        return '<i class="fa fa-circle" style="color: green;"></i>';
+                    } else {
+                        return '<i class="icon icon-close" style="color: red;"></i>';
+                    }
+                }       
+            }, {   header: '<center>사업</center>', dataIndex: 'goyoung_sayoup',  width: 35,align:'center' ,    
+                renderer: function (value) {
+                    if (value === 'Y') {
+                        return '<i class="fa fa-circle" style="color: green;"></i>';
+                    } else {
+                        return '<i class="icon icon-close" style="color: red;"></i>';
+                    }
+                }       
+            }, {   header: '<center>반기</center>', dataIndex: 'goyoung_banki',  width: 35,align:'center',    
+                renderer: function (value) {
+                    if (value === 'Y') {
+                        return '<i class="fa fa-circle" style="color: green;"></i>';
+                    } else {
+                        return '<i class="icon icon-close" style="color: red;"></i>';
+                    }
+                }       
+            },{   header: '<center>우편번호</center>', dataIndex: 'biz_zipcode',  width: 80,align:'center'    
+            },{   header: '<center>사업장 주소</center>', dataIndex: 'biz_addr',  flex:1,align:'left'     
+            },{   header: '<center>설립일</center>', dataIndex: 'reg_date',width: 100, align:'center',renderer: formatDate, 
+                editor: {		xtype: 'datefield',	format: 'y-m-d'		},allowBlank: true	        
+            },{   id: 'ceo_name',header: '<center>대표자명</center>', dataIndex: 'ceo_name',width:0           },    
+            ...(isSuperuser ? [
+                { 
+                    header: '<center>담당자</center>', 
+                    dataIndex: 'biz_manager', 
+                    width: 80, 
+                    align: 'center',
+                    editor: {
+                        xtype: 'combo',
+                        queryMode: 'local',
+                        displayField: 'name',
+                        valueField: 'id',
+                        editable: false,
+                        allowBlank: false,
+                        store:comboDataStore,
+                        listeners: {
+                            change: function (combo, newValue, oldValue) {
+                                handleComboChange(combo,'biz_manager', newValue, oldValue);
+                            }
+                        }
+                    }
+                },
+                { 
+                    header: '<center>계속관리</center>', 
+                    dataIndex: 'keeping_yn', 
+                    width: 60, 
+                    align: 'center',
+                    editor: {
+                        xtype: 'combo',
+                        queryMode: 'local',
+                        displayField: 'name',
+                        valueField: 'id',
+                        editable: false,
+                        allowBlank: false,
+                        store: keepingYnStore, // Y/N을 계속/해임으로 매핑한 스토어
+                        listeners: {
+                            change: function (combo, newValue, oldValue) {
+                                handleComboChange(combo,'keeping_yn', newValue, oldValue);
+                            }
+                        }
+                    },
+
+                    renderer: function (value, metaData, record) {
+                        const recordData = keepingYnStore.findRecord('id', value);
+                        return recordData ? recordData.get('name') : value;
+                    }
+                }
+            ] : [])                         
+        ],
+        dockedItems: [{
+            dock: 'top',
+            xtype: 'toolbar',
+            items: dockedItemsConfig
+        }],
+    });
+    // ★ [추가] 브라우저 크기를 조절할 때 그리드 높이도 같이 조절
+    $(window).on('resize', function() {
+        if (grid && !grid.isDestroyed) {
+            grid.setHeight(getGridHeight());
+            grid.doLayout(); // 레이아웃 강제 갱신
+        }
+    });    
+    //회원정보 팝업생성 assets/js/ExtToooltip.js
+    const gridQuery = Ext.ComponentQuery.query('gridpanel')[0]; // 첫 번째 그리드 가져오기
+    const tooltipUrl = '{% url "kijang_member_popup" %}?seq_no={seq_no}';
+    if (gridQuery) {
+        attachGridToolTip(grid, tooltipUrl);
+    }
+
+    function handleComboChange(combo, field,newValue, oldValue) {
+        const gridRecord = combo.up('grid').getSelectionModel().getSelection()[0]; // 현재 선택된 그리드 레코드
+        const store = combo.getStore();
+        const selectedRecord = store.findRecord('id', newValue); // 새로운 값에 해당하는 레코드
+
+        if (!selectedRecord || !gridRecord) {
+            console.error('선택된 값 또는 그리드 레코드를 가져오지 못했습니다.');
+            return;
+        }
+
+        // SweetAlert 확인 창 띄우기
+        Swal.fire({
+            title: '변경 확인',
+            text: `정말로 ${selectedRecord.get('name')} 값으로 변경하시겠습니까?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '예',
+            cancelButtonText: '아니오'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // 사용자가 확인 버튼을 클릭한 경우 Ajax 요청 실행
+                Ext.Ajax.request({
+                    url: '{% url "kijang_member_edit" %}', // Django URL
+                    method: 'GET',
+                    params: {
+                        ADID: '{{ ADID }}', // Django 변수
+                        seq_no: gridRecord.get('seq_no'),
+                        target: field,
+                        val: selectedRecord.get('id') // 선택된 콤보 값의 ID
+                    },
+                    success: function (response) {
+                        Swal.fire('성공', '변경이 완료되었습니다.', 'success');
+                        gridRecord.store.reload(); // 스토어 갱신
+                    },
+                    failure: function (response) {
+                        Swal.fire('오류', '변경에 실패했습니다.', 'error');
+                        gridRecord.reject(); // 변경 실패 시 값 복원
+                    }
+                });
+            } else {
+                // 사용자가 취소 버튼을 클릭한 경우 값 복원
+                Swal.fire('취소', '변경이 취소되었습니다.', 'info');
+                gridRecord.reject();
+            }
+        });
+    }
+    function renderTopic(value,meta, record) {
+
+    }  
+    function renderTopic_Insurance(value, p, record) {
+        return Ext.String.format(
+            '<a href=javascript:pop1("pop_addr.asp?work_yy=<%=input_workyear%>&seq_no={1}","pop_Insurance","1410","975")>{0}</a>',
+            value,
+            trim(record.data.seq_no)
+        );
+    }  
+    function formatDate(value){
+        return value ? Ext.Date.dateFormat(value, 'Y-m-d') : '';
+    }    
+
+    // 업체명 클릭 이벤트(위임)
+    $(document).on('click', '.member-link', function (e) {
+        e.preventDefault();
+        const seq = $(this).data('seq');
+        openMemberModal(seq);
+    });
+
+    // 공용 모달 오픈 함수
+    function openMemberModal(seq_no) {
+        const $modal = $('#memberModal');
+        const $body  = $modal.find('.modal-body');
+        const $title = $('#memberModalTitle');
+
+        // 제목 설정
+        if (seq_no) {
+            $title.text('회원 정보 수정');
+        } else {
+            $title.text('신규 회원 등록');
+        }
+
+        // 로딩 표시
+        $body.html('<div class="text-center p-5 text-muted">로딩중...</div>');
+
+        // 폼 HTML 로드
+        $.ajax({
+            url: '{% url "kijang_member_form" %}',
+            method: 'GET',
+            cache: false, // 모달 재오픈 시 캐시된 HTML을 쓰지 않도록 방지
+            data: seq_no ? { seq_no: seq_no, _ts: Date.now() } : { _ts: Date.now() },
+            success: function (html) {
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    const avatar = tmp.querySelector('#avatarClick');
+                    console.debug('[memberModal] loaded HTML',
+                        {
+                            seq_no: seq_no,
+                            avatar_data_src: avatar ? avatar.getAttribute('data-bs-image-src') : null,
+                            avatar_style_bg: avatar ? (avatar.style && avatar.style.backgroundImage) : null
+                        }
+                    );
+                } catch (e) {
+                    console.debug('[memberModal] debug parse failed', e);
+                }
+                $body.html(html);
+                initMemberFormInModal(seq_no);   // ★ 폼 초기화(JS 플러그인, 마스크 등)
+                try {
+                    const domAvatar = $modal.find('#avatarClick')[0];
+                    console.debug('[memberModal] DOM after insert',
+                        {
+                            seq_no: seq_no,
+                            avatar_data_src: domAvatar ? domAvatar.getAttribute('data-bs-image-src') : null,
+                            avatar_style_bg: domAvatar ? domAvatar.style.backgroundImage : null
+                        }
+                    );
+                } catch (e) {
+                    console.debug('[memberModal] debug dom failed', e);
+                }
+                $modal.modal('show');
+            },
+            error: function () {
+                $body.html('<div class="text-danger">폼을 불러오지 못했습니다.</div>');
+            }
+        });
+    }
+    function initMemberFormInModal(seq_no) {
+        // 모달 안에서만 대상 DOM을 찾도록 범위 제한
+        const $modal = $('#memberModal');
+
+        // 마스크
+        $modal.find('#biz_no').mask('999-99-99999');
+        $modal.find('#ssn').mask('999999-9999999');
+        $modal.find('#hp_no').mask('999-9999-9999');
+        $modal.find('#phoneMask').mask('(999)9999-9999');
+
+        // datepicker
+        $modal.find(".datepicker_noval").datepicker({
+            autoclose: true,
+            format: 'yyyy-mm-dd',
+            todayHighlight: true,
+        });
+
+        $modal.find(".datepicker_val").each(function () {
+            const $input = $(this);
+            $input.datepicker({
+                autoclose: true,
+                format: 'yyyy-mm-dd',
+                todayHighlight: true,
+            });
+
+            // DB 값이 없을 때만 오늘 날짜로 세팅
+            if (!$input.val()) {
+                $input.datepicker('update', new Date());
+            }
+        });
+        $modal.find('.select2').select2({ dropdownParent: $modal });
+        // 담당자 콤보 (기존 코드 거의 그대로, 단 $modal 기준으로)
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}',
+            method: 'GET',
+            success: function (response) {
+                const data = Ext.decode(response.responseText);
+                const selectBox = $modal.find("#biz_manager")[0];
+                if (!selectBox) return;
+
+                const $select = $modal.find("#biz_manager");
+                const selectedVal = ($select.data('selected') || '').toString();  // ← 여기서 값 읽기
+
+                // 기본 옵션 초기화
+                selectBox.innerHTML = `
+                    <option label="Choose one"></option>
+                    <option value="empty">선택해주세요</option>
+                `;
+
+                data.forEach(function (admin) {
+                    const option = document.createElement("option");
+                    option.value = admin.id;
+                    option.textContent = admin.name;
+
+                    // 서버에서 내려온 담당자와 같으면 선택
+                    if (selectedVal && selectedVal === admin.id.toString()) {
+                        option.selected = true;
+                    }
+                    selectBox.appendChild(option);
+                });
+
+                // select2 사용 시
+                $select.select2({
+                    dropdownParent: $modal
+                });
+                if (selectedVal) {
+                    $select.val(selectedVal).trigger('change');
+                }
+            },
+            failure: function () {
+                Ext.Msg.alert('오류', '담당자 목록을 불러오는 데 실패했습니다.');
+            }
+        });
+
+
+        // 해임에 따른 활성화
+        function toggleTerminationFields() {
+            const isTerminated = $modal.find("input[name='keeping_yn']:checked").val() === "N";
+            $modal.find("#taltye_date").prop("disabled", !isTerminated);
+            $modal.find("#taltye_reason").prop("disabled", !isTerminated);
+
+            if (!isTerminated) {
+                $modal.find("#taltye_date").val("");
+                $modal.find("#taltye_reason").val("empty");
+            }
+        }
+        $modal.find("input[name='keeping_yn']").on("change", toggleTerminationFields);
+        toggleTerminationFields();
+
+        // 기장료 콤마 설정
+        const feeInput = $modal.find("#feeamt input");
+
+        function formatNumber(value) {
+            return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        feeInput.on("input", function () {
+            let rawValue = $(this).val().replace(/,/g, "");
+            if (!isNaN(rawValue) && rawValue !== "") {
+                $(this).val(formatNumber(rawValue));
+            }
+        });
+
+        feeInput.on("blur", function () {
+            let rawValue = $(this).val().replace(/,/g, "");
+            if (rawValue === "" || isNaN(rawValue)) {
+                $(this).val("");
+            }
+        });
+
+        // 저장 버튼 클릭 시 AJAX 저장
+        $modal.off('click', '#btnMemberSave').on('click', '#btnMemberSave', function () {
+            saveMemberFromModal(seq_no);
+        });
+    }
+    function saveMemberFromModal(seq_no) {
+        const $modal = $('#memberModal');
+        const $form  = $modal.find('#memberForm');  // 폼에 id="memberForm" 줄 예정
+
+        const formData = $form.serializeArray();
+        if (seq_no) {
+            formData.push({name: 'seq_no', value: seq_no});
+        }
+
+        $.ajax({
+            url: '{% url "kijang_member_save" %}',
+            method: 'POST',
+            data: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function (res) {
+                if (res.ok) {
+                    Swal.fire('성공', res.msg || '저장되었습니다.', 'success');
+                    $modal.modal('hide');
+                    // 그리드 리로드
+                    const grid = Ext.ComponentQuery.query('gridpanel')[0];
+                    if (grid) grid.getStore().reload();
+                } else {
+                    Swal.fire('오류', res.msg || '저장에 실패했습니다.', 'error');
+                }
+            },
+            error: function () {
+                Swal.fire('오류', '저장 요청 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+
+    // ─────────────────────────────
+    // ① Daum 주소검색 (그대로 사용 가능)
+    // ─────────────────────────────
+    function sample6_execDaumPostcode() {
+        new daum.Postcode({
+            oncomplete: function(data) {
+                var addr = ''; 
+                var extraAddr = ''; 
+
+                if (data.userSelectedType === 'R') {
+                    addr = data.roadAddress;
+                } else {
+                    addr = data.jibunAddress;
+                }
+
+                if(data.userSelectedType === 'R'){
+                    if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                        extraAddr += data.bname;
+                    }
+                    if(data.buildingName !== '' ){
+                        extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                    }
+                    if(extraAddr !== ''){
+                        extraAddr = ' (' + extraAddr + ')';
+                    }
+                } else {
+                    document.getElementById("sample6_detailAddress").value = '';
+                }
+
+                document.getElementById('sample6_postcode').value = data.zonecode;
+                document.getElementById("sample6_address").value = addr + ', ' +  extraAddr;
+                document.getElementById("sample6_detailAddress").focus();
+            }
+        }).open();
+    }
+
+    function sample7_execDaumPostcode() {
+        new daum.Postcode({
+            oncomplete: function(data) {
+                var addr = ''; 
+                var extraAddr = ''; 
+
+                if (data.userSelectedType === 'R') {
+                    addr = data.roadAddress;
+                } else {
+                    addr = data.jibunAddress;
+                }
+
+                if(data.userSelectedType === 'R'){
+                    if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                        extraAddr += data.bname;
+                    }
+                    if(data.buildingName !== '' ){
+                        extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                    }
+                    if(extraAddr !== ''){
+                        extraAddr = ' (' + extraAddr + ')';
+                    }
+                } else {
+                    document.getElementById("sample7_detailAddress").value = '';
+                }
+
+                document.getElementById('sample7_postcode').value = data.zonecode;
+                document.getElementById("sample7_address").value = addr + ', ' +  extraAddr;
+                document.getElementById("sample7_detailAddress").focus();
+            }
+        }).open();
+    }
+})();
+</script>

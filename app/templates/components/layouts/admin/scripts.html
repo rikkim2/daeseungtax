@@ -1,0 +1,253 @@
+﻿{% load static %}
+
+<script src="{% static 'assets/js/util.js'%}"></script>
+
+<script src="{% static 'assets/js/jquery.min.js'%}"></script>
+
+<script src="{% static 'assets/plugins/bootstrap/js/popper.min.js'%}"></script>
+<script src="{% static 'assets/plugins/bootstrap/js/bootstrap.min.js'%}"></script>
+
+<script src="{% static 'assets/plugins/bootstrap-editable/bootstrap-editable/js/bootstrap-editable.min.js' %}"></script>
+<script src="{% static 'assets/js/bootstrap-editable.js' %}"></script>
+<script src="{% static 'assets/js/address-editable.js' %}"></script>
+
+<script src="{% static 'assets/plugins/select2/select2.full.min.js' %}"></script>
+
+<script src="{% static 'assets/plugins/moment/moment.js' %}"></script>
+
+<script src="{% static 'assets/plugins/sidemenu/sidemenu.js'%}"></script>
+
+<script src="{% static 'assets/plugins/p-scroll/perfect-scrollbar.js'%}"></script>
+<script src="{% static 'assets/plugins/p-scroll/pscroll.js'%}"></script>
+
+<script src="{% static 'assets/js/stickyAdmin.js'%}"></script>
+
+<script src="{% static 'assets/js/custom1.js'%}"></script>
+
+<script src="{% static 'assets/switcher/js/switcher.js'%}"></script>
+
+<script src="{% static 'assets/plugins/bootstrap-waitingfor/bootstrap-waitingfor.js'%}"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+
+<script src="{% static 'assets/js/themeColors.js'%}"></script>
+
+<link rel="stylesheet" href="{% static 'assets/plugins/ext422/extjs-build/resources/ext-theme-neptune/ext-theme-neptune-all.css'%}">
+<script src="{% static 'assets/plugins/ext422/extjs-build/ext-all.js'%}"></script>
+
+<script src="{% static 'assets/js/ExtCommon.js'%}"></script>
+
+{# React & ag-Grid CDN (UMD) #}
+<!-- React 18 UMD --
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+<!-- PropTypes: ag-grid-react UMD가 이 전역을 기대함 --
+<script src="https://unpkg.com/prop-types@15.8.1/prop-types.js"></script>
+
+<!-- ag-Grid Community (v27, UMD) --
+<script src="https://unpkg.com/ag-grid-community@27.0.1/dist/ag-grid-community.min.js"></script>
+
+<!-- ag-Grid React (v23, UMD, 전역명: AgGridReact) --
+<script src="https://unpkg.com/ag-grid-react@23.0.0/umd/ag-grid-react.min.js"></script>
+-->
+
+<script>
+/**
+ * TabManager: 탭 관리 및 AJAX 페이지 로딩
+ */
+var TabManager = {
+    $tabContainer: null,
+    $tabList: null,
+    $tabContent: null,
+
+    // 초기화
+    init: function() {
+        this.$tabContainer = $('#tab-container');
+        if (this.$tabContainer.length === 0) return;
+
+        // 기존 내용을 첫 번째 탭(대시보드)으로 감싸기
+        var initialContent = this.$tabContainer.html();
+        //  nav-link 안에 아이콘과 텍스트 정렬을 위한 구조 적용
+        this.$tabContainer.empty().html(`
+            <ul class="nav nav-tabs page-tabs" role="tablist" id="page-tab-list">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-dashboard" data-bs-toggle="tab" data-bs-target="#content-dashboard" type="button" role="tab" aria-controls="content-dashboard" aria-selected="true" data-url="/">
+                        <i class="fa fa-calendar"></i> <span>일정관리</span>
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="page-tab-content">
+                <div class="tab-pane fade show active" id="content-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" data-loaded="true">
+                    ${initialContent}
+                </div>
+            </div>
+        `);
+
+        this.$tabList = $('#page-tab-list');
+        this.$tabContent = $('#page-tab-content');
+        this.bindEvents();
+    },
+
+    bindEvents: function() {
+        // 탭 닫기 버튼 클릭
+        this.$tabList.on('click', '.tab-close-btn', this.closeTab.bind(this));
+        
+        // 탭 활성화 시점(보여질 때) 처리
+        this.$tabList.on('shown.bs.tab', 'button[role="tab"]', this.handleTabShow.bind(this));
+    },
+
+    // 탭 열기 (사이드바에서 호출됨)
+    openTab: function(event, element) {
+        if (event) event.preventDefault();
+        
+        var $link = $(element);
+        var url = $link.attr('href');
+        
+        // 사이드바 텍스트 추출 (span.side-menu__label 등 고려)
+        var tabTitle = $link.find('.side-menu__label, .sub-side-menu__label').text().trim();
+        if(!tabTitle) tabTitle = $link.text().trim();
+
+        if (!url || url === '#' || url.startsWith('javascript:')) {
+            return false;
+        }
+
+        // URL 기반 고유 ID 생성
+        var tabId = 'tab-' + url.replace(/[^a-zA-Z0-9]/g, '_');
+        var contentId = 'content-' + url.replace(/[^a-zA-Z0-9]/g, '_');
+
+        // 이미 탭이 존재하면 활성화만 수행
+        if ($('#' + tabId).length > 0) {
+            var tabInstance = bootstrap.Tab.getOrCreateInstance(document.querySelector('#' + tabId));
+            tabInstance.show();
+            return false;
+        }
+
+        // ★ 새 탭 버튼 HTML 수정 (Flexbox 정렬 및 닫기 버튼 디자인 적용)
+        var tabHtml = `
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="${tabId}" data-bs-toggle="tab" data-bs-target="#${contentId}" 
+                        type="button" role="tab" aria-controls="${contentId}" aria-selected="false" data-url="${url}">
+                    <span>${tabTitle}</span>
+                    <span class="tab-close-btn ms-2">
+                        <i class="fe fe-x"></i>
+                    </span>
+                </button>
+            </li>`;
+        this.$tabList.append(tabHtml);
+
+        // 새 탭 콘텐츠 영역 추가 (스피너 중앙 정렬)
+        var contentHtml = `
+            <div class="tab-pane fade" id="${contentId}" role="tabpanel" aria-labelledby="${tabId}" data-loaded="false">
+                <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>`;
+        this.$tabContent.append(contentHtml);
+
+        // 새 탭 활성화 (이벤트 트리거로 loadContent 호출됨)
+        var newTabBtn = document.querySelector('#' + tabId);
+        var tabInstance = new bootstrap.Tab(newTabBtn);
+        tabInstance.show();
+
+        return false;
+    },
+
+    // 탭이 활성화될 때 실행 (콘텐츠 로딩)
+    handleTabShow: function(e) {
+        var button = e.target; // 활성화된 탭 버튼
+        var targetSelector = button.getAttribute('data-bs-target');
+        var $content = $(targetSelector);
+        var url = button.getAttribute('data-url');
+        var isLoaded = $content.data('loaded');
+
+        // 처음 열리는 탭이면 AJAX 로드
+        if (!isLoaded && url) {
+            this.loadContent($content, url);
+        } else {
+            // 이미 로드된 탭이면 ExtJS 그리드 리사이즈 등을 위해 window resize 트리거
+            setTimeout(function() { $(window).trigger('resize'); }, 100);
+        }
+    },
+
+    // AJAX 콘텐츠 로드
+    loadContent: function($content, url) {
+        var self = this;
+        // AJAX 요청 시 구분 파라미터 추가
+        var ajaxUrl = url + (url.indexOf('?') !== -1 ? '&' : '?') + 'is_ajax_tab=1';
+
+        $.ajax({
+            url: ajaxUrl,
+            method: 'GET',
+            success: function(response) {
+                $content.html(response);
+                $content.data('loaded', true);
+                
+                // 삽입된 스크립트 실행 (ExtJS 등)
+                self.executeScripts($content);
+
+                // 레이아웃 조정
+                setTimeout(function() { $(window).trigger('resize'); }, 200);
+            },
+            error: function(xhr) {
+                $content.html('<div class="p-4 text-danger">페이지를 불러오는데 실패했습니다. (' + xhr.status + ')</div>');
+            }
+        });
+    },
+
+    // 탭 닫기
+    closeTab: function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $closeBtn = $(e.target);
+        var $tabBtn = $closeBtn.closest('.nav-link');
+        var targetSelector = $tabBtn.data('bs-target');
+        var $tabLi = $tabBtn.closest('.nav-item');
+        
+        // 닫으려는 탭이 활성 상태인지 확인
+        var isActive = $tabBtn.hasClass('active');
+
+        // 요소 제거
+        $tabLi.remove();
+        $(targetSelector).remove();
+
+        // 활성 탭을 닫았다면 이전 탭(혹은 마지막 탭) 활성화
+        if (isActive) {
+            var $lastTab = this.$tabList.find('.nav-link').last();
+            if ($lastTab.length > 0) {
+                bootstrap.Tab.getOrCreateInstance($lastTab[0]).show();
+            }
+        }
+    },
+
+    // HTML 내 스크립트 실행 (ExtJS 호환성)
+    executeScripts: function($container) {
+        $container.find('script').each(function() {
+            if (!this.src && this.innerHTML.trim()) {
+                try {
+                    // 글로벌 스코프에서 실행
+                    window.eval(this.innerHTML);
+                } catch(err) {
+                    console.error('Script execution error:', err);
+                }
+            }
+        });
+    }
+};
+
+/**
+ * 전역 함수: 사이드바 HTML의 onclick="return openEmbedPage(...)" 와 호환
+ */
+function openEmbedPage(event, element) {
+    return TabManager.openTab(event, element);
+}
+
+// 문서 로드 완료 시 실행
+$(document).ready(function() {
+    TabManager.init();
+});
+</script>

@@ -1,0 +1,545 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+{% load custom_filters %}
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">블로그</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">블로그</li>
+										<li class="breadcrumb-item"><a href="javascript:void(0);">내용보기</a></li>
+										<li class="breadcrumb-item active" aria-current="page">{{ post.category.name }}</li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-xl-12">
+									<div class="card">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-xl-8">
+													<div class="">
+														<div class="d-sm-flex d-block align-items-center">
+															<div class="d-flex align-items-center mb-sm-0 mb-2">
+																<div class="avatar-list">
+																{% if author.user.profile.image_thumbnail.url %}
+																<a href="javascript:void(0)" class="avatar avatar-sm rounded-circle cover-image" data-bs-image-src= "{{ author.user.profile.image_thumbnail.url }}"></a>
+																{% else %}	
+																<a href="javascript:void(0)" class="avatar avatar-sm rounded-circle cover-image" data-bs-image-src= "{% static 'assets/images/faces/blank.jpg' %}"></a>
+																{% endif %}
+																</div>
+																<h6 class="mb-0 text-muted ms-2 text-13 me-sm-0 me-2">{{ author.user.Mem_Admin.admin_name }}</h6>
+															</div>
+															<a href="#" class="d-f-ai-c mx-0 mb-sm-0 mb-2 mx-sm-4 mx-0 text-13">
+																<span class="fe fe-calendar text-muted me-1 text-15"></span>
+																<span class="mt-0 mt-0 text-muted">{{post.published_date|date:"y년 m월 d일"}}</span></a>
+															<a href="#" class="me-0 d-f-ai-c mb-sm-0 mb-2 text-13">
+																<span class="fe fe-message-square text-muted me-1 text-15"></span>
+																<span class="mt-0 mt-0 text-muted">{{comments_count}}</span></a>
+														</div>
+														<div>
+															<h3 class="font-weight-normal text-dark-light mt-4 mb-4">{{ post.title }}</h3>
+														</div>
+													</div>
+													<div class="ps-relative p-1 bg-light br-5">
+														<!-- <img src="{% static 'assets/images/blog/green_pigwithmoney.webp' %}" alt="img" class="cover-image br-5 ms-auto me-auto wp-100"> -->
+														<img src= "{{ latest_attachment.file.url }}" alt="img" class="cover-image br-5 ms-auto me-auto wp-100">
+														<span class="badge bg-primary-gradient blog-label label5">{{ post.category.name }}</span>
+													</div>
+																									
+													<div class=" mb-2 mt-5 content">
+														{{ post.content | safe }}
+													</div>
+													<div class=" mt-2 pt-2 pb-3 border-top footer-container-main blog-footer">
+														<div class="footer border-top-0 p-0 icons-bg d-sm-flex">
+															<div class="social m-0">
+																<ul class="text-center">
+																	<li>
+																		<a class="social-icon" href="javascript:void(0)" onclick="return alert('준비중입니다.');"><i class="fa fa-rss"></i></a>
+																	</li>
+
+																	{% if request.user.is_staff%}
+																	<li><a class="social-icon" href="{% url 'blog_delete' pk=post.id %}" onclick="return confirm('포스트를 삭제하시겠습니까?');" title="삭제"><i class="fa fa-trash"></i></a></li>																																		
+																	<li><a class="social-icon" href="{% url 'blog_edit' pk=post.id %}"  title="수정"><i class="fa fa-edit" ></i></a></li>									
+																	{% endif %}								
+																</ul>
+															</div>
+															<div>
+																<a href="{% url 'blog_list' %}" class="more-btn d-f-ai-c d-sm-flex d-block">전체보기 <i class="fe fe-chevron-right ms-2"></i> </a>
+															</div>
+														</div>
+													</div>
+													<div class="mt-4 pt-5 border-top">
+														{% for comment in comments %}
+														<div class="media mb-4 overflow-visible">
+															<div class="me-3">
+																{% if comment.author.profile.image_thumbnail.url %}
+																<a href="#"> <img class="media-object rounded-circle thumb-sm"  src="{{ comment.author.profile.image_thumbnail.url }}"> </a>
+																{% else %}
+																<a href="#"> <img class="media-object rounded-circle thumb-sm"  src="{% static 'assets/images/faces/blank.jpg' %}"> </a>
+																{% endif%}
+															</div>
+															<div class="media-body overflow-visible">
+																<div class="border mb-5 p-4 br-5">
+																	<nav class="nav float-end">
+																		<div class="dropdown">
+																			<a class="nav-link text-muted fs-16 p-0 ps-4" href="javascript:;" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+																			<div class="dropdown-menu dropdown-menu-start">
+																				<a class="dropdown-item" href="#"><i class="fe fe-edit me-1"></i> 수정</a>
+																				<a class="dropdown-item" href="{% url 'delete_comment' comment.id %}" onclick="return confirm('댓글을 삭제하시겠습니까?');">
+																					<i class="fe fe-trash-2 me-1"></i> 삭제
+																			</a>
+																			</div>
+																		</div>
+																	</nav>
+																	<h5 class="mt-0">{{ comment.author.username }}<span class="text-muted fs-12 ms-1">{{ comment.created_at|timesince }}</span></h5>
+																	<span><i class="fe fe-thumb-up text-danger"></i></span>
+																	<p class="font-13 text-muted">{{comment.content}}</p>
+																	<!-- <span class="reply" id="4">
+																		<a href="javascript:;"><span class="badge badge-sm btn-info-light rounded-pill py-2 px-3"><i class="fe fe-corner-up-left me-1"></i>댓글</span></a>
+																	</span> -->
+																</div>
+															</div>
+														</div>
+															{% if comment.replies.all %}
+																	{% for reply in comment.replies.all %}
+																	<div class="media mb-4 overflow-visible">
+																		<div class="me-3">
+																			<a href="profile"> <img class="media-object rounded-circle thumb-sm" alt="64x64" src="{{ reply.author.profile.image_thumbnail.url }}"> </a>
+																		</div>
+																		<div class="media-body overflow-visible">
+																			<div class="border mb-5 p-4 br-5">
+																				<nav class="nav float-end">
+																					<div class="dropdown">
+																						<a class="nav-link text-muted fs-16 p-0 ps-4" href="javascript:;" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+																						<div class="dropdown-menu dropdown-menu-start">
+																							<a class="dropdown-item" href="#"><i class="fe fe-edit me-1"></i> 수정</a>
+																							<a class="dropdown-item" href="#"><i class="fe fe-trash-2 me-1"></i> 삭제</a>
+																						</div>
+																					</div>
+																				</nav>
+																				<h5 class="mt-0">Gavin Murray<span class="text-muted fs-12 ms-1">5 min ago</span></h5>
+																				<span><i class="fe fe-thumb-up text-danger"></i></span>
+																				<p class="font-13 text-muted">{{reply.content}}</p>
+																				<!-- <span class="reply" id="4">
+																					<a href="javascript:;"><span class="badge badge-sm btn-info-light rounded-pill py-2 px-3"><i class="fe fe-corner-up-left me-1"></i>댓글</span></a>
+																				</span> -->
+																			</div>
+																		</div>
+																	</div>
+																	{% endfor %}
+															{% endif %}
+														{% endfor %}
+
+														<!-- ajax 댓글 -->
+														<div class="comments-list"></div>
+
+														<!-- 댓글 폼 -->
+														{% if user.is_authenticated %}
+																<form  action="{% url 'create_comment' post_id=post.id %}" method="post" >
+																		{% csrf_token %}
+																		<div class="row row-xs form-group-wrapper">
+																				<h3 class="card-title">의견:</h3>
+																				<div class="col-md-12 mt-2">
+																					<div class="col-md-12 mt-2">
+																						<div class="main-form-group">
+																							<textarea name="content" id="content" class="form-control text-area border-0" placeholder="Message" rows="3"></textarea>
+																							<label for="message" class="form-label mb-1">내용</label>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="col-md-12 my-2">
+																						<button type="submit" class="btn btn-success text-white float-end">작성</button>
+																				</div>
+																		</div>
+																</form>
+														{% else %}
+																<form  action="{% url 'create_comment' post_id=post.id %}" method="post" >
+																		{% csrf_token %}
+																		<div class="row row-xs form-group-wrapper">
+																				<h3 class="card-title">의견:</h3>
+																				<div class="col-md-6">
+																						<div class="main-form-group my-1">
+																								{{ guest_comment_form.name }}
+																								<label for="name" class="form-label mb-1">이름</label>
+																						</div><!-- main-form-group -->
+																				</div>
+																				<div class="col-md-6">
+																						<div class="main-form-group my-1">
+																								{{ guest_comment_form.email }}
+																								<label for="mail" class="form-label mb-1">이메일</label>
+																						</div><!-- main-form-group -->
+																				</div>
+																				<div class="col-md-12 mt-2">
+																					<div class="col-md-12 mt-2">
+																						<div class="main-form-group">
+																							<textarea name="content" id="content" class="form-control text-area border-0" placeholder="Message" rows="3"></textarea>
+																							<label for="message" class="form-label mb-1">내용</label>
+																						</div>
+																					</div>
+																				</div>
+																				<div class="col-md-12 my-2">
+																						<button type="submit" class="btn btn-success text-white float-end">작성</button>
+																				</div>
+																		</div>
+																</form>
+														{% endif %}
+													</div>
+												</div>
+												
+												<div class="col-xl-4">
+
+													<!-- 작성자 이력 --
+													<div class="card overflow-hidden border br-5">
+														<div class="card-header border-bottom">
+															<h3 class="card-title">작성자</h3>
+														</div>
+														<div class="card-body">
+															<div class="text-center">
+																<a href="blog-details"><img class="card-img-top w-100 w-100" src="{% static 'assets/images/photos/11.jpg' %}" alt=""></a>
+																<div class="br-5 pt-3 text-justify">
+																	<p class="m-0 text-muted">
+																		작성자 이력/인사
+																	</p>
+																</div>
+															</div>
+														</div>
+													</div>
+													<!--  -->
+													<!-- 카테고리 -->
+													<div class="card border overflow-hidden">
+														<div class="card-header border-bottom">
+															<h3 class="card-title mb-1">카테고리</h3>
+														</div>
+														<div class="card-body">
+															<div>
+																<div class="tags">
+																	{% for category in categories %}
+																	<a href="{% url 'category_posts' category.id %}" class="tag">{{ category.name }}</a>
+																	{% endfor %}
+															</div>
+														</div>
+														</div>
+													</div>
+													<!--  -->
+													<!-- 이슈 포스트 -->
+													<div class="card border">
+														<div class="card-header border-bottom">
+															<h3 class="card-title">이슈 포스트</h3>
+														</div>
+														<div class="card-body">
+															<div class="item-list">
+																<ul class="list-group mb-0">
+																	{% for post in top_posts %}
+																	<li class="list-group-item d-flex pb-4 pt-0 px-0 border-bottom-0">
+																			{% if post.attachments.all %}
+																				{% with post.attachments.all|first as attachment %}
+																						<img src="{{ attachment.file.url }}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																				{% endwith %}
+																			{% else %}
+																					<img src="{% static 'assets/images/faces/blank.jpg' %}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																			{% endif %}
+																			<div>
+																					<span class="d-block text-muted">{{ post.category }} | {{ post.published_date |date:"y년 m월 d일" }}</span>
+																					<a href="{% url 'blog_detail' post.id %}" class="text-dark text-16 font-weight-semibold">{{ post.title }}</a>
+																					<small class="d-block text-gray">댓글 {{ post.comment_count }} </small>
+																			</div>
+																	</li>
+																	{% empty %}
+																	<li class="list-group-item">연재를 준비중입니다.</li>
+																	{% endfor %}
+
+																</ul>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /row -->
+
+
+        {% endblock %}
+
+
+				{% block modal %}
+
+				<!-- award1 -->
+				<div class="modal fade"  id="award1">
+					<div class="modal-dialog modal-dialog-centered text-center  modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 보다 전문적인 세무조사 대응 및 조세불복을 위해 서울시립대 조세쟁송과정을 수료하였습니다.</i>
+								<img src="{% static 'assets/images/blog/award1.png' %}" class="img-responsive" alt="상패 1">
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- award2 -->
+				<div class="modal fade"  id="award2">
+					<div class="modal-dialog modal-dialog-centered text-center  modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 보다 도움이되는 세무대리인이 되도록 노력하고 있습니다.</i>
+								<img src="{% static 'assets/images/blog/award2.png' %}" class="img-responsive" alt="상패 2">
+							</div>
+						</div>
+					</div>
+				</div>	
+				<!-- award1 -->
+				<div class="modal fade"  id="award3">
+					<div class="modal-dialog modal-dialog-centered text-center modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 세무사의 역량 향상을 위해 기업진단업무 획득에 공헌하였습니다.</i>
+								<img src="{% static 'assets/images/blog/award3.png' %}" class="img-responsive" alt="상패 3">
+							</div>
+						</div>
+					</div>
+				</div>							
+				<!-- award1 -->
+				<div class="modal fade"  id="award4">
+					<div class="modal-dialog modal-dialog-centered text-center modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 사소한 사건일 지라도 가볍게 여기거나 쉽게 지나치지 않습니다.</i>
+								<img src="{% static 'assets/images/blog/award4.png' %}" class="img-responsive" alt="상패 4">
+							</div>
+						</div>
+					</div>
+				</div>				
+				{% endblock %}
+
+
+
+    {% block scripts %}
+
+		<!-- THEMECOLORS JS -->
+		<script src="{% static 'assets/js/themeColors.js'%}"></script>
+
+<script>
+$(document).ready(function() {
+    $('form').submit(function(e) {
+        e.preventDefault();
+        
+        var postUrl = $(this).attr('action');
+        var csrfToken = $('[name=csrfmiddlewaretoken]').val();
+        var content = $('#content').val();
+        
+        sendComment(postUrl, csrfToken, content, createCommentContainer);
+    });
+
+
+    // 댓글에 대한 '댓글' 버튼 클릭 이벤트 처리
+    $('.reply a').on('click', function() {
+        // 대댓글 입력 필드와 '저장' 버튼을 포함하는 Div 생성
+
+				let Div = document.createElement('div')
+			Div.setAttribute('class', "comment mt-5 d-grid w-60")
+
+			// creating textarea
+			let textArea = document.createElement('textarea')
+			textArea.setAttribute('class', "form-control")
+			textArea.setAttribute('rows', "5")
+			// textArea.innerText = "Your Comment";
+
+			// creating Cancel buttons
+			let cancelButton = document.createElement('button');
+			cancelButton.setAttribute('class', "btn btn-danger");
+			cancelButton.innerText = "취소";
+
+			let buttonDiv = document.createElement('div')
+			buttonDiv.setAttribute('class', "btn-list ms-auto mt-2")
+
+			// Creating submit button
+			let submitButton = document.createElement('button');
+			submitButton.setAttribute('class', "btn btn-success ms-3");
+			submitButton.innerText = "저장";
+
+			// appending text are to div
+			Div.append(textArea)
+			Div.append(buttonDiv);
+			buttonDiv.append(cancelButton);
+			buttonDiv.append(submitButton);
+
+
+			// '저장' 버튼 클릭 이벤트
+			submitButton.addEventListener('click', function() {
+					let replyContent = textArea.value;
+					let parentCommentId = $(this).closest('.media').attr('id'); // 상위 댓글 ID 추출
+					var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute(replyContent);
+					// AJAX 요청을 통해 대댓글 저장
+					$.ajax({
+							url: '/path/to/reply/api/', // 실제 대댓글 저장 API 경로
+							type: 'POST',
+							data: {
+									'content': replyContent,
+									'parent_id': parentCommentId,
+									// 필요한 추가 데이터
+							},
+							headers: {'X-CSRFToken': csrfToken}, // CSRF 토큰 추가
+							success: function(response) {
+									// 대댓글 저장 성공 후 처리
+									console.log('대댓글 저장 성공', response);
+									// 페이지에 대댓글 동적 추가 등의 처리
+							},
+							error: function(error) {
+									console.log('대댓글 저장 실패', error);
+							}
+					});
+
+					// 대댓글 입력 필드와 '저장' 버튼 제거
+					replyDiv.remove();
+			});
+
+			// 댓글에 대댓글 입력 필드와 '저장' 버튼 추가
+			$(this).closest('.media-body').append(Div);	
+    });		
+});
+
+function makeReply(){
+
+}
+
+function createCommentContainer(response) {
+    let commentContainer = document.createElement('div');
+    commentContainer.className = 'media mb-4 overflow-visible';
+    commentContainer.id = `comment-${response.id}`;
+    
+    commentContainer.innerHTML = `
+        <div class="me-3">
+            <a href="profile"> <img class="media-object rounded-circle thumb-sm" alt="64x64" src="${response.author_profile_image}"> </a>
+        </div>
+        <div class="media-body overflow-visible">
+						<div class="border mb-5 p-4 br-5">
+								<nav class="nav float-end">
+										<div class="dropdown">
+												<a class="nav-link text-muted fs-16 p-0 ps-4" href="javascript:;" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+												<div class="dropdown-menu dropdown-menu-start">
+														<a class="dropdown-item" href="#"><i class="fe fe-edit me-1"></i> 수정</a>
+														<a class="dropdown-item" href="#"><i class="fe fe-trash-2 me-1"></i> 삭제</a>
+												</div>
+										</div>
+								</nav>
+								<h5 class="mt-0">${response.author}<span class="text-muted fs-12 ms-1"></span></h5>
+								<span><i class="fe fe-thumb-up text-danger"></i></span>
+								<p class="font-13 text-muted">${response.content}</p>
+						</div>
+        </div>
+    `;
+
+    document.querySelector('.comments-list').appendChild(commentContainer);
+    document.getElementById('content').value = ''; // 입력 필드 초기화
+    replay(); // 답글 입력 필드 생성 함수 호출
+}
+
+function sendComment(postUrl, csrfToken, content, onSuccess) {
+    var postData = {
+        'content': content,
+    };
+    $.ajax({
+        type: 'POST',
+        url: postUrl,
+        data: JSON.stringify(postData),
+        contentType: 'application/json',
+        dataType: 'json',
+        headers: {'X-CSRFToken': csrfToken},
+        success: onSuccess,
+        error: function(xhr, errmsg, err) {
+            console.log('댓글 작성 실패', errmsg);
+        }
+    });
+}
+
+/*
+
+	$(document).ready(function() {
+			$('form').submit(function(e) {
+					e.preventDefault(); // 폼 제출 기본 동작 방지
+	
+					var postUrl = $(this).attr('action'); // 폼의 action 속성에서 URL을 가져옵니다.
+					var csrfToken = $('[name=csrfmiddlewaretoken]').val(); // CSRF 토큰 가져오기
+					var postData = {
+							'content': $('#content').val(), // 댓글 내용 가져오기
+							// 필요한 경우 추가 데이터 추가
+					};
+					$.ajax({
+							type: 'POST',
+							url: postUrl,
+							data: JSON.stringify(postData),
+							contentType: 'application/json',
+							dataType: 'json',
+							headers: {'X-CSRFToken': csrfToken}, // CSRF 토큰 헤더에 추가
+							success: function(response) {
+								// 댓글 컨테이너 생성
+								let commentContainer = document.createElement('div');
+								commentContainer.className = 'media mb-4 overflow-visible';
+								commentContainer.id = `comment-${response.id}`;
+								console.log(response)
+								// 댓글 내용 및 작성자 정보를 포함하는 HTML 구성
+								commentContainer.innerHTML = `
+										<div class="me-3">
+												<a href="profile"> <img class="media-object rounded-circle thumb-sm" alt="64x64" src="${response.author_profile_image}"> </a>
+										</div>
+										<div class="media-body overflow-visible">
+												<div class="border mb-5 p-4 br-5">
+														<nav class="nav float-end">
+																<div class="dropdown">
+																		<a class="nav-link text-muted fs-16 p-0 ps-4" href="javascript:;" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+																		<div class="dropdown-menu dropdown-menu-start">
+																				<a class="dropdown-item" href="#"><i class="fe fe-edit me-1"></i> 수정</a>
+																				<a class="dropdown-item" href="#"><i class="fe fe-trash-2 me-1"></i> 삭제</a>
+																		</div>
+																</div>
+														</nav>
+														<h5 class="mt-0">${response.author}<span class="text-muted fs-12 ms-1"></span></h5>
+														<span><i class="fe fe-thumb-up text-danger"></i></span>
+														<p class="font-13 text-muted">${response.content}</p>
+												</div>
+												<span class="reply" id="reply-${response.id}">
+														<a href="javascript:;"><span class="badge badge-sm btn-info-light rounded-pill py-2 px-3"><i class="fe fe-corner-up-left me-1"></i>댓글</span></a>
+												</span>
+										</div>
+								`;
+
+								// 댓글 목록에 새 댓글 추가
+								document.querySelector('.comments-list').appendChild(commentContainer);
+
+								// 입력 필드 초기화
+								document.getElementById('content').value = '';
+
+								// 답글 입력 필드 생성 함수 호출
+								replay();
+							},
+							error: function(xhr, errmsg, err) {
+									// 오류 처리, 예: 오류 메시지 표시
+									console.log('댓글 작성 실패', err);
+							}
+					});
+			});
+	});
+
+*/
+	</script>			
+    {% endblock %}
+
+
+

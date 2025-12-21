@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ subject }}</title>
+    <style>
+.row {
+    border-collapse: collapse;
+    border-spacing: 0;
+    display: block;
+    padding: 0px;
+    position: relative;
+    text-align: left;
+    vertical-align: top;
+    width: 100%;
+}
+
+.wrapper {
+    -moz-hyphens: none;
+    -webkit-hyphens: none;
+    border-collapse: collapse !important;
+    color: #333;
+    font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif;
+    font-size: 14px;
+    font-weight: normal;
+    hyphens: none;
+    line-height: 26px;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.twelve.columns {
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin: 0 auto;
+    padding: 0;
+    text-align: left;
+    vertical-align: top;
+    width: 680px;
+}
+
+.two.sub-column, .one.sub-column {
+    border-collapse: collapse !important;
+    color: #333;
+    font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif;
+    font-size: 14px;
+    font-weight: normal;
+    hyphens: none;
+    line-height: 26px;
+    margin: 0;
+    min-width: 0px;
+    padding: 0 10px 0 0px;
+    text-align: left;
+    vertical-align: top;
+    width: 16.666666%;
+    word-break: break-word;
+}
+
+.one.sub-column {
+    width: 8.333333%;
+}
+
+.expander {
+    visibility: hidden;
+    width: 0px;
+}
+
+.tax-table {
+    border-top-width: 1px solid #ffffff;
+    border-left: 1px solid #ffffff;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 565px;
+    border-collapse: collapse;
+}
+
+.tax-table td {
+    border: 1px solid #dadada;
+    font-family: sans-serif;
+    font-size: 12px;
+    color: #054059;
+    background: #fff;
+    padding: 10px;
+    text-align: left;
+}
+
+.table-header {
+    background: #f3f3f3;
+    font-weight: bold;
+    text-align: center;
+}
+
+.table-content {
+    background: #fff;
+    text-align: left;
+}
+
+.table-content.right {
+    text-align: right;
+    padding-right: 10px;
+}
+
+.table-content.center {
+    text-align: center;
+}      
+
+    </style>
+</head>
+<body class="background" style="-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;background: #dedede;color: #333;
+      font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif;font-size: 14px;font-weight: normal;line-height: 26px;
+      margin: 0;min-width: 100%;padding: 0;text-align: left;width: 100% !important" bgcolor="#dedede">
+
+    <table class="body" style="background: #dedede; border-collapse: collapse; border-spacing: 0; color: #333; 
+            font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; 
+            height: 100%; line-height: 26px; margin: 0; padding: 0; text-align: left; vertical-align: top; width: 100%;" 
+            bgcolor="#dedede">
+        <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+            <td class="center" align="center" valign="top" style="padding: 10px 0; text-align: center; vertical-align: top;">
+                <center style="min-width: 680px; width: 100%">
+                    <table class="container" bgcolor="white" 
+                        style="background: white; border-collapse: collapse; border-spacing: 0; margin: 0 auto; 
+                        padding: 0; text-align: inherit; vertical-align: top; width: 680px;">
+                        <tr align="left">
+                            <td align="left" valign="top">
+                                <table class="row" style="border-collapse: collapse; width: 100%;">
+                                    <tr class="header" align="left" bgcolor="#217648">
+                                        <td class="wrapper" align="left" valign="top">
+                                            <table class="twelve columns" style="width: 680px;">
+                                                <tr align="left">
+                                                    <td class="six sub-column" align="left" valign="top" style="width: 50%;">
+                                                        <table class="header" style="background: #217648; width: 100%;">
+                                                            <tr align="left">
+                                                                <td align="left" valign="top" style="color: #fff; font-weight: bold; padding: 8px 10px;">
+                                                                    {{ TXT_CorpName }}
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </td>
+                                                    <td class="six sub-column last" align="left" valign="top" style="width: 50%;">
+                                                        <table class="header" style="background: #217648; width: 100%;">
+                                                            <tr align="left">
+                                                                <td align="right" valign="top" style="color: #fff; padding: 8px 10px;">
+                                                                    {{ biz_name }}
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <table class="row" style="border-collapse: collapse; width: 100%;">
+                                    <tr align="left">
+                                        <td class="wrapper" align="left" valign="top">
+                                            <table class="content" style="width: 100%;">
+                                                <tr align="left">
+                                                    <td align="left" valign="top" style="padding: 40px 60px 0;">
+                                                    </td>
+                                                </tr>
+                                                <tr align="left">
+                                                    <td align="left" valign="top" style="padding: 0 60px 16px;">
+                                                        <p style="color: #77787b;">
+                                                            안녕하세요 {{ TXT_CorpName }} 입니다.
+                                                        </p>                                                  
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table class="row" style="width: 100%;">
+                                  <tr align="left">
+                                      <td align="left" valign="top" style="padding: 20px 60px;">
+                                          <p class="email-notification-title" style="color: #77787b;">
+                                            아래 안내드리는 세목으로 미납세액이 있으니 인터넷 뱅킹의 공과금 납부 메뉴에서 해당 전자납부번호로 조회하여 납부기한까지 고지세액을 납부하여 주시기 바랍니다. 
+                                            <br><br>납부기한까지 미납할 경우 체납세액으로 분류되며 기간 경과분에 대한 가산세가 추가되어 1개월 경과된 납부서가 재발송됩니다.
+                                          </p>
+                                      </td>
+                                  </tr>
+                              </table>
+                                <table class="row" style="width: 100%;">
+                                    <tr align="left">
+                                        <td class="wrapper" align="left" valign="top">
+                                            <table class="twelve columns" style="width: 680px;">
+                                                <tr align="left">
+                                                    <td align="left" valign="top">
+                                                        <table class="content" style="width: 100%;">
+                                                            <tr align="left">
+                                                                <td align="left" valign="top" style="padding: 0 60px;">
+                                                                    <p class="email-notification-title" style="color: #80397B;">
+                                                                        <center>
+                                                                            <br><b>- [{{ biz_name }}] {{ work_YY }}년 {{ work_MM }}월 조회 기준 -</b>
+                                                                        </center>
+                                                                    </p>
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <table class="row" style="width: 100%;">
+                                  <tr align="left">
+                                    <td class="wrapper" align="left" valign="top">
+                          
+                                        <table class="twelve columns" style="width: 680px;">
+                                          <tr align="left">
+                                               
+                          
+                                                <td align="left" valign="top" style="padding: 0 60px;">
+                          
+                                                      <table style="border-top-width:1px solid #ffffff; border-left:1px solid #ffffff; margin-top:10px; 
+                                                          margin-bottom:10px; width: 565px;">
+                                                          <tr>
+                                                              <td width="100px" align="center" 
+                                                                  style="border-bottom:#fff;border-bottom-width:1px;border-right:#fff;font-family:sans-serif;
+                                                                  font-size:12px;text-decoration:none;color:#054059;background:#f3f3f3;border-bottom-color: #dadada; 
+                                                                  border-bottom-style: solid; border-bottom-width: 1px;line-height: 22px;border-right-color: #dadada;
+                                                                  border-right-style: solid; border-right-width: 1px;border-top-color: #dadada;border-top-style: solid;
+                                                                  border-top-width: 1px;"><b>세 목</td>
+                          
+                                                              <td width="80px" align="center" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#054059;background:#f3f3f3;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;
+                                                                  border-top-color: #dadada;border-top-style: solid;border-top-width: 1px;"><b>고지세액</td>
+                          
+                                                              <td width="160px" align="center" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#054059;background:#f3f3f3;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;
+                                                                  border-top-color: #dadada;border-top-style: solid;border-top-width: 1px;"><b>전자납부번호</td>
+                          
+                                                              <td width="80px" align="center" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#054059;background:#f3f3f3;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;
+                                                                  border-top-color: #dadada;border-top-style: solid;border-top-width: 1px;"><b>관할세무서</td>
+                          
+                                                              <td width="80px" align="center" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#3366ff;background:#f3f3f3;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-top-color: #dadada;border-top-style: solid;border-top-width: 1px;">
+                                                                  <b>납부기한</td>
+                                                          </tr>
+                          
+                                                          {% for tax in tax_data %}
+                                                          <tr>
+                                                              <td align="center" style="border-bottom:#fff;border-bottom-width:1px;border-right:#fff;
+                                                                  font-family:sans-serif;font-size:12px;text-decoration:none;color:#054059;background:#fff;
+                                                                  border-bottom-color: #dadada;border-bottom-style: solid;border-bottom-width: 1px;line-height: 18px;
+                                                                  border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;">
+                                                                  {{ tax.taxmok }}</td>
+                          
+                                                              <td align="right" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#054059;background:#fff;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;
+                                                                  padding-right: 10px;">
+                                                                  {{ tax.taxamt|floatformat:0 }} 원</td>
+                          
+                                                              <td align="right" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#054059;background:#fff;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;
+                                                                  padding-right: 10px;">
+                                                                  {{ tax.taxnapbunum }}</td>
+                          
+                                                              <td align="center" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#054059;background:#fff;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;border-right-color: #dadada;border-right-style: solid;border-right-width: 1px;">
+                                                                  {{ tax.taxoffice }}</td>
+                          
+                                                              <td align="right" style="border-bottom:#fff;border-bottom-width:1px;font-family:sans-serif;
+                                                                  font-size:12px;color:#3366ff;background:#fff;border-bottom-color: #dadada;border-bottom-style: solid;
+                                                                  border-bottom-width: 1px;padding-right: 10px;">
+                                                                  {{ tax.taxduedate }}</td>
+                                                          </tr>
+                                                          {% endfor %}
+                                                      </table>
+                          
+                                                  </td>
+                                              </tr>
+                                          </table>
+                          
+                                      </td>
+                                  </tr>
+                                </table>
+
+                                <table class="row" style="width: 100%;">
+                                    <tr align="left">
+                                        <td align="left" valign="top" style="padding: 40px 60px;">
+                                            <p class="email-notification-title" style="color: #77787b;">
+                                                더 궁금한 점은 담당자에게 문의주시기 바랍니다. 감사합니다.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <!-- 전체 분리 라인 -->
+                                <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0; position: relative; text-align: left; vertical-align: top; width: 100%;">
+                                  <tr style="padding: 0; text-align: left; vertical-align: top;" align="left">
+                                      <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333;
+                                          font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal;
+                                          hyphens: none; line-height: 26px; margin: 0; padding: 0; position: relative; text-align: left; vertical-align: top; word-break: break-word;"
+                                          align="left" valign="top">
+
+                                          <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: 680px;">
+                                              <tr style="padding: 0; text-align: left; vertical-align: top;" align="left">
+                                                  <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333;
+                                                      font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal;
+                                                      hyphens: none; line-height: 26px; margin: 0; padding: 0; text-align: left; vertical-align: top; word-break: break-word;"
+                                                      align="left" valign="top">
+
+                                                      <table style="border-collapse: collapse; border-spacing: 0; padding: 0; text-align: left; vertical-align: top; width: 100%;">
+                                                          <tr style="padding: 0; text-align: left; vertical-align: top;" align="left">
+                                                              <td style="-moz-hyphens: none; -webkit-hyphens: none; border-bottom-color: #dadada;
+                                                                  border-bottom-style: solid; border-bottom-width: 1px; border-collapse: collapse !important;
+                                                                  color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif;
+                                                                  font-size: 14px; font-weight: normal; height: 1px; hyphens: none; line-height: 26px;
+                                                                  margin: 0; padding: 0 60px; text-align: left; vertical-align: top; word-break: break-word;"
+                                                                  align="left" valign="top">
+                                                              </td>
+                                                          </tr>
+                                                      </table>
+
+                                                  </td>
+                                                  <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                                      color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px;
+                                                      font-weight: normal; hyphens: none; line-height: 26px; margin: 0; padding: 0; text-align: left;
+                                                      vertical-align: top; visibility: hidden; width: 0px; word-break: break-word;"
+                                                      align="left" valign="top">
+                                                  </td>
+                                              </tr>
+                                          </table>
+
+                                      </td>
+                                  </tr>
+                                </table>
+                                <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: middle; width: 100%;">
+                                  <tr style="padding: 0; text-align: left; vertical-align: top;">
+                                      <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 26px; margin: 0; padding: 0; position: relative; text-align: left; vertical-align: middle; word-break: break-word;" align="left" valign="middle">
+                                        <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: middle; width: 100%;">
+                                              <tr style="padding: 0; text-align: left; vertical-align: middle;" align="left">
+                                                  <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 50px; margin: 0; min-width: 0px; padding: 10 10px 0 0px; text-align: left; vertical-align: middle; width: 100px; word-break: break-word;" align="left" valign="top">
+                                                      <table style="border-collapse: collapse; border-spacing: 0; padding: 0; text-align: left; vertical-align: top;">
+                                                          <tr style="padding: 0; text-align: left; vertical-align: top;" align="left">
+                                                              <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 26px; margin: 0; padding: 10px 30px 10px 60px; text-align: left; vertical-align: top; word-break: break-word;" align="left" valign="top">
+                                                                  <img src="https://daeseungtax.co.kr/static/assets/images/brand/Logo_SNS_new.jpg" style="-ms-interpolation-mode: bicubic; clear: both; display: block; float: left; width: 80px;height:80px; outline: none; text-decoration: none; width: auto;" align="left" />
+                                                              </td>
+                                                          </tr>
+                                                      </table>
+                                                  </td>
+                                                  <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 26px; margin: 0; min-width: 0px; padding: 5px 0 0 0; text-align: left; vertical-align: top; width: 480px; word-break: break-word;" align="left" valign="top">
+                                                      <table>
+                                                          <tr>
+                                                              <td style="font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size:12px; text-decoration:none; color: #77787B; hyphens: none; line-height: 26px; margin: 0; padding: 0 5px 0 0px; text-align: left; vertical-align: top; width: 100% !important; word-break: break-word;" align="left" valign="top">
+                                                                  업무담당자 : {{ admin_name }} 📞{{ admin_tel_no }}
+                                                              </td>
+                                                          </tr>
+                                                          <tr>
+                                                              <td style="font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size:12px; text-decoration:none; color: #77787B; hyphens: none; line-height: 26px; margin: 0; padding: 0 5px 0 0px; text-align: left; vertical-align: top; width: 100% !important; word-break: break-word;" align="left" valign="top">
+                                                                  책임세무사 : {{ TXT_DutyCTA }} 📱{{ TXT_DutyCTAHP }}
+                                                              </td>
+                                                          </tr>
+                                                          <tr>
+                                                            <td style="font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; 
+                                                                      font-size:12px; text-decoration:none; color: #77787B; 
+                                                                      hyphens: none; line-height: 26px; margin: 0; padding: 0 0px 0 0px; 
+                                                                      text-align: left; vertical-align: top; word-break: break-word;">
+                                                              {{ TXT_OfficeAddress }}
+                                                            </td>
+                                                        </tr>                                                          
+                                                      </table>
+                                                  </td>
+                                                  <td style="visibility: hidden; width: 0px;"></td>
+                                              </tr>
+                                          </table>
+                                      </td>
+                                  </tr>
+                                </table>
+
+                                
+                              
+                              <!-- 라인하단 공백 -->
+                              <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%;">
+                                  <tr style="padding: 0; text-align: left; vertical-align: top;">
+                                      <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 26px; margin: 0; padding: 0; position: relative; text-align: left; vertical-align: top; word-break: break-word;">
+                                          <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: 680px;">
+                                              <tr style="padding: 0; text-align: left; vertical-align: top;">
+                                                  <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 26px; margin: 0; padding: 0; text-align: left; vertical-align: top; word-break: break-word;">
+                                                      <table style="border-collapse: collapse; border-spacing: 0; padding: 0; text-align: left; vertical-align: top;">
+                                                          <tr style="padding: 0; text-align: left; vertical-align: top;">
+                                                              <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important; color: #333; font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size: 14px; font-weight: normal; hyphens: none; line-height: 26px; margin: 0; padding: 40px 0 0; text-align: left; vertical-align: top; word-break: break-word;"></td>
+                                                          </tr>
+                                                      </table>
+                                                  </td>
+                                                  <td style="visibility: hidden; width: 0px;"></td>
+                                              </tr>
+                                          </table>
+                                      </td>
+                                  </tr>
+                              </table>
+                            </td>
+                        </tr>
+                    </table>
+                </center>
+            </td>
+        </tr>
+    </table>
+    <img src='http://click.email.office.com/open.aspx?ffcb10-febd10797d60027e-fdfd1570756d027e70147671-fe9815707264017b71-ff631c7176-fe1713797c61007e701c76-fec61575756d037e&amp;d=40045' width='1' height='1' style='outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;width: auto;max-width: 100%;float: left;clear: both;display: block' />    
+</body>
+</html>

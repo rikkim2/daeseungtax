@@ -1,0 +1,763 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">계정별원장</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">재무제표</li>
+										<li class="breadcrumb-item">보조원장</li>
+										<li class="breadcrumb-item active" aria-current="page"><a href="javascript:void(0);">계정별원장</a></li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-lg-4 col-xl-3">
+									<div class="card mb-4">
+										<div class="card-header border-bottom d-flex flex-row-reverse">
+                
+
+                      <div class="btn-group">
+                        <button id="btn_selectedYear"  type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                           {{selectedYear}} 년<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li class="dropdown-plus-title">
+                            작업연도
+                            <b class="fa fa-angle-up" aria-hidden="true"></b>
+                          </li>
+													<div class="list-group">
+														{% for node in statementYears %}
+															<li class='list-group-item list-group-item-action'><a href='javascript:handleButtonClose({{node.work_yy}})' >{{node.work_yy}}년</a></li>
+														{% endfor %}
+													</div>
+                        </ul>
+                      </div>
+                      
+										</div>
+										<div class="card-body">
+                      <div class="panel-group1" id="accordionAcnt" role="tablist" aria-expanded="false"></div>
+										</div>
+                  </div>
+                  <div class="card bg-primary-transparent">
+										<div class="card-body upgrade-storage ">
+											<a href="javascript:void(0)">
+												<div class="upgrade-main text-center">
+                          <span class="demo-icon">
+                            <svg class="fe-spin text-primary" xmlns="http://www.w3.org/2000/svg"  style="width: 3rem;" viewBox="0 0 24 24"><path d="M11.5,7.9c-2.3,0-4,1.9-4,4.2s1.9,4,4.2,4c2.2,0,4-1.9,4-4.1c0,0,0-0.1,0-0.1C15.6,9.7,13.7,7.9,11.5,7.9z M14.6,12.1c0,1.7-1.5,3-3.2,3c-1.7,0-3-1.5-3-3.2c0-1.7,1.5-3,3.2-3C13.3,8.9,14.7,10.3,14.6,12.1C14.6,12,14.6,12.1,14.6,12.1z M20,13.1c-0.5-0.6-0.5-1.5,0-2.1l1.4-1.5c0.1-0.2,0.2-0.4,0.1-0.6l-2.1-3.7c-0.1-0.2-0.3-0.3-0.5-0.2l-2,0.4c-0.8,0.2-1.6-0.3-1.9-1.1l-0.6-1.9C14.2,2.1,14,2,13.8,2H9.5C9.3,2,9.1,2.1,9,2.3L8.4,4.3C8.1,5,7.3,5.5,6.5,5.3l-2-0.4C4.3,4.9,4.1,5,4,5.2L1.9,8.8C1.8,9,1.8,9.2,2,9.4l1.4,1.5c0.5,0.6,0.5,1.5,0,2.1L2,14.6c-0.1,0.2-0.2,0.4-0.1,0.6L4,18.8c0.1,0.2,0.3,0.3,0.5,0.2l2-0.4c0.8-0.2,1.6,0.3,1.9,1.1L9,21.7C9.1,21.9,9.3,22,9.5,22h4.2c0.2,0,0.4-0.1,0.5-0.3l0.6-1.9c0.3-0.8,1.1-1.2,1.9-1.1l2,0.4c0.2,0,0.4-0.1,0.5-0.2l2.1-3.7c0.1-0.2,0.1-0.4-0.1-0.6L20,13.1z M18.6,18l-1.6-0.3c-1.3-0.3-2.6,0.5-3,1.7L13.4,21H9.9l-0.5-1.6c-0.4-1.3-1.7-2-3-1.7L4.7,18l-1.8-3l1.1-1.3c0.9-1,0.9-2.5,0-3.5L2.9,9l1.8-3l1.6,0.3c1.3,0.3,2.6-0.5,3-1.7L9.9,3h3.5l0.5,1.6c0.4,1.3,1.7,2,3,1.7L18.6,6l1.8,3l-1.1,1.3c-0.9,1-0.9,2.5,0,3.5l1.1,1.3L18.6,18z"/></svg>
+                          </span>
+                          <h3 class="mb-1" id="uploadDate"></h3>
+													<span class="text-primary-lit mt-1">까지 회계처리 전표가 업로드 되었습니다. </span>
+												</div>
+											</a>
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-8 col-xl-9">
+									<div class="row">
+										<div class="col-xl-12 col-lg-12 col-md-12">
+											<div class="card custom-card overflow-hidden">
+												<div class="card-body p-3 ">
+													<div class="breadcrumb-main">
+														<nav aria-label="breadcrumb">
+															<ol class="breadcrumb mb-0" id="selectedYear">
+															</ol>
+														</nav>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- 파일리스트 -->
+
+									<div class="row">
+										<div class="col-xl-12 ">
+											<div class="card"  >
+												<div class="card-body h-100">
+                          <div class="d-flex flex-row justify-content-between " >
+                            <div style='width:55%;text-align:center;'>집계월</div>
+                            <div style='width:15%;text-align:center;'>차변</div>
+                            <div style='width:15%;text-align:center;'>대변</div>
+                            <div style='width:15%;text-align:center'>잔액</div>
+                            <div style='width:55px;'></div>
+                          </div>
+
+                          <!-- <div id="loadingAccordionLedgr" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                          </div> -->
+                          <div id="accordionLedgr" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                        </div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- End Row -->
+              <!-- 상세보기모달 -->
+              <div class="modal fade" id="summitModal">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo"> 
+          
+                    <div class="modal-header ">
+                      <div id="summitModalTitle"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    
+                    <div class="modal-body p-0 border-top-0" >
+                      <div class="card">
+                        <div class="row">
+                          <div id="moreDetailTable"></div>
+                        </div>
+                      </div>
+                      <!-- Tabs -->
+                      <div class="tabs-menu4 w-100">
+                        <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-1">
+                            연도별 거래내역
+                          </a>
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                            연도별 거래처계정원장
+                          </a>
+                        </nav>
+                      </div>
+                      <div class="tab-content w-100">
+                        <!-- 연도별 거래내역 -->
+                        <div class="tab-pane active task-files-tab" id="task-1">
+                          <div class="d-flex flex-row justify-content-between ">
+                            <div style='width:40%;text-align:center;'>거래연도</div>
+                            <div style='width:15%;text-align:right;margin-right:20px;'>기초</div>
+                            <div style='width:15%;text-align:right;margin-right:20px;'>차변</div>
+                            <div style='width:15%;text-align:right;margin-right:30px;'>대변</div>
+                            <div style='width:15%;text-align:right;margin-right:30px;'>잔액</div>
+                          </div>
+                          <div id="accordionTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                        </div>
+                        <div class="tab-pane  task-files-tab" id="task-2">
+                          <div class="d-flex flex-row justify-content-between ">
+                            <div style='width:40%;text-align:center;'>거래연도</div>
+                            <div style='width:20%;text-align:right;margin-right:20px;'>계정명</div>
+                            <div style='width:20%;text-align:right;margin-right:20px;'>차변</div>
+                            <div style='width:20%;text-align:right;margin-right:30px;'>대변</div>
+                          </div>
+                          <div id="accordionYearlyTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                        </div>
+                      </div>
+
+                      <!-- 채팅창 별도 모달로 -->
+                      <!-- <div class="card h-100" style="background-color:#acc1d2">
+                        <div class="pt-0 pb-0">
+                          <div class="main-content-body main-content-body-chat ">
+                            <div class="main-chat-header pt-3 d-block d-sm-flex">
+                              <div class="main-img-user online">
+                                {% if userProfile %}
+                                  <img src="{{ userProfile.image.url }}" alt="avatar">
+                                {% else %}
+                                  <img src="{% static 'assets/images/faces/blank.jpg' %}" alt="avatar">
+                                {% endif %}
+                              </div>
+                              <div class="main-chat-msg-name mt-2">
+                                <p class="mb-0">{{ memuser.biz_name }}</p>
+                                <span class="dot-label bg-success"></span><small class="me-3">online</small>
+                              </div>
+                              <nav class="nav">
+                                <div>
+                                  <div class="input-group">
+                                    <input type="text" class="form-control" placeholder="">
+                                    <button class="btn ripple btn-info input-group-text text-white border-0" type="button"><i class="fe fe-search"></i></button>
+                                  </div>
+                                </div>
+                              </nav>
+                            </div>
+                            <!-- main-chat-header 
+                            <div class="main-chat-body flex-2" id="ChatBody" style="max-height: calc(100vh - 600px); overflow-x: hidden; overflow-y: auto;">
+                              <div class="content-inner">
+                                <label class="main-chat-time"><span><i class="fe fe-calendar"></i>2022년 12월 8일(목요일)</span></label>
+                                <div class="media flex-row-reverse chat-right">
+                                  <div class="main-img-user online"><img alt="avatar" src="{% static 'assets/images/brand/Logo_SNS_only.jpg' %}"></div>
+                                  <div class="media-body">
+                                    <div class="main-msg-wrapper">
+                                        안녕하세요 세무법인대승입니다
+                                    </div>
+                                    <div class="main-msg-wrapper">
+                                        문의사항을 남겨주시기 바랍니다
+                                    </div>
+                                    <div>
+                                      <span>9:48 am</span> <a href="javascript:void(0)"><i class="icon ion-android-more-vertical"></i></a>
+                                    </div>
+                                  </div>
+                                </div> -->
+                                <!-- <div class="media chat-left">
+                                  <div class="main-img-user online"><img src="{{ userProfile.image.url }}" alt="avatar"></div>
+                                  <div class="media-body">
+                                    <div class="main-msg-wrapper">
+                                      안녕하세요 계정별원장 거래내역 문의드려요
+                                    </div>
+                                    <div>
+                                      <span>9:32 am</span> <a href="javascript:void(0)"><i class="icon ion-android-more-vertical"></i></a>
+                                    </div>
+                                  </div>
+                                </div> -->
+                              <!-- </div>
+                            </div>
+                            <div class="main-chat-footer pt-5 pb-5">
+                              <input class="form-control" placeholder="아직은 준비중입니다..." type="text">
+                              <a class="nav-link" href="javascript:void(0)"><i class="fe fe-paperclip"></i></a>
+                              <button type="button" class="btn btn-icon  btn-info brround"><i class="fa fa-paper-plane-o"></i></button>
+                              <nav class="nav">
+                              </nav>
+                            </div>
+                          </div>
+                        </div>
+                      </div> -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+													
+        {% endblock %}
+
+        {% block scripts %}
+
+        <script>
+
+				// var kejungList = "{{kejungList|escapejs}}";
+        // kejungList = JSON.parse(kejungList.replaceAll("'","\""));
+				var biz_name = "{{ memuser.biz_name }}";
+				var selectedYear,selectedAcntNm,selectedAcntCd="";
+        // if(selectedAcntCd=="" & kejungList.length>0){
+        //   selectedAcntCd = kejungList[0].acnt_cd;
+        //   selectedAcntNm = kejungList[0].acnt_nm;
+        // }
+				$(document).ready(function(){
+          selectedYear = "{{selectedYear}}"
+					treeLoad(selectedYear);
+          // document.getElementById('loadingAccordionLedgr').style.display = 'none';  
+          if(selectedAcntCd!=""){
+            setSelectedFolder("{{selectedYear}}년  >> "+ selectedAcntNm);
+            gridLoad( "{{selectedYear}}",selectedAcntCd,selectedAcntNm)
+          }
+					
+				});
+
+// 로딩 마스크를 표시하는 함수
+const showLoading = (newAcntNm) => {
+  // 로딩 마스크가 이미 존재한다면, 새 계정명을 업데이트
+  if ($("#loading-mask").length != 0) {
+    $("#loading-mask div div:nth-child(2)").text(`${newAcntNm} 로딩 중...`);
+    $("#loading-mask").show();
+  } else {
+    // 로딩 마스크가 없으면 추가
+    $('body').append(`
+    <div id="loading-mask" style="position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0, 0, 0, 0.5); z-index: 9999; display:flex; align-items:center; justify-content:center;">
+      <div style="color:white; font-size:24px; text-align:center;">
+        <div class="spinner-border text-light" role="status" style="margin-bottom: 10px;">
+          <span class="sr-only">Loading...</span>
+        </div>
+        <div>${selectedAcntNm} 로딩 중...</div>
+      </div>
+    </div>
+    `);
+  }
+};
+
+// 로딩 마스크를 숨기는 함수
+const hideLoading = () => {
+  $("#loading-mask").hide(); // 로딩 마스크 숨기기
+};
+
+// treeLoad 함수
+const treeLoad = async (selYear) => {
+  return new Promise((resolve, reject) => {
+    try {
+      // 로딩 마스크 표시
+      showLoading("");
+
+      // 우측 내용 지우기
+      $('#accordionLedgr').empty();
+      var ledgrData = [];
+
+      $.ajax({
+        url: "{% url 'getKejungList' %}",
+        data: {
+          selYear: selYear
+        },
+        dataType: "Json",
+        success: async function (data) {
+          var kejungList = data.rows;
+
+          if (kejungList.length > 0) {
+            selectedAcntCd = kejungList[0].acnt_cd;
+            selectedAcntNm = kejungList[0].acnt_nm;
+            setSelectedFolder(`${selYear}년  >> ${selectedAcntNm}`);
+
+            // 여기서 gridLoad에 올바른 selectedAcntCd 전달
+            await gridLoad(selYear, selectedAcntCd, selectedAcntNm);
+            const sectors = [
+              { label: "재무상태표 - 자산", ul: document.createElement('ul'), min: 0, max: 251 },
+              { label: "재무상태표 - 부채 및 자본", ul: document.createElement('ul'), min: 251, max: 381 },
+              { label: "손익계산서", ul: document.createElement('ul'), min: 381, max: 501 },
+              { label: "제조원가명세서 - 제조원가", ul: document.createElement('ul'), min: 501, max: 601 },
+              { label: "제조원가명세서 - 도급원가", ul: document.createElement('ul'), min: 601, max: 651 },
+              { label: "제조원가명세서 - 보관원가", ul: document.createElement('ul'), min: 651, max: 701 },
+              { label: "제조원가명세서 - 분양원가", ul: document.createElement('ul'), min: 701, max: 751 },
+              { label: "제조원가명세서 - 운송원가", ul: document.createElement('ul'), min: 751, max: 801 }
+            ];
+
+            // 각 섹터에 해당하는 항목을 UL에 추가
+            for (var i = 0; i < kejungList.length; i++) {
+              const listItem = createListItem(kejungList[i], selectedYear);
+              for (var s = 0; s < sectors.length; s++) {
+                if (kejungList[i].acnt_cd >= sectors[s].min && kejungList[i].acnt_cd < sectors[s].max) {
+                  sectors[s].ul.appendChild(listItem);
+                  break;
+                }
+              }
+            }
+
+            // 섹터별로 카드 및 아코디언 구성
+            let htmlContent = '';
+            for (var s = 0; s < sectors.length; s++) {
+              if (sectors[s].ul.children.length > 0) {
+                htmlContent += `
+                  <div class="card overflow-hidden mb-2 border-0" id="collapseHead${s}">
+                    <a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" href="#collapse${s}" aria-expanded="false">${sectors[s].label}</a>
+                    <div class="panel-collapse collapse ${s === 0 ? 'show' : ''}" id="collapse${s}" role="tabpanel" data-bs-parent="#accordionAcnt">
+                      <ul class="nav1 nav-column flex-column br-7" id="kejungList${s + 1}">
+                        ${sectors[s].ul.innerHTML}
+                      </ul>
+                    </div>
+                  </div>`;
+              }
+            }
+
+            // 한 번에 DOM에 추가
+            document.getElementById('accordionAcnt').innerHTML = htmlContent;
+
+            // 로딩 마스크 숨기기
+            hideLoading();
+
+            // 선택된 계정코드 리턴
+            resolve(selectedAcntCd);
+          } else {
+            // 계정 리스트가 없을 때
+            document.getElementById('accordionAcnt').innerHTML = '<div>데이터가 없습니다.</div>';
+            hideLoading();
+            reject('No data found');
+          }
+        },
+        error: function (error) {
+          console.error('Error during treeLoad:', error);
+          hideLoading();
+          reject(error);
+        }
+      });
+    } catch (error) {
+      console.error('Error during treeLoad:', error);
+      hideLoading();
+      reject(error);
+    }
+  });
+};
+
+const gridLoad = async (selYear, selAcntcd, selAcntnm) => {
+  try {
+    // 좌측 컨트롤 초기화
+    $('#accordionLedgr').empty();
+
+    const response = await $.ajax({
+      url: "{% url 'setLedgrGrid' %}",
+      data: {
+        selYear: selYear,
+        selAcntcd: selAcntcd
+      },
+      dataType: "Json",
+      beforeSend: function () {
+        // 로딩 이미지 설정
+        showLoading(selAcntnm);  // 선택된 계정과목명 표시
+      },
+      complete: function () {
+        // 로딩 이미지 숨김
+        hideLoading();
+      }
+    });
+
+    // 연도 및 데이터를 표시할 준비
+    $('[id="uploadDate"]').html(`${selYear}년 ${response.rowDuration.thisEndDate}`);
+    const ledgrData = response.rows;
+    
+    let htmlContent = ''; // DOM 조작 최소화를 위한 변수
+
+    for (let i = 0; i < ledgrData.length; i++) {
+      if (ledgrData[i].acnt_cd == selAcntcd) {
+        const startNum = i === 0 ? 0 : ledgrData[i - 1].TranAmt_Sum;
+
+        const detailHtml = await ledgrDetail(selYear, ledgrData[i].Real_MM, selAcntcd, startNum);
+
+        htmlContent += `
+          <div class="mt-2" id="headerAccord${i}">
+            <div class="accor" id="headingOne${i}">
+              <h4 class="m-0">
+                <a href="#detailAccord${i}" class="active" data-bs-toggle="collapse" data-bs-controls="detailAccord${i}" aria-expanded="false">
+                  <div class='d-flex flex-row justify-content-between'>
+                    <div style='width:55%; text-align:center;'>${ledgrData[i].Work_MM}</div>
+                    <div style='width:15%; text-align:right;'>${numberWithCommas(ledgrData[i].TranAmt_Cr)}</div>
+                    <div style='width:15%; text-align:right;'>${numberWithCommas(ledgrData[i].TranAmt_Dr)}</div>
+                    <div style='width:15%; text-align:right; ${ledgrData[i].TranAmt_Sum < 0 ? "color:red;" : ""}'>${numberWithCommas(ledgrData[i].TranAmt_Sum)}</div>
+                    <div style='width:55px; text-align:right;'></div>
+                  </div>
+                </a>
+              </h4>
+            </div>
+            <div class="collapse mb-2" id="detailAccord${i}" aria-labelledby="headingOne${i}" data-bs-parent="#accordionLedgr">
+              <div class="border p-3 br-bottom-radius-5">${detailHtml}</div>
+            </div>
+          </div>`;
+      }
+    }
+
+    // 최종적으로 한 번에 DOM에 삽입
+    document.getElementById('accordionLedgr').innerHTML = htmlContent;
+
+    // 선택된 계정 UI 업데이트
+    const previousSelected = document.getElementById(selectedAcntCd);
+    if (previousSelected) {
+      previousSelected.classList.remove("active");  // 기존 선택 계정에서 'active' 클래스 제거
+    }
+
+    const currentSelected = document.getElementById(selAcntcd);
+    if (currentSelected) {
+      currentSelected.classList.add("active");  // 새로 선택된 계정에 'active' 클래스 추가
+    }
+
+    selectedAcntCd = selAcntcd;
+    selectedAcntNm = selAcntnm;
+    setSelectedFolder(`${selYear}년 >> ${selAcntnm}`);
+
+  } catch (error) {
+    console.error('Error during gridLoad:', error);
+  }
+};
+
+
+// 선택된 폴더(경로) 설정 함수
+const setSelectedFolder = (strFolder) => {
+  var innerHtml = "";
+  var tmpArr = strFolder.split(">>");
+  for (var i = 0; i < tmpArr.length; i++) {
+    if (i < (tmpArr.length - 1)) {
+      innerHtml += "<li class='breadcrumb-item'>" + tmpArr[i] + "</li>";
+    } else {
+      innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>" + tmpArr[i] + "</a></li>";
+    }
+  }
+  $('[id="selectedYear"]').html(innerHtml);
+};
+
+// 상세 정보 로딩을 위한 함수
+function ledgrDetail(selYear2, selMM, selAcntcd, startNum) {
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url: "{% url 'getLedgrDetail' %}",
+      data: {
+        selYear2: selYear2,
+        selMonth: selMM,
+        selAcntcd: selAcntcd,
+        startNum: startNum
+      },
+      dataType: "Json",
+      success: function (data) {
+        let tmpHTML = "<table class='table table-sm mb-0'><thead><tr><th>날짜</th><th>적요(품목 등)</th><th style='text-align:center'>거래처</th><th style='text-align:center'>차변</th><th style='text-align:center'>대변</th><th style='text-align:center'>잔액</th><th style='text-align:center'>상세</th></tr></thead><tbody>";
+
+        data.rows.forEach(row => {
+          tmpHTML += `
+            <tr>
+              <th style='text-align:center;width:55px;'>${row.Tran_Dt}</th>
+              <td>${row.Remk}</td>
+              <td style='text-align:center;width:85px;'>${row.Trader_Name}</td>
+              <td style='text-align:right;width:15%;'>${numberWithCommas(row.TranAmt_Cr)}</td>
+              <td style='text-align:right;width:15%;'>${numberWithCommas(row.TranAmt_Dr)}</td>
+              <td style='text-align:right;width:15%; ${row.TranAmt_Sum < 0 ? "color:red;" : ""}'>${numberWithCommas(row.TranAmt_Sum)}</td>
+              <td style='text-align:right;width:55px;'>
+                <a href="javascript:summitModal('${selYear2}', '${row.Trader_Name.replace(/ /g, "")}', '${row.Trader_Code}', '${row.Slip_No}', '${row.Tran_Dt}');" class='btn btn-warning-light btn-square br-50' data-bs-toggle='tooltip' title='상세보기'><i class='zmdi zmdi-dns fs-16'></i></a>
+              </td>
+            </tr>`;
+        });
+
+        tmpHTML += "</tbody></table>";
+        resolve(tmpHTML);
+      },
+      error: function (request, status, error) {
+        console.error('Error during ledgrDetail:', error);
+        reject(error);
+      }
+    });
+  });
+}
+
+// 계정 선택 후 상세 정보 모달 창 열기
+const summitModal = async (work_yy, Trader_Name, Trader_Code, slip_no, Tran_Dt) => {
+  try {
+    // 회계 처리
+    await setLedgrMoreDetail(work_yy, slip_no, Tran_Dt);
+
+    // 연도별 거래처원장
+    await setYearlyTradeDetail(work_yy, selectedAcntCd, Trader_Code);
+
+    // 연도별 거래처계정원장
+    await setYearlyTradeLedgr(Trader_Code);
+
+    // 모달 타이틀 설정
+    let tmpHead = "<nav aria-label='breadcrumb'>";
+    tmpHead += "<ol class='breadcrumb breadcrumb-style'>";
+    tmpHead += "<li class='breadcrumb-item'>" + selectedYear + "년</li>";
+    tmpHead += "<li class='breadcrumb-item'>계정별원장 상세보기</li>";
+    tmpHead += "<li class='breadcrumb-item active'>" + Trader_Name + "</li>";
+    tmpHead += "</ol></nav>";
+    $('[id="summitModalTitle"]').html(tmpHead);
+
+    // 모달 창 열기
+    $("#summitModal").modal('show');
+  } catch (error) {
+    console.error('Error during summitModal:', error);
+  }
+};
+
+// 연도별 거래내역 처리
+const setLedgrMoreDetail = async (work_yy, slip_no, Tran_Dt) => {
+  try {
+    const response = await $.ajax({
+      url: "{% url 'getLedgrMoreDetail' %}",
+      data: {
+        selYear2: work_yy,
+        slip_no: slip_no,
+        Tran_Dt: Tran_Dt
+      },
+      dataType: "Json"
+    });
+
+    let tmpHTML = "<table class='table table-bordered table-sm mb-0 '>";
+    tmpHTML += "<thead><tr><th>날짜</th><th>계정명</th><th style='text-align:center'>거래처</th><th style='text-align:center'>차변</th><th style='text-align:center'>대변</th><th style='text-align:center'>적요</th><th style='text-align:center'>전표</th></tr></thead><tbody>";
+
+    response.rows.forEach(row => {
+      tmpHTML += `<tr>
+        <th style='text-align:center;width:55px'>${row.Tran_Dt}</th>
+        <td style='text-align:left'>${row.Acnt_Nm}</td>
+        <td style='text-align:left'>${row.Trader_Name}</td>
+        <td style='text-align:right;width:15%'>${numberWithCommas(row.TranAmt_Cr)}</td>
+        <td style='text-align:right;width:15%'>${numberWithCommas(row.TranAmt_Dr)}</td>
+        <td style='text-align:left;width:30%'>${row.Remk}</td>
+        <td style='text-align:center;width:65px;'>${row.Tran_Stat.substr(0, 4)}</td>
+      </tr>`;
+    });
+
+    tmpHTML += "</tbody></table>";
+    $('[id="moreDetailTable"]').html(tmpHTML);
+  } catch (error) {
+    console.error('Error during setLedgrMoreDetail:', error);
+  }
+};
+
+				function createListItem(item, selectedYear) {
+          const li = document.createElement("li");
+          li.setAttribute('id', "li" + item.acnt_cd);
+          li.setAttribute('class', "nav-item1 mt-0");
+
+          const anchor = document.createElement('a');
+          anchor.href = `javascript:gridLoad('${selectedYear}', '${item.acnt_cd}', '${item.acnt_nm}')`;
+          anchor.setAttribute('class', `nav-link thumb ${item.acnt_cd == selectedAcntCd ? 'active' : ''}`);
+          anchor.setAttribute('id', item.acnt_cd);
+
+          anchor.innerText = item.acnt_nm;
+          li.appendChild(anchor);
+
+          return li;
+        }
+
+        const setYearlyTradeDetail = async (work_yy,selectedAcntCd,Trader_Code) => {
+          $('#accordionTrader').empty();
+          var gridData = [];
+          $.ajax({
+						url:"{% url 'getYearlyTradeDetail' %}",
+            data:{
+              selYear:work_yy,
+              selAcntcd:selectedAcntCd,
+              Trader_Code:Trader_Code
+            },
+						dataType:"Json",
+						success: async function(data){
+              gridData=data.rows;
+              for(var i=0;i<gridData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","popheaderAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","popheadingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:40%;text-align:center'>"+gridData[i].work_yy+" 년 거래내역</div>"
+								tmpHtml2 += "<div style='width:15%;text-align:right;"+(gridData[i].Start_Amt<0?"color:red":"")+"'>"+numberWithCommas(gridData[i].Start_Amt)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Cr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Dr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right;"+(gridData[i].End_Amt<0?"color:red":"")+"'>"+numberWithCommas(gridData[i].End_Amt)+"</div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                // anchorHead.innerText = gridData[i].CompanyName + numberWithCommas(gridData[i].TEnd);
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","popdetailAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#popdetailAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","popdetailAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionTrader")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+                divBody2.innerHTML = await ledgrKeraeDetail(gridData[i].work_yy,selectedAcntCd,Trader_Code)
+                divBody.appendChild(divBody2)
+                document.getElementById('accordionTrader').appendChild(divHeader);
+                document.getElementById('accordionTrader').appendChild(divBody);
+              }
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+        }
+        function ledgrKeraeDetail(selYear,selAcntcd,trdCd){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getTraderDetailGrid' %}",
+              data:{
+                selYear:selYear,
+                selAcntcd:selAcntcd,
+                Trd_Cd:trdCd
+              },
+              dataType:"Json",
+              //async:false,
+              success:function(data){
+                tmpHTML = "<table class='table table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th><th>적요</th><th style='text-align:right'>기초</th>"
+                tmpHTML +=  "<th style='text-align:right'>차변</th>"
+                tmpHTML +=  "<th style='text-align:right'>대변</th>"
+                tmpHTML +=  "<th style='text-align:right'>잔액</th></tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr><th scope='row'>"+data.rows[j].tran_dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].remk+"</td>"
+                  tmpHTML += "  <td style='text-align:right;"+(data.rows[j].TStart<0?"color:red":"")+"'>"+numberWithCommas(data.rows[j].TStart)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;"+(data.rows[j].tranAmt_Sum<0?"color:red":"")+"'>"+numberWithCommas(data.rows[j].tranAmt_Sum)+"</td></tr>"
+
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+				const setYearlyTradeLedgr = async (Trader_Code) => {
+          $('#accordionYearlyTrader').empty();
+          var gridData = [];
+          $.ajax({
+						url:"{% url 'getYearlyTradeLedgr' %}",
+            data:{
+              Trader_Code:Trader_Code
+            },
+						dataType:"Json",
+						success: async function(data){
+              gridData=data.rows;
+              for(var i=0;i<gridData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","popheaderAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","popheadingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:40%;text-align:center'>"+ gridData[i].work_yy+" 년 거래계정</div>"
+								tmpHtml2 += "<div style='width:15%;text-align:center;'>"+ gridData[i].acnt_nm +"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Cr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Dr)+"</div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","yearlyDetailAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#yearlyDetailAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","yearlyDetailAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionYearlyTrader")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+                divBody2.innerHTML = await ledgrKeraeDetail(gridData[i].work_yy,gridData[i].acnt_cd,Trader_Code)
+                divBody.appendChild(divBody2)
+                document.getElementById('accordionYearlyTrader').appendChild(divHeader);
+                document.getElementById('accordionYearlyTrader').appendChild(divBody);
+              }
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+        }
+        const handleButtonClose = async (ev) => {
+					const btnElement  = document.getElementById('btn_selectedYear');
+  				btnElement.innerHTML = ev+" 년";
+					selectedYear = ev;
+					await setSelectedYear(ev);
+					setSelectedFolder(selectedYear+" 년" + " >> " + selectedAcntNm)
+				};  
+
+				const setSelectedYear = async(selYear) => {
+          selectedYear = selYear;
+          await treeLoad(selYear);	
+          if(selectedAcntCd!=""){
+            gridLoad(selYear,selectedAcntCd,selectedAcntNm);
+          }
+				}
+        </script>
+
+        {% endblock %}
+

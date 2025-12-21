@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 GPT 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        textarea { width: 100%; height: 100px; margin-bottom: 1rem; }
+        button { padding: 0.5rem 1rem; font-size: 1rem; }
+        .section { margin-top: 2rem; }
+        pre { background: #eaf4ff; padding: 1rem; border-radius: 5px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h2>🔧 관리자용 GPT 매뉴얼 테스트</h2>
+
+    <textarea id="msg" placeholder="문서 기반 질문을 테스트하세요. 예: '퇴직금 정산 방법'"></textarea><br>
+    <button onclick="askGPT()">전송</button>
+
+    <div class="section">
+        <h3>📋 GPT 응답 결과</h3>
+        <pre id="answer">-</pre>
+    </div>
+
+    <script>
+        async function askGPT() {
+            const msg = document.getElementById("msg").value;
+            const res = await fetch("/gpt_admin_query/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: msg })
+            });
+            const data = await res.json();
+            document.getElementById("answer").innerText = data.reply;
+        }
+    </script>
+</body>
+</html>

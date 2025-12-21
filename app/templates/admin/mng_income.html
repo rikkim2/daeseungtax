@@ -1,0 +1,394 @@
+{% load static %}
+
+<style>
+  .icon-refresh { color: white; }
+  .modal-xxl { min-width: 1200px; max-width: 1400px; }
+
+  /* ✅ Bootstrap과 ExtJS 충돌 방지 */
+  .ext-grid-wrapper .x-table { width: auto !important; margin: 0 !important; }
+  .ext-grid-wrapper { width: 100%; }
+
+  /* ✅ 첨부파일 느낌의 가벼운 카드 UI */
+  .income-head {
+    display:flex; flex-wrap:wrap; gap:12px; align-items:center;
+    margin: 10px 0 12px;
+  }
+  .income-card {
+    background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+    padding:12px 14px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .income-card .label { font-size:12px; color:#64748b; margin-bottom:4px; font-weight:600; }
+  .income-card .value { font-size:18px; color:#0f172a; font-weight:800; }
+</style>
+
+<div class="ext-grid-wrapper"></div>
+
+<script>
+(function() {
+  // ✅ 탭 내 AJAX 로드 시 “비어있는 마지막 래퍼”에만 그리드 렌더
+  var renderTarget = $('.ext-grid-wrapper').filter(function() {
+    return $(this).children().length === 0;
+  }).last()[0];
+
+  if (!renderTarget) {
+    renderTarget = $('div.tab-pane.active .ext-grid-wrapper')
+      .filter(function(){ return $(this).children().length === 0; })
+      .last()[0];
+  }
+  if (!renderTarget) {
+    console.warn('[mng_income] render target not found');
+    return;
+  }
+
+  var adminBizLevel = '{{ admin_biz_level }}'.trim();
+  var isSA = ('{{ admin_grade }}' === 'SA');
+  var ADID = '{{ ADID }}'.trim();
+
+  var yearOptions = JSON.parse('{{ year_options|safe|escapejs }}');
+  var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+  var work_YY = parseInt('{{ work_YY }}', 10) || (new Date().getFullYear());
+
+  function comma(n){
+    n = (n==null) ? 0 : n;
+    return (Number(n)||0).toLocaleString('ko-KR');
+  }
+  function setSummary(beforefee, afterfee){
+
+  }
+
+  // ✅ 공통 저장 함수
+  function saveField(seq_no, field, val) {
+    Ext.Ajax.request({
+      url: "{% url 'ajax_income_update' %}",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      jsonData: {
+        seq_no: seq_no,
+        work_YY: work_YY,
+        field: field,
+        val: val
+      },
+      success: function(resp){
+        var json = {};
+        try { json = Ext.decode(resp.responseText); } catch(e){}
+        if (!json.ok) {
+          Ext.Msg.alert('저장 실패', (json.msg || ''));
+        }
+      },
+      failure: function(){
+        Ext.Msg.alert('저장 실패', '서버 오류');
+      }
+    });
+  }
+
+  Ext.onReady(function(){
+    Ext.QuickTips.init();
+
+    Ext.define('IncomeRow', {
+      extend: 'Ext.data.Model',
+      fields: [
+        {name: 'YN_0'},
+        {name: 'seq_no'},
+        {name: 'biz_no'},
+        {name: 'biz_name', type: 'string'},
+        {name: 'ceo_name', type: 'string'},
+        {name: 'hometaxAgree', type: 'bool'},
+        {name: 'YN_1', type: 'number'},
+        {name: 'YN_2', type: 'number'},
+        {name: 'YN_3', type: 'number'},
+        {name: 'YN_4', type: 'number'},
+        {name: 'YN_5', type: 'number'},
+        {name: 'is1pdf', type: 'string'},
+        {name: 'MailGrade', type: 'string'},
+        // SA 여부에 따라 원본처럼 타입을 바꾸고 싶다면 여기서 분기 가능
+        {name: 'YN_6', type: isSA ? 'bool' : 'string'},
+        {name: 'YN_8', type: 'number'},
+        {name: 'YN_7', type: isSA ? 'bool' : 'string'},
+
+        {name: 'YN_10', type: 'date', dateFormat: 'Y-m-d'},
+        {name: 'YN_11', type: 'bool'},
+        {name: 'YN_12', type: 'date', dateFormat: 'Y-m-d'},
+        {name: 'YN_13', type: 'bool'},
+        {name: 'YN_14', type: 'bool'},
+        {name: 'YN_15', type: 'bool'},
+        {name: 'YN_9', type: 'string'},
+        {name: 'isIssue', type: 'bool'},
+        {name: 'userID', type: 'string'},
+        {name: 'bf_sale', type: 'number'},
+        {name: 'bf_cost', type: 'number'},
+        {name: 'bf_reve', type: 'number'},
+        {name: 'bf_fee', type: 'number'},
+        {name: 'admin_id', type: 'string'}
+      ]
+    });
+
+    var store = Ext.create('Ext.data.Store', {
+      model: 'IncomeRow',
+      autoLoad: true,
+      remoteSort: false,
+      sorters: [{ property:'biz_name', direction:'ASC' }],
+      proxy: {
+        type: 'ajax',
+        url: "{% url 'api_income_list' %}",
+        reader: { type:'json', root:'rows' },
+        extraParams: {
+          work_YY: work_YY,
+          ADID: ADID,
+          search_text: ''
+        }
+      },
+      listeners: {
+        load: function(st, recs, ok){
+          var raw = st.getProxy().getReader().rawData || {};
+          if (raw && raw.ok) setSummary(raw.beforefee||0, raw.afterfee||0);
+        }
+      }
+    });
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+        edit: function(editor, e){
+          // 숫자/문자 셀 수정 저장
+          saveField(e.record.get('seq_no'), e.field, e.value);
+
+          // 수수료(Y N_8) 변경 시 요약 다시 계산하려면: 서버에서 재조회가 깔끔
+          if (e.field === 'YN_8') store.load();
+        }
+      }
+    });
+
+    var checkboxRender = function(value){
+      return "<input type='checkbox' " + (value ? "checked='checked'" : "") + ">";
+    };
+
+    function formatDate(v){
+      return v ? Ext.Date.format(v, 'Y-m-d') : '';
+    }
+
+    function renderIssue(v){
+      return v ? "<img src='/script/ext411/examples/shared/icons/fam/accept.gif'/>" : "";
+    }
+
+    // ✅ 상단 툴바(연도/담당자 변경 즉시 반영 + 검색 Enter)
+    var yearCombo = Ext.create('Ext.form.field.ComboBox', {
+      width: 110,
+      editable: false,
+      store: Ext.create('Ext.data.Store', {
+        fields:['yy'],
+        data: yearOptions.map(function(y){ return {yy:y}; })
+      }),
+      displayField: 'yy',
+      valueField: 'yy',
+      value: work_YY,
+      listeners: {
+        select: function(cb){
+          work_YY = parseInt(cb.getValue(),10);
+          store.getProxy().extraParams.work_YY = work_YY;
+          store.load();
+        }
+      }
+    });
+
+    var adidCombo = Ext.create('Ext.form.field.ComboBox', {
+      width: 140,
+      editable: false,
+      store: Ext.create('Ext.data.Store', {
+        fields:['id'],
+        data: [{id:'전체'}].concat(arrADID.filter(function(x){return x!=='전체';}).map(function(x){return {id:x};}))
+      }),
+      displayField: 'id',
+      valueField: 'id',
+      value: (ADID || '전체'),
+      listeners: {
+        select: function(cb){
+          var v = cb.getValue();
+          store.getProxy().extraParams.ADID = (v === '전체') ? '전체' : v;
+          store.load();
+        }
+      }
+    });
+
+    var searchField = Ext.create('Ext.form.field.Text', {
+      width: 220,
+      emptyText: '상호/사업자번호/대표자명 (Enter)',
+      enableKeyEvents: true,
+      listeners: {
+        keydown: function(f, e){
+          if (e.getKey() === e.ENTER) {
+            store.getProxy().extraParams.search_text = f.getValue() || '';
+            store.load();
+          }
+        }
+      }
+    });
+
+    var grid = Ext.create('Ext.grid.Panel', {
+      store: store,
+      columnLines: true,
+      plugins: [cellEditing],
+      selModel: { selType: 'cellmodel' },
+      renderTo: renderTarget,
+      width: '100%',
+      height: Math.max(window.innerHeight - 220, 420),
+      title: '종합소득세 신고관리',
+      frame: false,
+      dockedItems: [{
+        dock: 'top',
+        xtype: 'toolbar',
+        items: [
+          {xtype:'tbtext', text:'작업연도'}, yearCombo,
+          '-', {xtype:'tbtext', text:'담당자'}, adidCombo,
+          '-', {xtype:'tbtext', text:'검색'}, searchField,
+          '->',
+          {
+            text: '새로고침',
+            iconCls: 'icon-refresh',
+            handler: function(){ store.load(); }
+          }
+        ]
+      }],
+      columns: [
+        { xtype:'rownumberer', width:30, sortable:false },
+        { header:'', dataIndex:'YN_0', width:0 },
+        { header:'SEQ', dataIndex:'seq_no', width:50 },
+        { header:'biz_no', dataIndex:'biz_no', width:0 },
+
+        { id:'biz_name', header:'<center>업체명</center>', dataIndex:'biz_name', width:160 },
+        { id:'ceo_name', header:'<center>이름</center>', dataIndex:'ceo_name', width:70 },
+
+        {
+          header:'<center>수임<br>동의</center>',
+          dataIndex:'hometaxAgree',
+          xtype:'checkcolumn',
+          renderer: checkboxRender,
+          width:45,
+          listeners: {
+            checkchange: function(col, rowIndex, checked){
+              var rec = store.getAt(rowIndex);
+              saveField(rec.get('seq_no'), 'hometaxAgree', checked);
+            }
+          }
+        },
+
+        { header:'<center>수입금액</center>', dataIndex:'YN_1', width:90, xtype:'numbercolumn', align:'right', format:'0,000', editor:{allowBlank:false} },
+        { header:'<center>경비율</center>', dataIndex:'YN_2', width:70, xtype:'numbercolumn', align:'right', format:'0,000.00%', editor:{allowBlank:false} },
+        { header:'<center>당기순손익</center>', dataIndex:'YN_3', width:90, xtype:'numbercolumn', align:'right', format:'0,000', editor:{allowBlank:false} },
+        { header:'<center>중간예납<br><b>(신고결과)</b></center>', dataIndex:'YN_4', width:95, xtype:'numbercolumn', align:'right', format:'0,000', editor:{allowBlank:false} },
+        { header:'<center>소득세등<br>(문자발송용)</center>', dataIndex:'YN_5', width:95, xtype:'numbercolumn', align:'right', format:'0,000', editor:{allowBlank:false} },
+
+        { header:'<center>신고<br>파일</center>', dataIndex:'is1pdf', width:45, align:'center' },
+        { header:'<center>메일<br>등급</center>', dataIndex:'MailGrade', width:70, align:'center' },
+
+        // ✅ SA면 체크컬럼, 아니면 표시만
+        (isSA ? {
+          header:'<center>결재</center>', dataIndex:'YN_6', xtype:'checkcolumn', renderer:checkboxRender, width:45,
+          listeners: { checkchange: function(col, rowIndex, checked){
+            var rec = store.getAt(rowIndex);
+            saveField(rec.get('seq_no'), 'YN_6', checked);
+          }}
+        } : {
+          header:'<center>결재</center>', dataIndex:'YN_6', width:45
+        }),
+
+        { header:'<center>수수료</center>', dataIndex:'YN_8', width:80, xtype:'numbercolumn', align:'right', format:'0,000', editor:{allowBlank:false} },
+
+        (isSA ? {
+          header:'<center>수금</center>', dataIndex:'YN_7', xtype:'checkcolumn', renderer:checkboxRender, width:45,
+          listeners: { checkchange: function(col, rowIndex, checked){
+            var rec = store.getAt(rowIndex);
+            saveField(rec.get('seq_no'), 'YN_7', checked);
+
+            // 체크 시 수금일 자동 입력(원본 로직 유지)
+            if (checked) {
+              var today = Ext.Date.format(new Date(), 'Y-m-d');
+              rec.set('YN_10', Ext.Date.parse(today,'Y-m-d'));
+              saveField(rec.get('seq_no'), 'YN_10', today);
+            } else {
+              rec.set('YN_10', null);
+              saveField(rec.get('seq_no'), 'YN_10', '');
+            }
+            store.load(); // afterfee 재계산
+          }}
+        } : {
+          header:'<center>수금</center>', dataIndex:'YN_7', width:45
+        }),
+
+        { header:'<center>수금일</center>', dataIndex:'YN_10', width:80, renderer: formatDate,
+          editor:{ xtype:'datefield', format:'Y-m-d', allowBlank:true },
+          listeners: {}
+        },
+
+        {
+          text:'세금계산서',
+          columns:[
+            { header:'<center>발행</center>', dataIndex:'YN_11', width:50, xtype:'checkcolumn', renderer:checkboxRender, align:'center',
+              listeners:{ checkchange:function(col,rowIndex,checked){
+                var rec = store.getAt(rowIndex);
+                saveField(rec.get('seq_no'),'YN_11',checked);
+
+                if (checked) {
+                  var today = Ext.Date.format(new Date(),'Y-m-d');
+                  rec.set('YN_12', Ext.Date.parse(today,'Y-m-d'));
+                  saveField(rec.get('seq_no'),'YN_12',today);
+                } else {
+                  rec.set('YN_12', null);
+                  saveField(rec.get('seq_no'),'YN_12','');
+                }
+              }}
+            },
+            { header:'<center>발행일</center>', dataIndex:'YN_12', width:80, renderer: formatDate,
+              editor:{ xtype:'datefield', format:'Y-m-d', allowBlank:true }
+            }
+          ]
+        },
+
+        {
+          text:'제본/발송',
+          columns:[
+            { header:'<center>출력</center>', dataIndex:'YN_13', width:50, xtype:'checkcolumn', renderer:checkboxRender, align:'center',
+              listeners:{ checkchange:function(col,rowIndex,checked){
+                var rec = store.getAt(rowIndex);
+                saveField(rec.get('seq_no'),'YN_13',checked);
+              }}
+            },
+            { header:'<center>전달</center>', dataIndex:'YN_14', width:50, xtype:'checkcolumn', renderer:checkboxRender, align:'center',
+              listeners:{ checkchange:function(col,rowIndex,checked){
+                var rec = store.getAt(rowIndex);
+                saveField(rec.get('seq_no'),'YN_14',checked);
+              }}
+            },
+            { header:'<center>발송</center>', dataIndex:'YN_15', width:50, xtype:'checkcolumn', renderer:checkboxRender, align:'center',
+              listeners:{ checkchange:function(col,rowIndex,checked){
+                var rec = store.getAt(rowIndex);
+                saveField(rec.get('seq_no'),'YN_15',checked);
+              }}
+            }
+          ]
+        },
+
+        { header:'<center>비고</center>', dataIndex:'YN_9', width:160, editor:{allowBlank:true} },
+        { header:'<center>전자<br>신고</center>', dataIndex:'isIssue', width:55, renderer: renderIssue, align:'center' },
+        { header:'<center>ID</center>', dataIndex:'userID', width:60 },
+
+        {
+          text:(work_YY-1) + ' 년',
+          columns:[
+            { header:'<center>총수입금액</center>', dataIndex:'bf_sale', width:90, xtype:'numbercolumn', align:'right', format:'0,000' },
+            { header:'<center>당기순손익</center>', dataIndex:'bf_cost', width:90, xtype:'numbercolumn', align:'right', format:'0,000' },
+            { header:'<center>소득세등</center>', dataIndex:'bf_reve', width:90, xtype:'numbercolumn', align:'right', format:'0,000' },
+            { header:'<center>수수료</center>', dataIndex:'bf_fee', width:90, xtype:'numbercolumn', align:'right', format:'0,000' }
+          ]
+        }
+      ]
+    });
+
+    // 창 크기 변경 반영
+    Ext.EventManager.onWindowResize(function(){
+      var h = Math.max(window.innerHeight - 220, 420);
+      grid.setHeight(h);
+    });
+  });
+
+})();
+</script>

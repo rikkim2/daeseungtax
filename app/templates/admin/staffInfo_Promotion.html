@@ -1,0 +1,574 @@
+{% load static %}
+{% load humanize %}
+
+<style>
+.bg-primary-light {
+    background-color: #e8f5e9 !important; /* Bootstrap의 연한색 */
+}
+.staff-scroll-container {
+    position: absolute; /* 부모(.tab-pane) 기준으로 위치 고정 */
+    top: 0; 
+    bottom: 0; 
+    left: 0; 
+    right: 0;
+    overflow-y: auto;   /* 세로 스크롤 허용 */
+    overflow-x: hidden; /* 가로 스크롤 방지 */
+    padding: 15px;      /* 내부 여백 */
+}    
+</style>
+<div class="staff-scroll-container">   
+							<!--ROW OPENED-->
+							<div class="row">
+								<div class="col-xl-8 col-md-12">
+									<div class="row">
+										<div class="col-md-12">
+											<div class="card">
+												<div class="card-body project-type-container projects p-4">
+													<h4 class="m-0" id="typeTitle"></h4>
+													<div class="d-sm-flex align-items-center">
+														<div class="btn-list mx-4">
+														</div> 
+														<nav class="nav card-body p-1 project-type ">
+															<a class="btn btn-primary active" data-bs-toggle="tab" href="#pjAll" id="pwAll">
+																<svg xmlns="http://www.w3.org/2000/svg" class="w-inner-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,13h-8.0005493C13.2234497,13.0001831,12.9998169,13.223999,13,13.5v8.0005493C13.0001831,21.7765503,13.223999,22.0001831,13.5,22h8.0006104C21.7765503,21.9998169,22.0001831,21.776001,22,21.5v-8.0006104C21.9998169,13.2234497,21.776001,12.9998169,21.5,13z M21,21h-7v-7h7V21z M10.5,2H2.4993896C2.2234497,2.0001831,1.9998169,2.223999,2,2.5v8.0005493C2.0001831,10.7765503,2.223999,11.0001831,2.5,11h8.0006104C10.7765503,10.9998169,11.0001831,10.776001,11,10.5V2.4993896C10.9998169,2.2234497,10.776001,1.9998169,10.5,2z M10,10H3V3h7V10z M10.5,13H2.4993896C2.2234497,13.0001831,1.9998169,13.223999,2,13.5v8.0005493C2.0001831,21.7765503,2.223999,22.0001831,2.5,22h8.0006104C10.7765503,21.9998169,11.0001831,21.776001,11,21.5v-8.0006104C10.9998169,13.2234497,10.776001,12.9998169,10.5,13z M10,21H3v-7h7V21z M21.5,2h-8.0005493C13.2234497,2.0001831,12.9998169,2.223999,13,2.5v8.0005493C13.0001831,10.7765503,13.223999,11.0001831,13.5,11h8.0006104C21.7765503,10.9998169,22.0001831,10.776001,22,10.5V2.4993896C21.9998169,2.2234497,21.776001,1.9998169,21.5,2z M21,10h-7V3h7V10z"/></svg>
+															</a>                              
+                              {% for year in corpYears %}
+															<a class="btn btn-primary-light btn-sm " data-bs-toggle="tab" href="#pj{{year}}" id="pw{{year}}">
+																{{year}}
+															</a>
+                              {% endfor %}
+														</nav>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row ">
+										<div class="tab-content">
+                      {% for selectedYear in corpYears %}
+											<div class="tab-pane  h-100" id="pj{{selectedYear}}">
+												<div class="row">
+                          {% for invoice in invoiceAll %}
+                          {%  if invoice.corpYear  ==  selectedYear%}
+													<div class="col-sm-12 col-md-12 col-lg-12 col-xl-6">
+                            <div class="card">
+															<div class="card-body">
+																<div class="row">
+																	<div class="col-md-12">
+																		<div class="row">
+																			<div class="col">
+																				<div class="d-sm-flex align-items-center">
+																					<div class="me-2">
+																						<img alt="User Avatar" class="rounded-circle avatar-lg" src="{% get_static_prefix %}assets/images/faces/{{invoice.admin_name}}.png">
+																					</div>
+                                          
+																					<div class="ms-1">
+																						<h6 class="mb-1 text-normal"> <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="float-start">{{invoice.corpYear}}년 귀속 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+																						<span class="text-muted border-end pe-2 fs-11 float-start mt-1"> 입사일</span>
+																						<span class="text-teritary ps-1 fs-11">{{invoice.reg_date }}</span>
+																					</div>
+																				</div>
+																			</div>
+																			<div class="col-auto">
+																				<div class="d-flex align-items-center">
+																					<a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+                                            <h6 class="text-muted">성과급</h6>
+                                            <h4 class="mb-0">{{invoice.promoAmt|intcomma}}</h4>
+                                          </a>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="col-md-12 mt-4">
+																		<div class="row align-items-center">
+																			<div class="col">
+																				<p class="mb-0">
+																					<span class="text-muted d-block">{{invoice.admon_name}}</span>
+																				</p>
+																			</div>
+																		</div>
+																	</div>
+                                  <hr class="mt-0 mb-0">
+                                  <div class=" d-flex justify-content-end align-items-center p-0 mt-4 mb-0" style="height: 8px;">
+                                    <p class="badge rounded-pill bg-{{invoice.corpColor}}-transparent text-{{invoice.corpColor}} mb-0">{{invoice.isCorpPaid}}</p>
+                                  </div>
+                                  
+																</div>
+															</div>
+														</div>
+													</div>
+                          {% endif %}
+                          {% endfor %}
+
+												</div>
+											</div>
+                      {% endfor %}
+                      <div class="tab-pane active h-100" id="pjAll">
+												<div class="row">
+                          {% for invoice in invoiceAll  %}
+													<div class="col-sm-12 col-md-12 col-lg-12 col-xl-6">
+                            <div class="card">
+															<div class="card-body">
+																<div class="row">
+																	<div class="col-md-12">
+																		<div class="row">
+																			<div class="col">
+																				<div class="d-sm-flex align-items-center">
+																					<div class="me-2">
+																						<img alt="User Avatar" class="rounded-circle avatar-lg" src="{% get_static_prefix %}assets/images/faces/{{invoice.admin_name}}.png">
+																					</div>
+                                          
+																					<div class="ms-1">
+																						<h6 class="mb-1 text-normal"> <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="float-start">{{invoice.corpYear}}년 귀속 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+																						<span class="text-muted border-end pe-2 fs-11 float-start mt-1"> 입사일</span>
+																						<span class="text-teritary ps-1 fs-11">{{invoice.reg_date }}</span>
+																					</div>
+																				</div>
+																			</div>
+																			<div class="col-auto">
+																				<div class="d-flex align-items-center">
+																					<a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+                                            <h6 class="text-muted">성과급</h6>
+                                            <h4 class="mb-0">{{invoice.promoAmt|intcomma}}</h4>
+                                          </a>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="col-md-12 mt-4">
+																		<div class="row align-items-center">
+																			<div class="col">
+																				<p class="mb-0">
+																					<span class="text-muted d-block">{{invoice.admon_name}}</span>
+																				</p>
+																			</div>
+																		</div>
+																	</div>
+                                  <hr class="mt-0 mb-0">
+                                  <div class=" d-flex justify-content-end align-items-center p-0 mt-4 mb-0" style="height: 8px;">
+                                    <p class="badge rounded-pill bg-{{invoice.corpColor}}-transparent text-{{invoice.corpColor}} mb-0 me-2">{{invoice.isCorpPaid}}</p>
+                                  </div>
+                                  
+																</div>
+															</div>
+														</div>
+													</div>
+                          {% endfor %}
+												</div>
+											</div>                      
+										</div>
+									</div>
+								</div>
+                <div class="col-xl-4 col-md-12">
+                  <div class="card overflow-hidden">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">성과급 지급기준</h3>
+										</div>
+										<div class="card-body">
+											<p class="text-muted">귀하의 노고에 감사드립니다.</p>
+											<div class="panel-group1" id="accordion11" role="tablist">
+												<div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse1" aria-expanded="true">
+                            법인세 및 종합소득세 기준</a>
+													<div id="collapse1" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body">
+															<p>입금된 수수료의 5%를 지급합니다.</p>
+															<p></p>
+														</div>
+													</div>
+												</div>
+												<div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse2" aria-expanded="false">차감기준</a>
+													<div id="collapse2" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>연도중 본인의 실수로 인하여 발생된 가산세의 5%를 차감합니다.</p>
+                              <p>본인의 홈택스 아이디 외의 접수건은 합산되지 않습니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse3" aria-expanded="false">집계기준</a>
+													<div id="collapse3" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>신고기한의 익월말일까지 수금된 수수료가 성과급 지급대상이 됩니다</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse4" aria-expanded="false">지급기한</a>
+													<div id="collapse4" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>신고기한의 익월말일분 급여대장에 포함하여 지급됩니다. </p>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+                  {% if admin_grade == "SA" %}
+                  <div class="card overflow-hidden">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">차감내역</h3>
+										</div>
+										<div class="card-body">
+											<p class="text-muted">업무실수 성과보수 차감하기.</p>
+                      <div class="tabs-menu4" id="tabsMenu">
+                        <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-0">
+                            업무실수 등록하기
+                          </a>      
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 " data-bs-toggle="tab" href="#task-1">
+                            실수 리스트
+                          </a>
+                        </nav>                         
+                      </div>
+                      <div class="tab-content" id="tabContent">   
+                        <div class="tab-pane active task-files-tab" id="task-0">
+                          <p class="text-muted"></p>
+                          <div class="form-group">
+                            <select class="form-control select2 form-select" name="admin_id" data-placeholder="Select Admin">
+                              <option label="누가 실수했나요?"></option>
+                              {% for admin in adminList %}
+                                  <option value="{{ admin.admin_id }}">{{ admin.admin_name }}</option>
+                              {% endfor %}
+                            </select>
+                          </div><!-- form-group -->
+                          <div class="form-group">
+														<!-- <label class="form-label ">언제 발생했나요?</label> -->
+														<div class="input-group">
+															<div id="datePickerStyle1" class="input-group date" data-date-format="yyyy-mm-dd">
+																<span class="input-group-addon input-group-text bg-primary-transparent"><i class="fe fe-calendar text-primary-dark"></i></span>
+																<input class="form-control datepicker_noval" id="occurDate" type="text"  placeholder="언제 발생했나요?"/>
+															</div>
+														</div>
+													</div>
+                          <div class="form-group">
+                              <input type="text" class="form-control" placeholder="업체명은 무엇인가요?" id="biz_name">
+                          </div><!-- form-group -->
+                          <div class="form-group">
+                              <input type="text" class="form-control" placeholder="발생경위는 무엇인가요?" id="reason">
+                          </div><!-- form-group -->
+													<div class="form-group">
+														<div class="input-group" id="faultAmt">
+															<span class="input-group-text bg-primary-transparent text-primary"><i class="fa fa-won text-primary-dark"></i></span>
+                              <input type="text" class="form-control text-dark text-right"  placeholder="사고금액은?" >
+														</div>
+													</div>                          
+                          <div class="form-group">
+                            <select class="form-control select2 form-select" name="AdaptOption" data-placeholder="Select Admin">
+                              <option label="언제 반영할까요?"></option>
+                              <option value="법인세">법인세 신고시</option>
+                              <option value="종합소득세">종합소득세 신고시</option>
+                            </select>
+                          </div><!-- form-group -->
+                          <button class="btn btn-primary btn-block mt-5" id="saveBtn_fault">저장</button>                
+                        </div>
+                        <div class="tab-pane task-files-tab" id="task-1">
+                          <div id="faultDataContainer">
+                            <p>데이터를 불러오는 중...</p>  <!-- AJAX 로딩 완료 후 테이블로 대체됨 -->
+                          </div>            
+                        </div>                        
+                                                  
+                      </div>
+ 
+										</div>
+									</div>                
+                  {% endif %}  
+                </div>
+                          
+							</div>
+							<!--ROW CLOSED-->
+
+							<div class="modal fade"  id="modalFile2">
+								<div class="modal-dialog modal-lg" role="document">
+									<div class="modal-content modal-content-demo">
+										<div class="modal-body" >
+                      <div class="row">
+                        <div class="col-md-12">
+                          <div class="card">
+                            <div class="card-body">
+                              <div id="summitModal"></div>
+                            </div>
+                            <div class="card-footer text-end">
+                              <!-- <div class="modal-footer justify-content-center" id="btnKakaoSend1"></div> -->
+                              <button type="button" class="btn btn-info mb-1 me-2" onclick="printDiv('summitModal')">
+                                  <i class="si si-printer"></i> 출력
+                              </button>
+                              <button class="btn btn-light mb-1" onclick="closeModal('modalFile2')">닫기</button>
+                          </div>
+                        </div><!-- COL-END -->
+                      </div>
+                    </div>
+									</div>
+								</div>
+							</div>		
+</div>		          
+	            
+<script>
+// 탭 전용 스크립트 캡슐화 (즉시 실행 함수)
+(function() {
+    
+    // 카카오 알림톡 URL
+    const objectUrl_kakao = "{% url 'send_kakao_notification' %}";
+
+    // 데이트피커 초기화
+    $(".datepicker_noval").datepicker({
+        autoclose: true,
+        format: 'yyyy-mm-dd',
+        todayHighlight: true,
+    }).val('');
+
+    // 숫자에 3자리마다 콤마 추가
+    function formatNumber(value) {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    const faultAmt = $("#faultAmt input");
+    faultAmt.on("input", function() {
+        let rawValue = $(this).val().replace(/,/g, "");
+        if (!isNaN(rawValue) && rawValue !== "") {
+            $(this).val(formatNumber(rawValue));
+        }
+    });
+
+    var pyJsonStr = "{{invoiceAll|escapejs}}";
+    var pyJson = [];
+    if(pyJsonStr){
+        pyJsonStr = pyJsonStr.replaceAll("'", "\"");
+        try { pyJson = JSON.parse(pyJsonStr); } catch(e){}
+    }
+
+    // 탭 클릭 시 타이틀 변경 이벤트 바인딩
+    if(pyJson.length > 0) {
+        // 중복 바인딩 방지를 위해 off 후 on
+        $(document).off('click', '.year-tab-link').on('click', '.year-tab-link', function(e) {
+             // class="year-tab-link"를 탭 버튼(a태그)에 추가해주시면 더 좋습니다.
+             // 현재는 ID 기반이므로 기존 로직 유지하되, 동적 바인딩 사용
+        });
+
+        for (var i = 0; i < pyJson.length; i++) {
+            $(document).on('click', '#pw' + pyJson[i].corpYear, function(e) {
+                $('#typeTitle').html(e.target.innerText + " 년");
+            });
+        }
+    }
+    
+    $(document).on('click', '#pwAll', function(e) {
+        $('#typeTitle').html("");
+    });
+
+    // -----------------------------------------------------------
+    // ★ 핵심 수정: 함수들을 window 객체에 할당 (HTML onclick에서 접근 가능하도록)
+    // -----------------------------------------------------------
+
+    // 1. loadFaultData 함수 정의 (호출보다 먼저 정의해야 안전함)
+    window.loadFaultData = function() {
+        // 템플릿 변수 safe 처리 (값이 없을 경우 대비)
+        let admin_id = '{{invoice.admin_name|default:""|escapejs}}'; 
+        
+        // 만약 리스트 루프 밖이라 invoice가 없다면, 현재 로그인한 세션 ID 등을 사용해야 할 수도 있습니다.
+        // 현재는 기존 로직을 유지합니다.
+        
+        $.ajax({
+            url: "{% url 'get_fault_data' %}",
+            type: "GET",
+            data: { admin_id: admin_id },
+            success: function(response) {
+                let tableContent = `
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover text-center">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>발생일</th>
+                                            <th>업체명</th>
+                                            <th>금액</th>
+                                            <th>반영</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+
+                if (response.data && response.data.length > 0) {
+                    response.data.forEach(fault => {
+                        tableContent += `
+                            <tr>
+                                <td>${fault.admin_id}<br>${fault.occurDate}</td>
+                                <td>${fault.biz_name}<br>${fault.reason}</td>
+                                <td class="text-danger">${parseFloat(fault.faultAmt).toLocaleString()}</td>
+                                <td>${fault.AdaptOption}</td>
+                            </tr>`;
+                    });
+                } else {
+                    tableContent += `<tr><td colspan="4">차감 내역이 없습니다.</td></tr>`;
+                }
+                tableContent += `</tbody></table></div></div></div>`;
+                $("#faultDataContainer").html(tableContent);
+            },
+            error: function(xhr, status, error) {
+                // 404 에러 등은 여기서 잡힘
+                console.error("Error fetching fault data:", error);
+                $("#faultDataContainer").html("<p class='text-danger text-center mt-3'>데이터를 불러올 수 없습니다.</p>");
+            }
+        });
+    };
+
+    // 2. invoiceDetail 함수 정의
+    window.invoiceDetail = function(ADID, work_YY, title) {
+        $.ajax({
+            url: "{% url 'getInvoiceDetail' %}",
+            type: "POST",
+            data: {
+                ADID: ADID,
+                work_YY: work_YY,
+                title: title,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function(response) {
+                if (!response.data || response.data.length === 0) {
+                    alert("조회된 데이터가 없습니다.");
+                    return;
+                }
+
+                let total_promoAmt = 0;
+                let payDate = "05-10";
+                if (title == "종합소득세신고") {
+                    payDate = "08-10";
+                } else if (title == "부가세(1기확정)") {
+                    payDate = "08-10";
+                } else if (title == "부가세(2기확정)") {
+                    payDate = "02-10";
+                }
+                let tmpContent = `
+                    <div class="clearfix">
+                      <div class="float-start">
+                        <h3 class="card-title mb-0">${work_YY}년 귀속 ${title} - ${ADID}</h3>
+                      </div>
+                      <div class="float-end">
+                        <h3 class="card-title">지급일: ${parseInt(work_YY) + 1}-${payDate}</h3>
+                      </div>
+                    </div>
+                    <hr>
+                    <div class="table-responsive push">
+                      <table class="table table-bordered table-hover mb-0 text-nowrap border-bottom">
+                        <thead>
+                          <tr class="bg-primary-transparent text-primary-dark fw-bold fs-15">
+                            <th class="text-center">#</th>
+                            <th>업체명</th>
+                            <th>접수ID</th>
+                            <th class="text-center">담당</th>
+                            <th class="text-end">조정료</th>
+                            <th class="text-end">성과급</th>
+                          </tr>
+                        </thead>
+                        <tbody>`;
+
+                response.data.forEach((item, index) => {
+                    let promoAmt_value = parseFloat(item.promoAmt) || 0;
+                    total_promoAmt += promoAmt_value;
+                    tmpContent += `
+                      <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td>${item.biz_name}</td>
+                        <td>${item.JupsuID}</td>
+                        <td class="text-center">${item.biz_manager}</td>
+                        <td class="text-end">${parseFloat(item.YN_8).toLocaleString()}</td>
+                        <td class="text-end">${promoAmt_value.toLocaleString()}</td>
+                      </tr>`;
+                });
+
+                tmpContent += `
+                        <tr>
+                          <td colspan="4" class="fw-bold text-uppercase text-end">합계</td>
+                          <td class="fw-bold text-end h4">${total_promoAmt.toLocaleString()}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>`;
+
+                // 모달 내용 업데이트
+                $("#summitModal").html(tmpContent);
+                $("#modalFile2").modal("show");
+            },
+            error: function(xhr, status, error) {
+                alert("데이터를 불러오는 중 오류가 발생했습니다.");
+                console.error(error);
+            }
+        });
+    };
+
+    // 3. 기타 유틸 함수들
+    window.printDiv = function(divId) {
+        var printContents = document.getElementById(divId).innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.innerHTML = "<div>" + printContents + "</div>";
+        window.print();
+        document.body.innerHTML = originalContents;
+        // 탭 복구 (새로고침 대신 현재 탭 유지)
+        // location.reload(); // 전체 새로고침은 피하는 게 좋습니다.
+        // 현재는 프린트 후 화면이 깨질 수 있으므로 새로고침이 안전할 수 있습니다.
+        window.location.reload();
+    };
+
+    window.closeModal = function(modalId) {
+        var modalElement = document.getElementById(modalId);
+        if(typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+             var modalInstance = bootstrap.Modal.getInstance(modalElement);
+             if (modalInstance) {
+                 modalInstance.hide();
+             } else {
+                 $(modalElement).modal('hide');
+             }
+        } else {
+             $(modalElement).modal('hide');
+        }
+    };
+
+    // 실수 저장 버튼 이벤트
+    $("#saveBtn_fault").click(function(e) {
+        e.preventDefault();
+
+        let admin_id = $("select[name='admin_id']").val();
+        let occurDate = $("#occurDate").val();
+        let biz_name = $("#biz_name").val();
+        let faultAmtVal = $("#faultAmt input").val();
+        let reason = $("#reason").val();
+        let AdaptOption = $("select[name='AdaptOption']").val();
+
+        if (!admin_id || !occurDate || !faultAmtVal) {
+            alert("필수 항목을 입력하세요!");
+            return;
+        }
+
+        $.ajax({
+            url: "{% url 'save_fault' %}",
+            type: "POST",
+            data: {
+                admin_id: admin_id,
+                occurDate: occurDate,
+                biz_name: biz_name,
+                faultAmt: faultAmtVal,
+                reason: reason,
+                AdaptOption: AdaptOption,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function(response) {
+                if (response.status === "success") {
+                    alert("저장 완료!");
+                    window.loadFaultData(); // 저장 후 목록 갱신
+                } else {
+                    alert("저장 실패: " + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert("오류 발생: " + xhr.responseText);
+            }
+        });
+    });
+
+    // ★ 초기 데이터 로드 (함수 정의 후 호출해야 안전함)
+    window.loadFaultData();
+
+})();
+</script>
+    

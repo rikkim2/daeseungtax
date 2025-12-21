@@ -1,0 +1,308 @@
+{% load static %}
+{% load tz %}
+
+<style>
+    /* 스크롤 컨테이너 */
+    .admin-list-scroll-container {
+        position: absolute;
+        top: 0; 
+        bottom: 0; 
+        left: 0; 
+        right: 0;
+        overflow-y: auto;   
+        overflow-x: hidden; 
+        padding: 15px;      
+    }
+    /* 테이블 안의 아바타 */
+    .avatar.avatar-md {
+        width: 32px;
+        height: 32px;
+    }
+</style>
+
+<div class="admin-list-scroll-container">
+
+    <div class="row row-sm">
+        <div class="col-lg-12">
+            <div class="card custom-card">
+                <div class="card-body">
+                    <div class="text-left py-4 ">
+                        <a class="btn btn-primary" id="addRowBtn" href="javascript:void(0)">신규등록</a>
+                    </div>	
+                    <div class="table-responsive">
+                        <table id="user-datatable" class="table table-bordered text-nowrap w-100">
+                            <thead>
+                                    <tr>
+                                            <th>대화사진</th>
+                                            <th>아이디</th>
+                                            <th>패스워드</th>
+                                            <th>전화번호</th>
+                                            <th>이메일</th>
+                                            <th>묶음</th>
+                                            <th>직책</th>
+                                            <th>관리권한</th>
+                                            <th>입사일</th>
+                                            <th>YS</th>
+                                            <th>Htx_ID</th>
+                                            <th>수정/삭제</th>
+                                    </tr>
+                            </thead>
+                            <tbody>
+                                    {% for admin in adminList %}
+                                    <tr>
+                                            <td class="text-center editable" data-field="admin_name">
+                                                <div class="avatar avatar-md rounded-circle me-2">
+                                                        <img alt="avatar" class="rounded-circle" src="{% get_static_prefix %}assets/images/faces/{{ admin.admin_name }}.png" >
+                                                </div>
+                                                <span>{{ admin.admin_name }}</span>
+                                            </td>
+                                            <td class="editable" data-field="admin_id">{{ admin.admin_id }}</td>
+                                            <td class="editable" data-field="admin_pwd">{{ admin.admin_pwd }}</td>
+                                            <td class="editable" data-field="admin_tel_no">{{ admin.admin_tel_no }}</td>
+                                            <td class="editable" data-field="admin_email">{{ admin.admin_email }}</td>
+                                            <td class="editable" data-field="admin_biz_area">{{ admin.admin_biz_area }}</td>
+                                            <td class="editable" data-field="biz_level">{{ admin.biz_level }}</td>
+                                            <td class="editable" data-field="grade">{{ admin.grade }}</td>
+                                            <td class="editable" data-field="reg_date">{{ admin.reg_date|date:"Y-m-d" }}</td>
+                                            <td class="editable" data-field="manage_YN">{{ admin.manage_YN }}</td>
+                                            <td class="editable" data-field="htx_id">{{ admin.htx_id }}</td>
+                                            <td style="display: flex; gap: 5px;">
+                                                <button type="button" class="btn btn-primary btn-sm edit-btn" data-admin-update-url="{% url 'admin_update' %}">
+                                                        Edit
+                                                </button>
+                                                <button type="button" class="btn btn-success btn-sm save-btn" style="display:none;">
+                                                        Save
+                                                </button>
+                                        
+                                                <form action="{% url 'delete_admin' seq_no=admin.seq_no %}" method="post" style="display:inline;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-icon btn-sm btn-secondary-light" data-bs-toggle="tooltip" title="삭제" onclick="return confirm('정말 [{{admin.admin_id}}]를 삭제하시겠습니까?');">
+                                                                <i class="fe fe-trash-2"></i>
+                                                        </button>
+                                                </form>																					
+                                            </td>
+                                    </tr>
+                                    {% endfor %}
+                            </tbody>
+                        </table>												
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+<script src="{% static 'assets/plugins/datatable/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'assets/plugins/datatable/js/dataTables.bootstrap5.js' %}"></script>
+<script src="{% static 'assets/plugins/datatable/dataTables.responsive.min.js' %}"></script>
+
+<script>
+// 탭 전용 스크립트 캡슐화
+(function() {
+    
+    // 테이블 요소 찾기 (탭 내부)
+    // var tableId = '#user-datatable'; // ID 중복 방지를 위해선 탭마다 다른 ID를 쓰거나 class로 찾아야 함
+    // 여기서는 간단히 기존 로직 사용하되 destroy 옵션 필수
+    
+    // DataTable 초기화
+    if ($.fn.DataTable.isDataTable('#user-datatable')) {
+        $('#user-datatable').DataTable().destroy();
+    }
+    
+    var table = $('#user-datatable').DataTable({
+        "pageLength": 50,
+        "lengthMenu": [ [10, 25, 50, 100], [10, 25, 50, 100] ],
+        "searching": true,
+        "paging": true,
+        "info": true,
+        "responsive": true,
+        "autoWidth": false
+    });
+
+    // --------------------------------------------------------
+    // 이벤트 위임 (동적 생성 요소 및 탭 환경 대응)
+    // --------------------------------------------------------
+
+    // Edit 버튼 클릭
+    $('#user-datatable tbody').on('click', '.edit-btn', function() {
+        let row = $(this).closest('tr');
+        let saveButton = row.find('.save-btn');
+        let editButton = $(this);
+
+        row.find('.editable').each(function() {
+            let td = $(this);
+            let fieldName = td.data('field');
+            // span이 있으면 텍스트 추출, 없으면 바로 텍스트
+            let currentValue = td.find('span').length > 0 ? td.find('span').text().trim() : td.text().trim();
+            let input;
+
+            if (fieldName === 'biz_level') {
+                input = $('<select class="form-control form-control-sm"></select>');
+                input.append(`<option value="직원" ${currentValue === '직원' ? 'selected' : ''}>직원</option>`);
+                input.append(`<option value="관리자" ${currentValue === '관리자' ? 'selected' : ''}>관리자</option>`);
+                input.append(`<option value="세무사" ${currentValue === '세무사' ? 'selected' : ''}>세무사</option>`);
+            } else if (fieldName === 'grade') {
+                input = $('<select class="form-control form-control-sm"></select>');
+                input.append(`<option value="MEM" ${currentValue === 'MEM' ? 'selected' : ''}>MEM</option>`);
+                input.append(`<option value="SALE" ${currentValue === 'SALE' ? 'selected' : ''}>SALE</option>`);
+                input.append(`<option value="SA" ${currentValue === 'SA' ? 'selected' : ''}>SA</option>`);
+            } else {
+                input = $('<input type="text" class="form-control form-control-sm">');
+                input.val(currentValue);
+            }
+
+            input.attr('name', fieldName);
+            td.html(input); // 기존 내용 지우고 input 삽입
+        });
+
+        saveButton.show();
+        editButton.hide();
+    });
+
+    // Save 버튼 클릭
+    $('#user-datatable tbody').on('click', '.save-btn', function() {
+        let row = $(this).closest('tr');
+        let editButton = row.find('.edit-btn');
+        let saveButton = $(this);
+        let updateUrl = editButton.data('admin-update-url');    
+
+        let formData = new FormData();
+        row.find('.editable input, .editable select').each(function() {
+            formData.append($(this).attr('name'), $(this).val());
+        });
+
+        // AJAX 요청
+        fetch(updateUrl, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 성공 시 텍스트로 변환
+                row.find('.editable').each(function() {
+                    let td = $(this);
+                    let input = td.find('input, select');
+                    let val = input.val();
+                    
+                    td.empty(); // input 제거
+
+                    if (td.data('field') === 'admin_name') {
+                        // 이름 컬럼은 아바타 다시 생성
+                        let avatarHtml = `
+                            <div class="avatar avatar-md rounded-circle me-2">
+                                <img alt="avatar" class="rounded-circle" src="{% get_static_prefix %}assets/images/faces/${val}.png" onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
+                            </div>
+                            <span>${val}</span>
+                        `;
+                        td.html(avatarHtml);
+                    } else {
+                        td.text(val);
+                    }
+                });
+                
+                saveButton.hide();
+                editButton.show();
+            } else {
+                alert('업데이트 실패: ' + data.error);
+            }
+        })
+        .catch(err => alert('오류 발생: ' + err));
+    });
+
+    // 신규등록 버튼
+    $('#addRowBtn').off('click').on('click', function() {
+        // DataTable의 row.add() API를 사용하는 것이 좋지만, 
+        // 기존 코드처럼 prepend 방식으로 처리하려면 DOM 조작 후 draw() 필요할 수 있음.
+        // 여기서는 간단히 DOM prepend 사용 (단, 페이징/정렬 시 사라질 수 있음 주의)
+        
+        let newRowHtml = `
+            <tr>
+                <td class="editable" data-field="admin_name"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="admin_id"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="admin_pwd"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="admin_tel_no"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="admin_email"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="admin_biz_area"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="biz_level">
+                    <select class="form-control form-control-sm">
+                        <option value="직원">직원</option>
+                        <option value="관리자">관리자</option>
+                        <option value="세무사">세무사</option>
+                    </select>
+                </td>
+                <td class="editable" data-field="grade">
+                    <select class="form-control form-control-sm">
+                        <option value="MEM">MEM</option>
+                        <option value="SALE">SALE</option>
+                        <option value="SA">SA</option>
+                    </select>
+                </td>
+                <td class="editable" data-field="reg_date"><input type="text" class="form-control form-control-sm" value="{{ now|localtime|date:"Y-m-d" }}"></td>
+                <td class="editable" data-field="manage_YN"><input type="text" class="form-control form-control-sm"></td>
+                <td class="editable" data-field="htx_id"><input type="text" class="form-control form-control-sm"></td>
+                <td style="display: flex; gap: 5px;">
+                    <button type="button" class="btn btn-primary btn-sm save-new-btn">Save</button>
+                    <button type="button" class="btn btn-secondary btn-sm cancel-btn">Cancel</button>
+                </td>
+            </tr>
+        `;
+        
+        $('#user-datatable tbody').prepend(newRowHtml);
+    });
+
+    // 신규 행 저장
+    $('#user-datatable tbody').on('click', '.save-new-btn', function() {
+        let row = $(this).closest('tr');
+        let formData = new FormData();
+        let valid = true;
+
+        row.find('.editable input, .editable select').each(function() {
+            let field = $(this).parent().data('field');
+            let val = $(this).val().trim();
+            
+            // 필수값 체크 (예시)
+            if(['admin_name', 'admin_id', 'admin_pwd'].includes(field) && !val) {
+                alert(field + ' 값을 입력하세요.');
+                valid = false;
+                return false; 
+            }
+            formData.append(field, val);
+        });
+
+        if(!valid) return;
+
+        fetch("{% url 'admin_create' %}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert('등록되었습니다.');
+                // 탭 새로고침 또는 row 업데이트
+                // 여기서는 간단히 탭 재로딩을 위해 트리거
+                // (TabManager 로직에 따라 다름, 일단은 reload)
+                // location.reload(); // 탭 환경에서는 비추천
+                // 대신 현재 탭을 다시 로드하는 로직 호출 (TabManager에 구현 필요)
+                // 임시로 row 내용만 텍스트로 확정
+                row.find('.editable').each(function() {
+                    let val = $(this).find('input, select').val();
+                    $(this).text(val);
+                });
+                row.find('.save-new-btn, .cancel-btn').remove();
+                // Edit 버튼 등 추가 필요... 복잡하므로 보통 재로딩 권장
+            } else {
+                alert('에러: ' + data.error);
+            }
+        });
+    });
+
+    // 취소 버튼
+    $('#user-datatable tbody').on('click', '.cancel-btn', function() {
+        $(this).closest('tr').remove();
+    });
+
+})();
+</script>

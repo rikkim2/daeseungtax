@@ -1,0 +1,613 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">거래처원장</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">재무제표</li>
+										<li class="breadcrumb-item">보조원장</li>
+										<li class="breadcrumb-item active" aria-current="page"><a href="javascript:void(0);">거래처원장</a></li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-lg-4 col-xl-3">
+									<div class="card mb-4">
+										<div class="card-header border-bottom d-flex flex-row-reverse">
+                
+
+                      <div class="btn-group">
+                        <button id="btn_selectedYear"  type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                           {{selectedYear}} 년<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li class="dropdown-plus-title">
+                            작업연도
+                            <b class="fa fa-angle-up" aria-hidden="true"></b>
+                          </li>
+													<div class="list-group">
+														{% for node in statementYears %}
+															<li class='list-group-item list-group-item-action'><a href='javascript:handleButtonClose({{node.work_yy}})' >{{node.work_yy}}년</a></li>
+														{% endfor %}
+													</div>
+                        </ul>
+                      </div>
+                      
+										</div>
+										<div class="card-body">
+                      <div class="panel-group1" id="accordionAcnt" role="tablist" aria-expanded="false"></div>
+										</div>
+                  </div>
+                  <div class="card bg-primary-transparent">
+										<div class="card-body upgrade-storage ">
+											<a href="javascript:void(0)">
+												<div class="upgrade-main text-center">
+                          <span class="demo-icon">
+                            <svg class="fe-spin text-primary" xmlns="http://www.w3.org/2000/svg"  style="width: 3rem;" viewBox="0 0 24 24"><path d="M11.5,7.9c-2.3,0-4,1.9-4,4.2s1.9,4,4.2,4c2.2,0,4-1.9,4-4.1c0,0,0-0.1,0-0.1C15.6,9.7,13.7,7.9,11.5,7.9z M14.6,12.1c0,1.7-1.5,3-3.2,3c-1.7,0-3-1.5-3-3.2c0-1.7,1.5-3,3.2-3C13.3,8.9,14.7,10.3,14.6,12.1C14.6,12,14.6,12.1,14.6,12.1z M20,13.1c-0.5-0.6-0.5-1.5,0-2.1l1.4-1.5c0.1-0.2,0.2-0.4,0.1-0.6l-2.1-3.7c-0.1-0.2-0.3-0.3-0.5-0.2l-2,0.4c-0.8,0.2-1.6-0.3-1.9-1.1l-0.6-1.9C14.2,2.1,14,2,13.8,2H9.5C9.3,2,9.1,2.1,9,2.3L8.4,4.3C8.1,5,7.3,5.5,6.5,5.3l-2-0.4C4.3,4.9,4.1,5,4,5.2L1.9,8.8C1.8,9,1.8,9.2,2,9.4l1.4,1.5c0.5,0.6,0.5,1.5,0,2.1L2,14.6c-0.1,0.2-0.2,0.4-0.1,0.6L4,18.8c0.1,0.2,0.3,0.3,0.5,0.2l2-0.4c0.8-0.2,1.6,0.3,1.9,1.1L9,21.7C9.1,21.9,9.3,22,9.5,22h4.2c0.2,0,0.4-0.1,0.5-0.3l0.6-1.9c0.3-0.8,1.1-1.2,1.9-1.1l2,0.4c0.2,0,0.4-0.1,0.5-0.2l2.1-3.7c0.1-0.2,0.1-0.4-0.1-0.6L20,13.1z M18.6,18l-1.6-0.3c-1.3-0.3-2.6,0.5-3,1.7L13.4,21H9.9l-0.5-1.6c-0.4-1.3-1.7-2-3-1.7L4.7,18l-1.8-3l1.1-1.3c0.9-1,0.9-2.5,0-3.5L2.9,9l1.8-3l1.6,0.3c1.3,0.3,2.6-0.5,3-1.7L9.9,3h3.5l0.5,1.6c0.4,1.3,1.7,2,3,1.7L18.6,6l1.8,3l-1.1,1.3c-0.9,1-0.9,2.5,0,3.5l1.1,1.3L18.6,18z"/></svg>
+                          </span>
+                          <h3 class="mb-1" id="uploadDate"></h3>
+													<span class="text-primary-lit mt-1">까지 회계처리 전표가 업로드 되었습니다. </span>
+												</div>
+											</a>
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-8 col-xl-9">
+									<div class="row">
+										<div class="col-xl-12 col-lg-12 col-md-12">
+											<div class="card custom-card overflow-hidden">
+												<div class="card-body p-3 ">
+													<div class="breadcrumb-main">
+														<nav aria-label="breadcrumb">
+															<ol class="breadcrumb mb-0" id="selectedYear">
+															</ol>
+														</nav>
+													</div>
+                          
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- 파일리스트 -->
+									<div class="row">
+										<div class="col-xl-12 ">
+											<div class="card">
+												<div class="card-body h-100">
+                          <div class="d-flex flex-row justify-content-between ">
+                            <div style='width:40%;text-align:center;'>거래처명</div>
+                            <div style='width:15%;text-align:right;margin-right:20px;'>기초</div>
+                            <div style='width:15%;text-align:right;margin-right:20px;'>차변</div>
+                            <div style='width:15%;text-align:right;margin-right:30px;'>대변</div>
+                            <div style='width:15%;text-align:right;margin-right:30px;'>잔액</div>
+                            <div style='width:55px;'></div>
+                          </div>
+                          <div id="accordionTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                        </div>
+											</div>
+										</div>
+									</div>
+									
+								</div>
+							</div>
+							<!-- End Row -->
+              <!-- 상세보기모달 -->
+              <div class="modal fade" id="summitModal">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo">
+
+                    <div class="modal-header ">
+                      <div id="summitModalTitle"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+
+                    <div class="modal-body p-0 border-top-0" >
+                      <div class="card">
+                        <div class="row">
+                          <div id="moreDetailTable"></div>
+                        </div>
+                      </div>
+                      <!-- Tabs -->
+                      <div class="tabs-menu4 w-100">
+                        <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-1">
+                            연도별 거래내역
+                          </a>
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                            연도별 거래처계정원장
+                          </a>
+                        </nav>
+                      </div>
+                      <div class="tab-content w-100">
+                        <!-- 연도별 거래내역 -->
+                        <div class="tab-pane active task-files-tab" id="task-1">
+                          <div class="d-flex flex-row justify-content-between ">
+                            <div style='width:40%;text-align:center;'>거래연도</div>
+                            <div style='width:15%;text-align:right;margin-right:20px;'>기초</div>
+                            <div style='width:15%;text-align:right;margin-right:20px;'>차변</div>
+                            <div style='width:15%;text-align:right;margin-right:30px;'>대변</div>
+                            <div style='width:15%;text-align:right;margin-right:30px;'>잔액</div>
+                          </div>
+                          <div id="accordionTraderDetail" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                        </div>
+                        <div class="tab-pane  task-files-tab" id="task-2">
+                          <div class="d-flex flex-row justify-content-between ">
+                            <div style='width:40%;text-align:center;'>거래연도</div>
+                            <div style='width:20%;text-align:right;margin-right:20px;'>계정명</div>
+                            <div style='width:20%;text-align:right;margin-right:20px;'>차변</div>
+                            <div style='width:20%;text-align:right;margin-right:30px;'>대변</div>
+                          </div>
+                          <div id="accordionYearlyTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>			
+													
+        {% endblock %}
+
+        {% block scripts %}
+
+        <script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+				<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet"/>
+        <!-- <link href="{% static 'assets/plugins/ext422/extjs-build/resources/ext-theme-neptune/ext-theme-neptune-all.css'%}" rel="stylesheet"/>
+        <script href="{% static 'assets/plugins/ext422/extjs-build/ext-all.js'%}"></script>  -->
+        <script>
+				var kejungList = "{{kejungList|escapejs}}";
+        kejungList = JSON.parse(kejungList.replaceAll("'","\""));
+				var biz_name = "{{ memuser.biz_name }}";
+				var selectedYear,selectedAcntNm,selectedAcntCd="";
+        if(selectedAcntCd=="" & kejungList.length>0){
+          selectedAcntCd = kejungList[0].acnt_cd;
+          selectedAcntNm = kejungList[0].acnt_nm;
+        }
+				$(document).ready(function(){
+          selectedYear = "{{selectedYear}}"
+					setSelectedFolder("{{selectedYear}}년  >> "+ selectedAcntNm);
+					treeLoad(selectedYear);
+					gridLoad( "{{selectedYear}}",selectedAcntCd,selectedAcntNm)
+				});
+
+				const setSelectedFolder = (strFolder) => {
+          var innerHtml=""
+          var tmpArr = strFolder.split(">>")
+          for(var i=0;i<tmpArr.length;i++){
+            if(i<(tmpArr.length-1)){
+              innerHtml += "<li class='breadcrumb-item'>"+tmpArr[i]+"</li>"
+            }else{
+              innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>"+tmpArr[i]+"</a></li>"
+            }
+          }
+					$('[id="selectedYear"]').html(innerHtml);
+				}
+        const treeLoad =(selYear)=>{
+          $('#accordionAcnt').empty();
+          const ul1 = document.createElement('ul');
+          const ul2 = document.createElement('ul');
+
+          var sector = [false,false];
+          for(var i=0;i<kejungList.length;i++){
+            var activate="";
+            if(kejungList[i].acnt_cd==selectedAcntCd){
+              activate = "active"
+            }
+            const li = document.createElement("li");
+            li.setAttribute('id',"li"+kejungList[i].acnt_cd);
+            li.setAttribute('class',"nav-item1 mt-0")
+
+            const anchor2 = document.createElement('a');
+            anchor2.href = 'javascript:gridLoad("'+selectedYear+'" ,"'+kejungList[i].acnt_cd+'","'+kejungList[i].acnt_nm+'")';
+            anchor2.setAttribute('class',"nav-link thumb "+activate)
+            anchor2.setAttribute('id',kejungList[i].acnt_cd);
+
+            const designI = document.createElement('i');
+            designI.setAttribute('class',"fa fa-window-restore")
+            // anchor2.appendChild(designI);
+            anchor2.innerText = kejungList[i].acnt_nm;
+            li.appendChild(anchor2);            
+            if(kejungList[i].acnt_cd<251){ 
+              ul1.setAttribute("class","nav1 nav-column flex-column br-7")
+              ul1.setAttribute("id","kejungList1")
+              ul1.appendChild(li)
+              sector[0] = true;
+            } else if(kejungList[i].acnt_cd<381){ 
+              ul2.setAttribute("class","nav1 nav-column flex-column br-7")
+              ul2.setAttribute("id","kejungList2")
+              ul2.appendChild(li)   
+              sector[1] = true;                 
+            }
+          }//endfor
+          for(var s=0;s<sector.length;s++){           
+            const divcard = document.createElement("div")
+            divcard.setAttribute("class","card overflow-hidden mb-2 border-0")
+            divcard.setAttribute("id","collapseHead"+s)
+            const anchor1 = document.createElement('a');
+            anchor1.setAttribute("class","accordion-toggle panel-heading1 collapsed ")
+            anchor1.setAttribute("data-bs-toggle","collapse")
+            // anchor1.setAttribute("data-bs-parent","#accordionAcnt")
+            anchor1.setAttribute("aria-expanded","false")
+            anchor1.href="#collapse"+s     
+            divcard.appendChild(anchor1)
+            const divTabpanel = document.createElement("div")
+            if(s==0){
+              divTabpanel.setAttribute("class","panel-collapse collapse show")
+            } else {
+              divTabpanel.setAttribute("class","panel-collapse collapse")
+            }
+            divTabpanel.setAttribute("id","collapse"+s)
+            divTabpanel.setAttribute("role","tabpanel")
+            divTabpanel.setAttribute("aria-expanded","false")
+            divTabpanel.setAttribute("data-bs-parent","#accordionAcnt")
+            divcard.appendChild(divTabpanel)                   
+            if(sector[s]){
+              if(s==0){
+                var tmpTxt = "재무상태표 - 자산";
+                divTabpanel.appendChild(ul1)
+              } else if(s==1){
+                var tmpTxt = "재무상태표 - 부채 및 자본";
+                divTabpanel.appendChild(ul2)
+              }
+              anchor1.innerText = tmpTxt
+              document.getElementById('accordionAcnt').appendChild(divcard);
+            }
+          }
+				} 
+				const gridLoad = async(selYear,selAcntcd,selAcntnm) => {
+          //좌측 컨트롤
+          document.getElementById(selectedAcntCd).setAttribute('class',"nav-link thumb")
+          document.getElementById(selAcntcd).setAttribute('class',"nav-link thumb active")
+          //우측 내용지우기
+          // document.getElementById('accordionTrader').empty();
+          $('#accordionTrader').empty();
+          var gridData = [];
+          
+          $.ajax({
+						url:"{% url 'getTraderGrid' %}",
+            data:{
+              selYear:selYear,
+              selAcntcd:selAcntcd
+            },
+						dataType:"Json",
+						success:async function(data){
+              $('[id="uploadDate"]').html(selectedYear+"년 "+data.rowDuration.thisEndDate);
+              gridData=data.rows;
+              for(var i=0;i<gridData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","headerAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","headingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:35%'>"+gridData[i].CompanyName+"</div>"
+								tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TStart)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TCr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TDr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right;"+(gridData[i].TEnd<0?"color:red":"")+"'>"+numberWithCommas(gridData[i].TEnd)+"</div>"
+                tmpHtml2 += "<div style='width:55px;text-align:right'></div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","detailAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#detailAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","detailAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionTrader")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+                divBody2.innerHTML = await keraeDetail(selYear,selAcntcd,gridData[i].Trd_Cd,gridData[i].CompanyName)
+                divBody.appendChild(divBody2)
+
+                document.getElementById('accordionTrader').appendChild(divHeader);
+                document.getElementById('accordionTrader').appendChild(divBody);
+              }
+              
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+          selectedAcntCd = selAcntcd;
+          selectedAcntNm = selAcntnm;
+          setSelectedFolder(selectedYear+"년 >> " + selectedAcntNm)
+				}
+
+        function keraeDetail(selYear,selAcntcd,trdCd,Trader_Name){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getTraderDetailGrid' %}",
+              data:{
+                selYear:selYear,
+                selAcntcd:selAcntcd,
+                Trd_Cd:trdCd
+              },
+              dataType:"Json",
+              //async:false,
+              success:function(data){
+                tmpHTML = "<table class='table table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th><th>적요</th><th style='text-align:right'>기초</th>"
+                tmpHTML +=  "<th style='text-align:right'>차변</th>"
+                tmpHTML +=  "<th style='text-align:right'>대변</th>"
+                tmpHTML +=  "<th style='text-align:right'>잔액</th>"
+                tmpHTML +=  "<th style='text-align:center'>상세</th>"
+                tmpHTML +=  "</tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr><th scope='row'>"+data.rows[j].tran_dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].remk+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%;'>"+numberWithCommas(data.rows[j].TStart)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%;'>"+numberWithCommas(data.rows[j].tranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%;'>"+numberWithCommas(data.rows[j].tranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%;"+(data.rows[j].tranAmt_Sum<0?"color:red":"")+"'>"+numberWithCommas(data.rows[j].tranAmt_Sum)+"</td>"
+                  if(data.rows[j].Trader_Code.replaceAll(" ","")!=""){
+                    tmpHTML += "  <td style='text-align:center;width:55px'><a href=javascript:summitModal('"+selectedYear+"','"+Trader_Name.replaceAll(" ","")+"','"+data.rows[j].Trader_Code+"','"+data.rows[j].slip_no+"','"+data.rows[j].tran_dt+"'); class='btn btn-warning-light btn-square  br-50 ' data-bs-toggle='tooltip' title='' data-bs-original-title='상세보기'><i class='zmdi zmdi-dns fs-16'></i></a></td></tr>"
+                  } else{
+                    tmpHTML += "  <td style='text-align:center;width:55px'><i class='zmdi zmdi-close fs-16 '></i></td></tr>"
+                  }
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+
+        const summitModal = async(work_yy,Trader_Name,Trader_Code,slip_no,Tran_Dt) =>{
+          //회계처리
+          await setLedgrMoreDetail(work_yy,slip_no,Tran_Dt);
+          //연도별 거래처원장
+          await setYearlyTradeDetail(work_yy,selectedAcntCd,Trader_Code);
+          // 연도별 거래처계정원장
+          await setYearlyTradeLedgr(Trader_Code);
+          //최종세팅
+          tmpHead = "<nav aria-label='breadcrumb'>"
+          tmpHead += "<ol class='breadcrumb breadcrumb-style'>"
+          tmpHead += "<li class='breadcrumb-item'>"+selectedYear+"년</li>"
+          tmpHead += "<li class='breadcrumb-item'>계정별원장 상세보기</li>"
+          tmpHead += "<li class='breadcrumb-item active'>"+Trader_Name+"</li>"
+          tmpHead += "</ol></nav>"
+          $('[id="summitModalTitle"]').html(tmpHead);
+          $("#summitModal").modal('show');
+        }
+        const setLedgrMoreDetail = async(work_yy,slip_no,Tran_Dt)=>{
+          $.ajax({
+            url:"{% url 'getLedgrMoreDetail' %}",
+            data:{
+              selYear2:work_yy,
+              slip_no:slip_no,
+              Tran_Dt:Tran_Dt
+            },
+            dataType:"Json",
+            success: await function(data){
+              var tmpHTML="";
+              tmpHTML = "<table class='table table-bordered table-sm mb-0 '>"
+              tmpHTML += "<thead><tr><th>날짜</th>"
+              tmpHTML += "<th>계정명</th>"
+              tmpHTML += "<th style='text-align:center'>거래처</th>"
+              tmpHTML +=  "<th style='text-align:center'>차변</th>"
+              tmpHTML +=  "<th style='text-align:center'>대변</th>"
+              tmpHTML +=  "<th style='text-align:center'>적요</th>"
+              tmpHTML +=  "<th style='text-align:center'>전표</th>"
+              tmpHTML +=  "</tr></thead>"
+              tmpHTML += "<tbody>"
+              for(var j=0;j<data.rows.length;j++){
+                tmpHTML += "<tr ><th style='text-align:center;width:55px' >"+data.rows[j].Tran_Dt+"</th>"
+                tmpHTML += "  <td style='text-align:left;width:85px'>"+data.rows[j].Acnt_Nm+"</td>"
+                tmpHTML += "  <td style='text-align:left'>"+data.rows[j].Trader_Name+"</td>"
+                tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Cr)+"</td>"
+                tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Dr)+"</td>"
+                tmpHTML += "  <td style='text-align:left;width:30%'>"+data.rows[j].Remk+"</td>"
+                tmpHTML += "  <td style='text-align:center;width:65px;'>"+data.rows[j].Tran_Stat.substr(0,4)+"</td>"
+              }//endfor
+              tmpHTML += "</tbody></table>"
+              $('[id="moreDetailTable"]').html(tmpHTML);
+            },
+            error:function(request,status,error){
+              console.log('fail:'+error);
+            }
+          });//end 회계처리
+        }
+        const setYearlyTradeDetail = async (work_yy,selectedAcntCd,Trader_Code) => {
+          $('#accordionTraderDetail').empty();
+          var gridData = [];
+          
+          $.ajax({
+						url:"{% url 'getYearlyTradeDetail' %}",
+            data:{
+              selYear:work_yy,
+              selAcntcd:selectedAcntCd,
+              Trader_Code:Trader_Code
+            },
+						dataType:"Json",
+						success: async function(data){
+              gridData=data.rows;
+              for(var i=0;i<gridData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","popheaderAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","popheadingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:40%;text-align:center'>"+gridData[i].work_yy+" 년 거래내역</div>"
+								tmpHtml2 += "<div style='width:15%;text-align:right;"+(gridData[i].Start_Amt<0?"color:red":"")+"'>"+numberWithCommas(gridData[i].Start_Amt)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Cr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Dr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right;"+(gridData[i].End_Amt<0?"color:red":"")+"'>"+numberWithCommas(gridData[i].End_Amt)+"</div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                // anchorHead.innerText = gridData[i].CompanyName + numberWithCommas(gridData[i].TEnd);
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","popdetailAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#popdetailAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","popdetailAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionTraderDetail")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+                divBody2.innerHTML = await ledgrKeraeDetail(gridData[i].work_yy,selectedAcntCd,Trader_Code)
+                divBody.appendChild(divBody2)
+                document.getElementById('accordionTraderDetail').appendChild(divHeader);
+                document.getElementById('accordionTraderDetail').appendChild(divBody);
+              }
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+        }
+        function ledgrKeraeDetail(selYear,selAcntcd,trdCd){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getTraderDetailGrid' %}",
+              data:{
+                selYear:selYear,
+                selAcntcd:selAcntcd,
+                Trd_Cd:trdCd
+              },
+              dataType:"Json",
+              //async:false,
+              success:function(data){
+                tmpHTML = "<table class='table table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th><th>적요</th><th style='text-align:right'>기초</th>"
+                tmpHTML +=  "<th style='text-align:right'>차변</th>"
+                tmpHTML +=  "<th style='text-align:right'>대변</th>"
+                tmpHTML +=  "<th style='text-align:right'>잔액</th></tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr><th scope='row'>"+data.rows[j].tran_dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].remk+"</td>"
+                  tmpHTML += "  <td style='text-align:right;"+(data.rows[j].TStart<0?"color:red":"")+"'>"+numberWithCommas(data.rows[j].TStart)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;"+(data.rows[j].tranAmt_Sum<0?"color:red":"")+"'>"+numberWithCommas(data.rows[j].tranAmt_Sum)+"</td></tr>"
+
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+				const setYearlyTradeLedgr = async (Trader_Code) => {
+          $('#accordionYearlyTrader').empty();
+          var gridData = [];
+          $.ajax({
+						url:"{% url 'getYearlyTradeLedgr' %}",
+            data:{
+              Trader_Code:Trader_Code
+            },
+						dataType:"Json",
+						success: async function(data){
+              gridData=data.rows;
+              for(var i=0;i<gridData.length;i++){
+                // 디테일거래내역
+                const divHeader = document.createElement("div")
+                divHeader.setAttribute("class","mt-2")
+                divHeader.setAttribute("id","popheaderAccord"+i)
+                const divHeader2 = document.createElement("div")
+                divHeader2.setAttribute("class","accor")
+                divHeader2.setAttribute("id","popheadingOne"+i)
+                const h4 = document.createElement("h4")
+                h4.setAttribute("class","m-0")
+                const anchorHead = document.createElement("a")
+                var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                tmpHtml2 += "<div style='width:40%;text-align:center'>"+ gridData[i].work_yy+" 년 거래계정</div>"
+								tmpHtml2 += "<div style='width:15%;text-align:center;'>"+ gridData[i].acnt_nm +"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Cr)+"</div>"
+                tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TranAmt_Dr)+"</div>"
+                tmpHtml2 += "</div>"
+                anchorHead.innerHTML = tmpHtml2;
+                anchorHead.setAttribute("class","active")
+                anchorHead.setAttribute("data-bs-toggle","collapse")
+                anchorHead.setAttribute("data-bs-controls","yearlyDetailAccord"+i)
+                anchorHead.setAttribute("aria-expanded","false")
+                anchorHead.href="#yearlyDetailAccord"+i
+                h4.appendChild(anchorHead)
+                divHeader2.appendChild(h4)
+                divHeader.appendChild(divHeader2)
+
+                const divBody = document.createElement("div")
+                divBody.setAttribute("class","collapse mb-2")
+                divBody.setAttribute("id","yearlyDetailAccord"+i)
+                divBody.setAttribute("aria-labelledby","headingOne"+i)
+                divBody.setAttribute("data-bs-parent","#accordionYearlyTrader")
+                const divBody2 = document.createElement("div")
+                divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+                divBody2.innerHTML = await ledgrKeraeDetail(gridData[i].work_yy,gridData[i].acnt_cd,Trader_Code)
+                divBody.appendChild(divBody2)
+                document.getElementById('accordionYearlyTrader').appendChild(divHeader);
+                document.getElementById('accordionYearlyTrader').appendChild(divBody);
+              }
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+        }
+				const handleButtonClose = (ev) => {
+					const btnElement  = document.getElementById('btn_selectedYear');
+  				btnElement.innerHTML = ev+" 년";
+					selectedYear = ev;
+					setSelectedYear(ev);
+					setSelectedFolder(selectedYear+" 년" + " >> " + selectedAcntNm)
+				};  
+
+				const setSelectedYear = (selYear) => {
+          selectedYear = selYear;
+          treeLoad(selectedYear);
+					gridLoad(selYear,selectedAcntCd,selectedAcntNm);
+
+				}
+        </script>
+
+        {% endblock %}
+

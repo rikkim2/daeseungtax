@@ -1,0 +1,502 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+{% load custom_filters %}
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">블로그</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">블로그</li>
+										<li class="breadcrumb-item"><a href="javascript:void(0);">전체보기</a></li>
+										<li class="breadcrumb-item active" aria-current="page">최근글</li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-xl-8 col-lg-7 col-md-12">
+									<div class="card overflow-hidden">
+
+										<div class="ps-relative p-1 bg-light br-5">
+											<a href="{% url 'blog_detail' lastPost.pk %}">
+											<img src="{{ latest_attachment.file.url }}"  class="cover-image br-5 ms-auto me-auto wp-100 hpx-500" height="500">
+											</a>
+											<span class="badge bg-primary-gradient blog-label label5">{{ lastPost.category.name }}</span>
+										</div>
+										<div class="card-body">
+											<p class="text-muted text-14 ">{{ lastPost.title }}</p>
+											<p class="px-3 py-2 text-17 border br-5">
+												<span><sup><i class="fa fa-quote-left me-1 text-dark-light text-13" aria-hidden="true"></i></sup></span> 
+												<span class="text-muted">{{ lastPost.content | safe }}</span>
+												<span> <sup><i class="fa fa-quote-right ms-1 text-13 text-dark-light" aria-hidden="true"></i></sup> </span>
+											</p>
+											
+										</div>
+										<div class="card-footer">
+											<div class="d-sm-flex align-items-center">
+												<div class="avatar-list indicators">
+													<a href="javascript:void(0)" class="avatar avatar-md rounded-circle cover-image" data-bs-image-src= "{{ lastPostAuthor.user.profile.image_thumbnail.url }}"></a>
+												</div>
+												<h6 class="mb-0 text-muted ms-sm-2 mt-sm-0 mt-2">{{ lastPostAuthor.user.Mem_Admin.admin_name }}</h6>
+												<div class="d-sm-flex ms-sm-auto">
+													<a href="#" class="d-flex me-3"><span class="fe fe-calendar text-muted me-2 text-17"></span><div class="mt-0 mt-0   text-muted">{{lastPost.published_date|date:"y년 m월 d일"}}</div></a>
+													<a class="me-0 d-flex" href="#"><span class="fe fe-message-square text-muted me-2 text-17"></span><div class="mt-0 mt-0   text-muted">{{lastpost_comments_count}}</div></a>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-xl-4 col-lg-5 col-md-12">
+									<div class="card overflow-hidden">
+										<div class="">
+											<div class="card-header border-bottom d-block">
+												<div class="tabs-menu">
+													<!-- Tabs -->
+													<ul class="nav panel-tabs">
+														<li><a href="#trending" class="my-1 active me-1 text-default" data-bs-toggle="tab">개정사항</a></li>
+														<li><a href="#popular" data-bs-toggle="tab" class="my-1 me-1 text-default">인기글</a></li>
+														<li><a href="#recent" data-bs-toggle="tab" class="my-1 me-1 text-default">최근글</a></li>
+														<li><a href="#editorpicks" data-bs-toggle="tab" class="my-1 text-default">추천글</a></li>
+													</ul>
+												</div>
+											</div>
+											<div class="card-body">
+												<div class="tab-content">
+													<div class="tab-pane active" id="trending">
+														<div class="item-list">
+															<ul class="list-group mb-0">
+																{% for post in top_newLaw_posts %}
+																<li class="list-group-item d-flex pb-4 pt-0 px-0 border-bottom-0">
+																	{% if post.attachments.all %}
+																			{% with post.attachments.all|first as attachment %}
+																				<a href="{% url 'blog_detail' post.id %}">
+																					<img src="{{ attachment.file.url }}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																				</a>
+																			{% endwith %}
+																			{% else %}
+																					<img src="{% static 'assets/images/faces/blank.jpg' %}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																			{% endif %}
+																	<div>
+																		<span class="d-block text-muted">{{ post.category }} | {{ post.published_date |date:"y년 m월 d일" }}</span>
+																		<a href="{% url 'blog_detail' post.id %}" class="text-dark text-16 font-weight-semibold">{{ post.title }}</a>
+																		<small class="d-block text-gray">댓글 {{ post.comment_count }} </small>
+																	</div>
+																</li>
+																{% empty %}
+																<li class="list-group-item">연재를 준비중입니다.</li>
+																{% endfor %}
+															</ul>
+														</div>
+													</div>
+													<div class="tab-pane" id="popular">
+														<div class="item-list">
+															<ul class="list-group mb-0">
+																{% for post in top_comment_posts %}
+																<li class="list-group-item d-flex pb-4 pt-0 px-0 border-bottom-0">
+																	{% if post.attachments.all %}
+																			{% with post.attachments.all|first as attachment %}
+																			<a href="{% url 'blog_detail' post.id %}">
+																				<img src="{{ attachment.file.url }}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																			</a>
+																			{% endwith %}
+																			{% else %}
+																					<img src="{% static 'assets/images/faces/blank.jpg' %}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																			{% endif %}
+																	<div>
+																		<span class="d-block text-muted">{{ post.category }} | {{ post.published_date |date:"y년 m월 d일" }}</span>
+																		<a href="{% url 'blog_detail' post.id %}" class="text-dark text-16 font-weight-semibold">{{ post.title }}</a>
+																		<small class="d-block text-gray">댓글 {{ post.comment_count }} </small>
+																	</div>
+																</li>
+																{% empty %}
+																<li class="list-group-item">연재를 준비중입니다.</li>
+																{% endfor %}
+															</ul>
+														</div>
+													</div>
+													<div class="tab-pane" id="recent">
+														<div class="item-list">
+															<ul class="list-group mb-0">
+																{% for post in top_last_posts %}
+																<li class="list-group-item d-flex pb-4 pt-0 px-0 border-bottom-0">
+																	{% if post.attachments.all %}
+																			{% with post.attachments.all|first as attachment %}
+																			<a href="{% url 'blog_detail' post.id %}">
+																				<img src="{{ attachment.file.url }}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																			</a>
+																			{% endwith %}
+																			{% else %}
+																					<img src="{% static 'assets/images/faces/blank.jpg' %}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																			{% endif %}
+																	<div>
+																		<span class="d-block text-muted">{{ post.category }} | {{ post.published_date |date:"y년 m월 d일" }}</span>
+																		<a href="{% url 'blog_detail' post.id %}" class="text-dark text-16 font-weight-semibold">{{ post.title }}</a>
+																		<small class="d-block text-gray">댓글 {{ post.comment_count }} </small>
+																	</div>
+																</li>
+																{% empty %}
+																<li class="list-group-item">연재를 준비중입니다.</li>
+																{% endfor %}
+															</ul>
+														</div>
+													</div>
+													<div class="tab-pane" id="editorpicks">
+														<div class="item-list">
+															<ul class="list-group mb-0">
+																{% for post in top_imp_posts %}
+																<li class="list-group-item d-flex pb-4 pt-0 px-0 border-bottom-0">
+																	{% if post.attachments.all %}
+																		{% with post.attachments.all|first as attachment %}
+																		<a href="{% url 'blog_detail' post.id %}">
+																			<img src="{{ attachment.file.url }}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																		</a>
+																		{% endwith %}
+																	{% else %}
+																		<img src="{% static 'assets/images/faces/blank.jpg' %}" class="avatar br-5 avatar-lg me-3 my-auto" alt="avatar-img">
+																	{% endif %}
+																	<div>
+																		<span class="d-block text-muted">{{ post.category }} | {{ post.published_date |date:"y년 m월 d일" }}</span>
+																		<a href="{% url 'blog_detail' post.id %}" class="text-dark text-16 font-weight-semibold">{{ post.title }}</a>
+																		<small class="d-block text-gray">댓글 {{ post.comment_count }} </small>
+																	</div>
+																</li>
+																{% empty %}
+																<li class="list-group-item">연재를 준비중입니다.</li>
+																{% endfor %}
+															</ul>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /row -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-xl-8 col-md-12">
+									<!--card-->
+									<div class="card">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">주요 포스트 <span class="badge rounded-pill badge-sm bg-danger">중요</span> </h3>
+										</div>
+										<div class="card-body">
+											<div class="row">
+												<div class="col-xl-6 col-md-12 my-2 p-xl-max-0">
+													<div class="card overflow-hidden box-shadow mb-0 main-blog">
+														{% if top_imp_posts %}
+															{% with first_post=top_imp_posts|first %}
+																	<a href="{% url 'blog_detail' first_post.id %}" class="background-image-blog  mb-0">
+
+															{% endwith %}
+														{% endif %}
+														{% if top_imp_posts %}
+																{% with first_post=top_imp_posts|first %}
+																		{% if first_post.attachments.all %}
+																				{% with attachment=first_post.attachments.all|first %}
+																						<img src="{{ attachment.file.url }}" class=" background-image-blog mb-0" >
+																						<span class="badge rounded-pill bg-info-gradient blog-label label2">{{first_post.category}}</span>
+																				{% endwith %}
+																		{% else %}
+																				<img src="{% static 'assets/images/faces/blank.jpg' %}" class="avatar br-5 avatar-lg me-3 my-auto" >
+																		{% endif %}
+																{% endwith %}
+														{% else %}
+																<!-- 포스트가 없는 경우의 처리 -->
+																<img src="{% static 'assets/images/faces/blank.jpg' %}" class="background-image-blog img2 mb-0">
+														{% endif %}
+														</a>
+														{% with first_post=top_imp_posts|first %}
+														<div class="card-body p-0 border border-top-0 br-br-5 br-bl-5 mb-2 mb-lg-0">
+															<div class="p-5 border-bottom">
+																<a href="#" class="text-dark blog-title">{{first_post.title}}</a>
+																<p class="mb-0 text-muted mt-4">{{first_post.content|first_paragraph|safe}}</p>
+															</div>
+															<div class="d-sm-flex p-5 align-items-center">
+																<div class="avatar-list indicators">
+																	<a href="javascript:void(0)" class="avatar avatar-md rounded-circle cover-image" data-bs-image-src= "{{ first_post.author.user.profile.image_thumbnail.url }}"></a>
+																</div>
+																<h6 class="mb-0 text-muted ms-sm-2 mt-sm-0 mt-2">{{ first_post.user.Mem_Admin.admin_name }}</h6>
+																<div class="d-sm-flex ms-sm-auto">
+																	<a href="#" class="d-flex me-3"><span class="fe fe-calendar text-muted me-2 text-17"></span><div class="mt-0 mt-0   text-muted">{{first_post.published_date|date:"y년 m월 d일"}}</div></a>
+																</div>
+															</div>
+														</div>
+														{% endwith %}
+													</div>
+												</div>
+												
+												<div class="col-xl-6 col-md-12">
+													{% for post in top_imp_posts|slice:"1:5" %}
+													<div class="row mb-5">
+														<div class="col-xl-4 col-md-4 col-sm-4 pe-sm-0 p-sm-max-0">
+															<a href="{% url 'blog_detail' post.id %}">
+															{% if post.attachments.all %}
+																{% with post.attachments.all|first as attachment %}
+																	<img src="{{ attachment.file.url }}"  class="wp-100 editorpick-suggestion-img h-100">
+																{% endwith %}
+															{% else %}
+																<img src="{% static 'assets/images/faces/blank.jpg' %}" class="wp-100 editorpick-suggestion-img h-100">
+															{% endif %}
+															</a>
+														</div>
+														<div class="col-xl-8 col-md-8 col-sm-8 editorpicks-suggestions border p-2 br-sm-max-0">
+															<a href="{% url 'blog_detail' post.id %}" class="text-dark mb-4 blog-title">{{post.title}}</a>
+															<div class="d-md-flex mt-0">
+																<a href="#" class="d-flex"><span class="fe fe-layers text-muted me-2 text-17"></span><div class="mt-0 mt-0  font-weight-semibold text-muted">{{post.category}}</div></a>
+																<div class="d-flex ms-auto">
+																	<a href="#" class="d-flex me-3"><span class="fe fe-calendar text-muted me-2 text-17"></span><div class="mt-0 mt-0  font-weight-semibold text-muted">{{post.published_date|date:"y년 m월 d일"}}</div></a>
+																</div>
+															</div>
+														</div>
+													</div>
+													{% endfor %}
+												</div>
+												
+											</div>
+										</div>
+									</div>
+									<!--card closed-->
+
+									<!--card-->
+									<div class="card">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">개정사항 </h3>
+										</div>
+										<div class="card-body">
+											
+											<div class="row">
+												{% for post in top_imp_posts|slice:"0:2" %}
+												<div class="col-xl-6 col-md-12">
+													<div class="card overflow-hidden box-shadow mb-0 main-blog">
+														
+																{% if post.attachments.all %}
+																		{% with attachment=post.attachments.all|first %}
+																		<a href="{% url 'blog_detail' post.id %}" class=" background-image-blog mb-0">
+																			<img src="{{ attachment.file.url }}"  >
+																			<span class="badge rounded-pill bg-success-gradient blog-label label2">{{post.category}}</span>
+																		</a>
+																		{% endwith %}
+																{% else %}
+																	<a href="{% url 'blog_detail' post.id %}" class="background-image-blog img3 mb-0">
+																		<span class="badge rounded-pill bg-success-gradient blog-label label2">{{post.category}}</span>
+																	</a>
+																{% endif %}
+																													
+														
+														<div class="card-body p-0 border border-top-0 br-br-5 br-bl-5">
+															<div class="p-5 border-bottom">
+																<a href="#" class="text-dark blog-title">{{post.title}}</a>
+																<p class="mb-0 text-muted mt-4">{{ post.content|first_paragraph|safe }}</p>
+															</div>
+															<div class="d-sm-flex p-5 align-items-center">
+																<div class="avatar-list indicators">
+																	<a href="javascript:void(0)" class="avatar avatar-md rounded-circle cover-image" data-bs-image-src= "{{ post.author.user.profile.image_thumbnail.url }}"></a>
+																</div>
+																<h6 class="mb-0 text-muted ms-sm-2 mt-2 mt-sm-0">{{ post.user.Mem_Admin.admin_name }}</h6>
+																<div class="d-sm-flex ms-sm-auto">
+																	<a href="#" class="d-flex me-3"><span class="fe fe-calendar text-muted me-2 text-17"></span><div class="mt-0 mt-0   text-muted">Dec-01-2021</div></a>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+												{% endfor %}
+											</div>
+											
+										</div>
+									</div>
+									<!--card closed-->
+
+								</div><!--col closed-->
+
+								<div class="col-xl-4 col-md-12">
+									<!--card-->
+									<div class="card overflow-hidden">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">카테고리</h3>
+										</div>
+										<div class="accordion" id="categoryAccordion">
+											<!-- for category in categories|order_by_category -->
+											{% for category in categories %}
+											<div class="accordion-item border-0">
+												<div class="card-body p-0  border-0" id="heading{{ category.id }}" role="tab">
+													<ul class="list-group blog-topics  border-0">
+														<li class="list-group-item  border-0">
+															<a aria-controls="collapseOne" aria-expanded="true" data-bs-toggle="collapse" href="#collapse{{ category.id }}" >
+															<i class="fe fe-chevron-right me-2"></i>{{ category.name }}
+															</a>
+															<span class="tag float-end d-flex">{{ category.post_count }} </span> 
+														</li>
+													</ul>
+												</div>
+												<div aria-labelledby="heading{{ category.id }}" class="collapse  border-0" data-bs-parent="#accordion" id="collapse{{ category.id }}" role="tabpanel">
+													<ul class="nav1 nav-column flex-column br-7">
+														<!-- for post in category.blog_posts.all|order_by_title -->
+														{% for post in category.blog_posts.all %}
+														<li class="nav-item1 mt-0">
+															<a href="{% url 'blog_detail' post.id %}" class="nav-link thumb">{{ post.title }}</a>
+														</li>
+														{% empty %}
+														<li class="nav-item1">
+															연재를 준비중입니다.
+														</li>
+														{% endfor %}
+													</ul>
+												</div>
+
+											</div>
+											{% endfor %}
+										</div>
+									</div>
+									<!--card closed-->
+									<div class="card border overflow-hidden">
+										<div class="card-header border-bottom">
+											<h3 class="card-title ">세무법인대승 갤러리</h3>
+										</div>
+										<div class="card-body">
+											<div class="text-center demo-gallery">
+												<div class="mt-2">
+													<ul id="lightgallery" class="list-unstyled row row-sm">
+														<li class="col-sm-6 col-lg-6" data-responsive="{% static 'assets/images/blog/award1.png' %}" data-src="{% static 'assets/images/blog/award1.png' %}" data-sub-html="<h4>상패 1</h4>">
+															<!-- <a href="javascript:void(0)" data-toggle="modal" data-bs-target="#award1"> -->
+															<a  data-bs-target="#award1" data-bs-toggle="modal" href="javascript:void(0)">
+																	<img class="img-responsive br-5 w-100" src="{% static 'assets/images/blog/award1.png' %}" alt="상패-1">
+															</a>
+														</li>
+														<li class="col-sm-6 col-lg-6" data-responsive="{% static 'assets/images/blog/award2.png' %}" data-src="{% static 'assets/images/blog/award2.png' %}" data-sub-html="<h4>상패 2</h4>">
+															<a data-bs-target="#award2" data-bs-toggle="modal" href="javascript:void(0)" >
+																		<img class="img-responsive br-5 w-100" src="{% static 'assets/images/blog/award2.png' %}" alt="상패-1">
+																</a>
+														</li>
+														<li class="col-sm-6 col-lg-6" data-responsive="{% static 'assets/images/blog/award3.png' %}" data-src="{% static 'assets/images/blog/award3.png' %}" data-sub-html="<h4>상패 3</h4>">
+															<a data-bs-target="#award3" data-bs-toggle="modal" href="javascript:void(0)">
+																		<img class="img-responsive br-5 w-100" src="{% static 'assets/images/blog/award3.png' %}" alt="상패-1">
+																</a>
+														</li>
+														<li class="col-sm-6 col-lg-6" data-responsive="{% static 'assets/images/blog/award4.png' %}" data-src="{% static 'assets/images/blog/award4.png' %}" data-sub-html="<h4>상패 4</h4>">
+															<a data-bs-target="#award4" data-bs-toggle="modal" href="javascript:void(0)">
+																		<img class="img-responsive br-5 w-100" src="{% static 'assets/images/blog/award4.png' %}" alt="상패-1">
+																</a>
+														</li>
+													</ul>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!--글쓴이들--
+									<div class="card">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">글쓴이들</h3>
+										</div>
+										<div class="card-body">
+											<ul class="list-group blog-autors">
+												{% for author in authors %}
+												<li class="list-group-item">
+														<a href="#" class="text-dark-light">
+																<div class="media mt-0 d-sm-flex d-block">
+																	<img class="avatar-md rounded-circle me-3 my-auto" src="{{ author.user.profile.image_thumbnail.url }}" alt="Image description">
+																	<div class="media-body d-sm-flex d-block">
+																			<div class="d-flex align-items-center">
+																					<div class="mt-1">
+																							<h5 class="mb-1 text-dark-light">{{ author.user.Mem_Admin.admin_name }}</h5>
+																							<p class="mb-0 text-13 text-muted">{{ author.user.Mem_Admin.biz_level }}</p>
+																					</div>
+																			</div>
+																	</div>
+																</div>
+																<span class="badge rounded-pill bg-danger-transparent text-danger float-end">
+																	최근작성일 {{ author.latest_post_date|date:"Y년 m월 d일" }}
+																</span>
+														</a>
+												</li>
+												{% endfor %}
+											</ul>
+										</div>
+									</div>
+									<!--card closed-->
+
+								</div><!--col closed-->
+							</div>
+							<!-- /row -->
+
+							<ul class="pagination product-pagination ms-auto float-end mb-4">
+								<li class="page-item page-prev disabled"><a class="page-link" href="#" tabindex="-1">Prev</a></li>
+								<li class="page-item active"><a class="page-link" href="#">1</a></li>
+								<li class="page-item"><a class="page-link" href="#">2</a></li>
+								<li class="page-item"><a class="page-link" href="#">3</a></li>
+								<li class="page-item"><a class="page-link" href="#">4</a></li>
+								<li class="page-item page-next"><a class="page-link" href="#">Next</a></li>
+							</ul>
+
+        {% endblock %}
+
+				{% block modal %}
+
+				<!-- award1 -->
+				<div class="modal fade"  id="award1">
+					<div class="modal-dialog modal-dialog-centered text-center  modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 보다 전문적인 세무조사 대응 및 조세불복을 위해 서울시립대 조세쟁송과정을 수료하였습니다.</i>
+								<img src="{% static 'assets/images/blog/award1.png' %}" class="img-responsive" alt="상패 1">
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- award2 -->
+				<div class="modal fade"  id="award2">
+					<div class="modal-dialog modal-dialog-centered text-center  modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 보다 도움이되는 세무대리인이 되도록 노력하고 있습니다.</i>
+								<img src="{% static 'assets/images/blog/award2.png' %}" class="img-responsive" alt="상패 2">
+							</div>
+						</div>
+					</div>
+				</div>	
+				<!-- award1 -->
+				<div class="modal fade"  id="award3">
+					<div class="modal-dialog modal-dialog-centered text-center modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 세무사의 역량 향상을 위해 기업진단업무 획득에 공헌하였습니다.</i>
+								<img src="{% static 'assets/images/blog/award3.png' %}" class="img-responsive" alt="상패 3">
+							</div>
+						</div>
+					</div>
+				</div>							
+				<!-- award1 -->
+				<div class="modal fade"  id="award4">
+					<div class="modal-dialog modal-dialog-centered text-center modal-lg" role="document">
+						<div class="modal-content tx-size-sm">
+							<div class="modal-body text-center p-4">
+								<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button>
+								<i class="fe fe-check-circle fs-65 text-success lh-1 mb-5 d-inline-block"> 사소한 사건일 지라도 가볍게 여기거나 쉽게 지나치지 않습니다.</i>
+								<img src="{% static 'assets/images/blog/award4.png' %}" class="img-responsive" alt="상패 4">
+							</div>
+						</div>
+					</div>
+				</div>				
+				{% endblock %}
+    {% block scripts %}
+
+	<!-- THEMECOLORS JS -->
+	<script src="{% static 'assets/js/themeColors.js'%}"></script>
+
+    {% endblock %}

@@ -1,0 +1,1036 @@
+{% load static %}
+
+<style>
+    .icon-refresh { color: white; }
+    .modal-xxl { min-width: 1200px; max-width: 1400px; }    
+
+    /* [핵심] Bootstrap과 ExtJS 충돌 방지 */
+    .ext-grid-wrapper .x-table {
+        width: auto !important; 
+        margin: 0 !important;
+    }
+    
+    /* 그리드 래퍼 */
+    .ext-grid-wrapper {
+        width: 100%;
+        /* 높이는 JS에서 설정 */
+    }
+</style>  
+
+<div class="ext-grid-wrapper"></div>
+
+<div class="modal fade unique-summit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xxl modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-demo">
+      <div class="modal-header ">
+        <div class="summitModalTitle"></div>
+        <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body p-0 border-top-0" >
+        <div class="tabs-menu4 modal-tabs-menu"></div>
+        <div class="tab-content modal-tab-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+    // 1. 그리드 변수 미리 선언
+    var mainGrid;
+
+    // ───────────── [1] DOM 요소 확보 ─────────────
+    var renderTarget = $('.ext-grid-wrapper').filter(function() {
+        return $(this).children().length === 0;
+    }).last()[0];
+
+    // 2. 못 찾았다면, 활성 탭 내부에서 비어있는 래퍼를 다시 찾음 (ChatGPT 해결책)
+    if (!renderTarget) {
+        renderTarget = $('div.tab-pane.active .ext-grid-wrapper')
+            .filter(function () { return $(this).children().length === 0; })
+            .last()[0];
+    }
+    
+    // 3. 그래도 없으면 중단 (중복 실행 방지)
+    if (!renderTarget) {
+        // console.warn('렌더 타겟이 없어서 그리드를 만들지 않습니다.');
+        return;
+    }
+
+    // 모달 ID 생성 및 할당
+    var $wrapper = $(renderTarget).parent(); 
+    var modalUniqueId = 'summitModal_' + Math.floor(Math.random() * 100000);
+    var $modal = $wrapper.find('.unique-summit-modal');
+    $modal.attr('id', modalUniqueId);
+
+    function findInModal(selector) { return $modal.find(selector); }
+
+    // ───────────── [2] 높이 계산 함수 ─────────────
+    function getGridHeight() {
+        return window.innerHeight - 160; 
+    }
+    // ───────────── [3] 변수 설정 ─────────────
+    var adminBizLevel = '{{ admin_biz_level }}'.trim();
+    const isSuperuser = '{{ admin_grade }}' === 'SA';
+    var ADID = '{{ ADID }}'.trim();        
+    var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+    var flag = '{{ flag }}';
+    var work_YY = '{{ request.session.workyearPay }}';
+    var work_MM = '{{ request.session.workmonthPay }}';
+    
+    // 값이 없으면 현재 날짜 기준 설정
+    if(!work_YY) work_YY = new Date().getFullYear();
+    if(!work_MM) work_MM = new Date().getMonth() + 1;
+
+    const currentYear = new Date().getFullYear();
+    var payrollYear, selectedPeriod, selectedSheetID, selectedSheetName="";
+    // ───────────── [4] 전역 함수 정의 (onclick 대응) ─────────────
+
+    // 1. renderTopic
+    window.renderTopic = function(value, p, record) {
+        return Ext.String.format(
+            `<div style="cursor:pointer; color:blue;" 
+                onclick="window.summitModal(${record.data.seq_no}, '${Ext.String.htmlEncode(record.data.biz_name)}', ${work_YY}, ${work_MM}, 'pay');">
+                ${Ext.String.htmlEncode(value)}
+            </div>`    
+        );
+    };
+
+    // 2. check 함수
+    window.check = function(seq_no, target, work_YY, work_MM, val) {
+        $.ajax({
+            url: "{% url 'tbl_mng_jaroe_update' %}",
+            type: "POST",
+            data: {
+                seq_no: seq_no, target: target, work_YY: work_YY, work_MM: work_MM, val: val,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            dataType: "json",
+            success: function (data, textStatus, jqXHR) {
+                if (jqXHR.status !== 200 || data.status !== "success") {
+                     Swal.fire("오류", "전송오류 : " + jqXHR.responseJSON.message, "error");
+                }
+            },
+            error: function (jqXHR) {
+                Swal.fire("전송 실패", "서버 오류", "error");
+            }
+        });
+    };    
+
+    window.summitModal = async function(seq_no, biz_name, wYY, wMM, flag) {
+
+      let tmpHead = `
+          <nav aria-label='breadcrumb'>
+            <ol class='breadcrumb breadcrumb-style'>
+              <li class='breadcrumb-item'>${biz_name}</li>
+              <li class='breadcrumb-item'>${wYY}년</li>
+              <li class='breadcrumb-item'>${wMM}월</li>
+              <li class='breadcrumb-item active'>급여대장 및 납부서</li>
+            </ol>
+          </nav>`;
+      findInModal('.summitModalTitle').html(tmpHead);
+
+      let tmpTab = `
+          <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-0">급여대장등</a>
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-1">원천세 안내발송</a>
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">신고결과/분석</a>
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-3">고용증대</a>
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-4">지급명세서</a>
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-5">보낸 메일</a>
+          </nav>`;
+      
+      let tmpTab_Content = `
+          <div class="tab-pane active task-files-tab" id="task-0">
+            <div class="d-flex">
+              <div class="flex-grow-1 pe-3 mt-2 ps-5" style="flex-basis: 35%;">
+                <div class="btn-group">
+                  <button id="btn_selectedYear" type="button" class="btn btn-info dropdown-toggle mb-2" data-bs-toggle="dropdown">
+                    ${wYY} 년<span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" role="menu">
+                    <li class="dropdown-plus-title">작업연도<b class="fa fa-angle-up"></b></li>
+                    <div class="list-group">
+                      {% for node in corpYears %}
+                        <li class="list-group-item list-group-item-action">
+                          <a href="javascript:window.handleButtonClose(${seq_no}, '${biz_name}', {{ node }})">{{ node }}년</a>
+                        </li>
+                      {% endfor %}
+                    </div>
+                  </ul>
+                </div>          
+                <div class="panel-group1" id="accordionLeft" role="tablist" aria-expanded="false" style="max-height: 860px; overflow-y: auto;"></div>
+              </div>
+              <div class="flex-grow-0" style="flex-basis: 65%;">
+                <div class="card-body">
+                  <iframe id="singoseoPDFIframe" width="100%" height="850px" frameborder="0"></iframe>
+                </div>
+              </div>
+            </div>              
+          </div>
+          <div class="tab-pane task-files-tab" id="task-1">
+            <div class="d-flex">
+              <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="introMailContent"></div>
+              </div>
+              <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                  <iframe id="introPDFIframe" width="100%" height="850px" frameborder="0"></iframe>
+                </div>
+              </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend1"></div>
+          </div>
+          <div class="tab-pane task-files-tab" id="task-2">
+            <div class="d-flex">
+              <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="resultMailContent"></div>
+              </div>
+              <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                  <div class="container" id="resultDiagnosys"></div>
+                </div>
+              </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend2"></div>
+          </div>
+          <div class="tab-pane task-files-tab" id="task-4">
+            <div class="d-flex">
+              <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="4Content"></div>
+              </div>
+              <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                  <div class="container" id="4Diagnosys"></div>
+                </div>
+              </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend4"></div>
+          </div>
+          <div class="tab-pane task-files-tab" id="task-5">
+            <div class="d-flex">
+              <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="sentMailTable"></div>
+              </div>
+              <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                  <iframe id="mailIframe" width="100%" height="850px" frameborder="0"></iframe>
+                </div>
+              </div>
+            </div>    
+          </div>
+      `;
+      findInModal('.modal-tabs-menu').html(tmpTab);  
+      findInModal('.modal-tab-content').html(tmpTab_Content);  
+
+      // 데이터 로드
+      await treeLoad(seq_no, biz_name, wYY); 
+      await setMailContent(seq_no, wYY, wMM, flag);
+      
+      // 하단 버튼 생성
+      let tmpBtn1 = `<button class="btn btn-info" onclick="window.sendMailAndKakao(${seq_no},'${biz_name}', ${wYY}, ${wMM}, '${flag}')">
+          <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+          </button> 
+          <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+      $modal.find('#btnKakaoSend1').html(tmpBtn1);   
+
+      await sentMailList(seq_no, flag, "{% url 'getSentMails' %}");
+      
+      $modal.modal('show');
+    };
+
+    // 4. 기타 헬퍼 함수 (window 노출)
+    window.handleButtonClose = function(seq_no, biz_name, ev) {
+        const btnElement = document.getElementById('btn_selectedYear');
+        // 모달 내부 요소이므로 findInModal 사용 권장하지만, ID가 있으니 그대로 둠
+        if(btnElement) btnElement.innerHTML = ev + " 년";
+        treeLoad(seq_no, biz_name, ev);
+    };
+
+    window.changeSheet = function(selSheetID,selPeriod,selSheetName,file_path){
+      //좌측 컨트롤
+      if(document.getElementById(selectedSheetID)){
+        document.getElementById(selectedSheetID).setAttribute('class',"nav-link thumb")
+      }
+      if(document.getElementById(selSheetID)){
+        document.getElementById(selSheetID).setAttribute('class',"nav-link thumb active")
+      }
+      file_path = decodeURIComponent(file_path);
+      let iframe = document.getElementById("singoseoPDFIframe");
+      if (iframe) {
+          iframe.src = file_path;  // ✅ 파일이 존재하면 iframe에 표시
+      } else {
+        iframe.innerHTML = "원천세 신고서가 바르게 저장되지 않았습니다.";
+      }    
+      //selectedSheetID = selSheetID;
+      selectedPeriod = selPeriod;
+      selectedSheetName = selSheetName;
+    }
+
+    // 하단 카톡&메일 보내기
+    window.sendMailAndKakao = async function(seq_no, biz_name, work_YY, work_MM, mail_class)  {
+      const objectUrl = "{% url 'sendMail' %}";
+      const objectUrl_kakao = "{% url 'send_kakao_notification' %}";
+      const user_path = `static/cert_DS/${biz_name}/${work_YY}/인건비`;
+      
+      var targetUrl = '';
+      // 기본은 발송; 파일 존재시 여부 체크해서 없으면 false
+      let allIsGood = true;
+
+      targetUrl = 'admin/mail/payroll.html';
+
+      let strMM = `${work_MM}월`;
+      var user_file_names = await getFiles( biz_name, work_YY, work_MM);
+      console.log("📂 파일 목록2:",user_file_names)
+      if (!user_file_names) {
+        allIsGood = false;
+        alert(`파일이 존재하지 않습니다: ${user_file_names}`);
+      }   
+
+      // 기본은 발송; 파일 존재시 여부 체크해서 없으면 false
+      if (allIsGood) {
+        sendMail(seq_no, work_YY, work_MM, mail_class, objectUrl, targetUrl,user_file_names, user_path);
+        sendKakao(seq_no, work_YY, work_MM, mail_class, objectUrl_kakao);
+      } else {
+        console.warn("메일과 카카오톡 전송이 중단되었습니다. 발송요건을 충족하지 못했습니다.");
+      }
+    };
+
+    var store = Ext.create('Ext.data.Store', {
+        storeId: 'memberStore_' + Math.random(),
+        autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+        proxy: {
+            type: 'ajax', // Ajax를 통해 서버와 통신
+            url: '{% url "mng_payroll" %}', // 데이터를 가져올 API URL
+            extraParams: {
+                flag: flag, // 전달할 파라미터
+                ADID:ADID,
+                work_YY:work_YY,
+                work_MM:work_MM
+            },        
+            reader: {
+                type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+                rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+                totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+            },
+        },   
+        sorters: {property: 'biz_name', direction: 'ASC'},
+        fields: [ // 필드 정의 (데이터의 각 열)
+          {name: 'groupManager',type: 'string'},
+          {name: 'seq_no', type: 'int' },
+          {name: 'biz_name', type: 'string'},
+          {name: 'seq_no'},
+          {name: 'goyoung_jungkyu',type: 'string'},
+          {name: 'goyoung_ilyoung', type: 'string'},
+          {name: 'goyoung_sayoup', type: 'string'},
+          {name: 'goyoung_banki',type: 'string'},
+          {name: 'YN_11', type: 'bool'},
+          {name: 'YN_12',type: 'bool'},
+          {name: 'YN_13',type: 'bool'},
+          {name: 'YN_14',type: 'bool'},
+          {name: 'ediid',type: 'number'},
+          {name: 'edipw',type: 'string'},
+          {name: 'fileExist',type: 'string'},
+          {name: 'mail_date',type: 'string'},
+          {name: 'isIssue',type: 'string'},
+          {name: 'ElecFile',type: 'string'},
+          {name: 'issuedID',type: 'string'}
+        ],
+        ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+    });
+    var comboDataStore = Ext.create('Ext.data.Store', {
+        fields: ['id', 'name'],
+        data: [] // 초기 데이터는 비워둠
+    });
+
+    var checkboxRender =function(value) { 
+      return "<input type='checkbox'" + (value ? "checked='checked'" : "") + ">"; 
+    };
+
+    function onItemClickHandler(item) {
+        ADID = item;
+        const data = { flag: flag, ADID: item, work_YY: work_YY, work_MM: work_MM };
+        
+        var targetComponent = mainGrid ? mainGrid.body : Ext.getBody();
+        var loadMask = new Ext.LoadMask({ msg: '조회중...', target: targetComponent });
+        loadMask.show();
+
+        Ext.Ajax.request({
+            url: '{% url "mng_payroll" %}',
+            method: 'GET',
+            params: data,
+            success: function(response) {
+                try {
+                    store.loadData(Ext.decode(response.responseText));
+                    if (item == "전체") store.reload();
+                } catch(e) {} finally { loadMask.hide(); }
+            },
+            failure: function() { loadMask.hide(); }
+        });
+        updateScrollMenuText(item);        
+    }    
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}', // 동적으로 데이터를 가져올 API URL
+            method: 'GET',
+            success: function (response) {
+                const data = Ext.decode(response.responseText); // 응답 데이터를 파싱
+                comboDataStore.loadData(data); // store에 데이터 로드
+            },
+            failure: function () {
+                Ext.Msg.alert('오류', '데이터를 불러오는 데 실패했습니다.');
+            }
+        });
+    }
+    // Docked Items Config 생성
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);    
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: { edit: function(editor, e){
+				var record = e.record;
+				Ext.Ajax.request({
+          url: "{% url 'mem_deal_update' %}",
+          method: "POST",
+					params: {
+						seq_no		: record.get('seq_no'),
+						field		: e.field,
+						val				: e.value,
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+					},
+					success: function(response){
+          },
+          failure: function (response) {
+            Swal.fire("오류", "전송오류 : " + response.message, "error");
+          }
+				});
+			}}
+    });
+
+    mainGrid = Ext.create('Ext.grid.Panel', {
+      id: 'mainGrid',
+      renderTo: renderTarget,
+      title: '{{ gridTitle }}',
+      loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
+      tools: [  //최상단 오른쪽 툴바
+          {
+            xtype: 'button',
+            text: '접수번호저장',
+            iconCls: 'fa fa-floppy-o',
+            handler: function (btn) {
+              Ext.create('Ext.window.Window', {
+                title: '데이터 붙여넣기',
+                modal: true,
+                frame:false,
+                width: 800,
+                height: 200,
+                layout: 'fit',
+                items: [{
+                    xtype: 'textarea',
+                    name: 'clipboardData',
+                    emptyText: '홈택스 전자신고 결과를 드래그 복사해서 붙여넣으세요.'
+                }],
+                buttons: [
+                  {
+                    text: '저장',
+                    handler: function(btn) {
+                        var win = btn.up('window');
+                        var clipboardData = win.down('textarea').getValue();
+                        Ext.Ajax.request({
+                          url: "{% url 'save_clipboard_Pay' %}",
+                          method: 'POST',
+                          params: {
+                              clipboardData: clipboardData,
+                              csrfmiddlewaretoken: "{{ csrf_token }}"
+                          },
+                          success: function(response) {
+                            win.close();
+                            Swal.fire({
+                              title: '작업 성공',
+                              text: '전자신고파일이 성공적으로 저장되었습니다.',
+                              icon: 'success',
+                              //timer: 500,  // Set the timer to 3 seconds (3000 ms)
+                              showConfirmButton: true,  // Hide the confirm button
+                              willClose: () => {
+                                let store = Ext.getCmp('mainGrid').getStore();
+                                Ext.each(response.sqnos, function (item) {
+                                    let record = store.findRecord('seq_no', item.seq_no);
+                                    if (record) {
+                                        record.set('isIssue', "💙"); // userID의 마지막 두 자리
+                                    }
+                                });
+                                store.commitChanges(); // 변경 사항 적용
+                              }
+                            });                              
+                          },
+                          failure: function(response) {
+                            Swal.fire("오류", "저장오류 : " + response.message, "error");
+                          }
+                        });
+                        win.close();
+                    }
+                  },
+                  {
+                    text: '취소',
+                    handler: function(btn) {
+                        btn.up('window').close();
+                    }
+                  }]
+              }).show();
+            },
+            style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },      
+          {
+            xtype: 'button',
+            text: '전자신고파일 업로드',
+            iconCls: 'fa fa-cloud-upload',
+            handler: function () {
+              let uploadWindow = Ext.create('Ext.window.Window', {
+                    title: '파일 업로드',
+                    modal: true,
+                    layout: 'fit',
+                    items: [{
+                        xtype: 'form',
+                        bodyPadding: 10,
+                        fileUpload: true,
+                        items: [{
+                            xtype: 'filefield',
+                            name: 'uploadFile',
+                            fieldLabel: '파일 선택',
+                            labelWidth: 70,
+                            msgTarget: 'side',
+                            allowBlank: false,
+                            anchor: '100%',
+                            buttonText: '파일 찾기...'
+                        }],
+                        buttons: [{
+                            text: '업로드',
+                            handler: function (btn) {
+                                var form = btn.up('form').getForm();
+                                if (form.isValid()) {
+                                    form.submit({
+                                        url: "{% url 'save_elecfile_Pay' %}", // Django 업로드 URL
+                                        params: {
+                                            csrfmiddlewaretoken: "{{ csrf_token }}"
+                                        },
+                                        waitMsg: '파일 업로드 중...',
+                                        success: function (form, action) {
+                                            Ext.Msg.alert('성공', '파일이 성공적으로 업로드되었습니다.');
+                                            let store = Ext.getCmp('mainGrid').getStore();
+                                            let response = action.result;
+                                            Ext.each(response.sqnos, function (item) {
+                                                let record = store.findRecord('seq_no', item.seq_no);
+                                                if (record) {
+                                                    record.set('issuedID', item.userID.slice(-2)); // userID의 마지막 두 자리
+                                                }
+                                            });
+                                            store.commitChanges(); // 변경 사항 적용
+                                            uploadWindow.close();
+                                        },
+                                        failure: function (form, action) {
+                                            Ext.Msg.alert('실패', '파일 업로드에 실패했습니다.');
+                                        }
+                                    });
+                                }
+                            }
+                        }]
+                    }]
+                }).show();
+            },
+            style: 'margin-right: 10px;'
+          },{                
+              xtype: 'textfield',
+              emptyText: '검색어 입력',
+              width: 200,
+              listeners: {
+                  change: function (field, newValue) {
+                      const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                      if (!newValue || newValue.trim() === '') {
+                          store.clearFilter(); // 필터 제거
+                      } else {
+                          store.clearFilter(true); // 기존 필터 제거
+                          const searchValue = newValue.trim().toLowerCase();
+                          store.filterBy(record => {
+                              const bizName = record.get('biz_name')?.toLowerCase() || '';
+                              return (
+                                  bizName.includes(searchValue) 
+                              );
+                          });
+                      }
+                  }
+              }
+          },
+          {
+              xtype: 'button',
+              iconCls: 'icon icon-refresh',
+              handler: function (btn) {
+                  location.reload();
+              },
+              style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },
+      ],            
+      width:'100%',
+      height: getGridHeight(), 
+      scrollable: 'y', // 세로 스크롤 활성화
+      store: store,
+      columnLines: true,
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),        
+      plugins: [cellEditing],
+      columns: [
+          {   xtype: 'rownumberer',width: 30,	sortable: false}, 
+          {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0},  
+          {   header: 'SEQ', dataIndex: 'seq_no',width: 50            }, 
+          {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',  width: 200,renderer: renderTopic}, 
+          {  header: '<center>정규</center>', dataIndex: 'goyoung_jungkyu',  width: 40,align:'center'  ,
+              renderer: function (value) {
+                  if (value === 'Y') {
+                      return '<i class="fa fa-circle" style="color: green;"></i>';
+                  } else {
+                      return '<i class="icon icon-close" style="color: red;"></i>';
+                  }
+              }  
+          }, 
+          {  header: '<center>일용<br>변경</center>', dataIndex: 'goyoung_ilyoung',  width: 40,align:'center' ,
+              renderer: function (value) {
+                  if (value === 'Y') {
+                      return '<i class="fa fa-circle" style="color: green;"></i>';
+                  } else {
+                      return '<i class="icon icon-close" style="color: red;"></i>';
+                  }
+              }  
+          }, 
+          {  header: '<center>사업<br>변경</center>', dataIndex: 'goyoung_sayoup',  width: 40,align:'center',
+              renderer: function (value) {
+                  if (value === 'Y') {
+                      return '<i class="fa fa-circle" style="color: green;"></i>';
+                  } else {
+                      return '<i class="icon icon-close" style="color: red;"></i>';
+                  }
+              }            
+          }, 
+          {  header: '<center>반기</center>', dataIndex: 'goyoung_banki',  width: 40,align:'center',
+              renderer: function (value) {
+                  if (value === 'Y') {
+                      return '<i class="fa fa-circle" style="color: green;"></i>';
+                  } else {
+                      return '<i class="icon icon-close" style="color: red;"></i>';
+                  }
+              }            
+          }, 
+          { header: '<center>급여<br>변경</center>', dataIndex: 'YN_11',   xtype: 'checkcolumn',renderer : checkboxRender, width: 40,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'10',work_YY,work_MM,checked);	}}
+          }, {
+            header: '<center>사업<br>변경</center>', dataIndex: 'YN_12',  xtype: 'checkcolumn',renderer : checkboxRender, width: 40,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'11',work_YY,work_MM,checked);	}}
+          }, {
+            header: '<center>일용<br>변경</center>', dataIndex: 'YN_13',  xtype: 'checkcolumn',renderer : checkboxRender, width: 40,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'12',work_YY,work_MM,checked);	}}
+          }, {
+            header: '<center>확정<br>완료</center>', dataIndex: 'YN_14',  xtype: 'checkcolumn',renderer : checkboxRender, width: 40,
+            listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'13',work_YY,work_MM,checked);	}}
+          }, 
+          {  header: '<center>급여일</center>', dataIndex: 'ediid',  width: 60, align:'center',editor: { allowBlank: true } }, 
+          {  header: '<center>주의사항</center>', dataIndex: 'edipw', flex:1, align:'center',editor: { allowBlank: true }  }, 
+          {  header: '<center>신고<br>파일</center>', dataIndex: 'fileExist', width: 40, align:'center',renderer: value => value === "1" ? "📩" : "" }, 
+          {  header: '<center>전송시간</center>', dataIndex: 'mail_date',  width: 160, align:'center'  }, 
+          {  header: '<center>전자<br>신고</center>', dataIndex: 'isIssue',  width: 40, align:'center',renderer: value => value ? "💙" : ""    }, 
+          {  header: '<center>접수<br>ID</center>', dataIndex: 'issuedID',  width: 40, align:'center' ,
+              renderer: function(value) {
+                // 값이 존재하면 끝에서 두 자리만 반환합니다.
+                if (value && value.length >= 2) {
+                    return value.slice(-2);
+                }
+                return value;
+              }
+          }
+      ],                       
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+          items: [
+            ...dockedItemsConfig,
+            {
+                xtype: 'buttongroup', columns: 5, frame: false,
+                defaults: { enableToggle: true, toggleGroup: 'yearGroup', margin: '0 5 0 0', style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } },
+                items: Array.from({ length: 5 }, (_, i) => ({
+                  text: `${currentYear - i}년`,
+                  pressed: currentYear - i === parseInt(work_YY, 10),
+                  handler: function () {
+                    var grid = this.up('grid');
+                    work_YY = parseInt(this.text.replace('년', ''));
+                    grid.getStore().getProxy().extraParams.work_YY = work_YY;
+                    grid.getStore().reload();
+                  }
+                }))
+            }
+          ]
+        },
+        {
+          xtype: 'buttongroup', columns: 12,
+          defaults: { 
+            enableToggle: true, toggleGroup: 'monthGroup', margin: '0 5 0 0', 
+            style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } 
+          },
+          items: Array.from({ length: 12 }, (_, i) => ({
+              text: `${i + 1}월`,
+              pressed: i + 1 === parseInt(work_MM, 10),
+              handler: function () {
+                var grid = this.up('grid'); // gridpanel 찾기
+                work_MM = parseInt(this.text.replace('월', ''));
+                // 그리드 스토어 리로드
+                var store = grid.getStore();
+                store.getProxy().extraParams.work_MM = work_MM;
+                store.reload();
+              }
+          })),
+          style: { background: '#fff', border: '1px solid #ccc', padding: '6px' }
+        }
+      ],
+   
+    });
+    if (mainGrid) {
+        attachGridToolTip(mainGrid, '{% url "kijang_member_popup" %}?seq_no={seq_no}');
+    }
+    // ★ [추가] 브라우저 크기를 조절할 때 그리드 높이도 같이 조절
+    $(window).on('resize', function() {
+      if (mainGrid && !mainGrid.isDestroyed) {
+        mainGrid.setHeight(getGridHeight());
+        mainGrid.doLayout(); // 레이아웃 강제 갱신
+      }
+    }); 
+
+    const setSelectedFolder = async(strFolder) => {
+      var innerHtml=""
+      var tmpArr = strFolder.split(">>")
+      for(var i=0;i<tmpArr.length;i++){
+        if(i<(tmpArr.length-1)){
+          innerHtml += "<li class='breadcrumb-item'>"+tmpArr[i]+"</li>"
+        }else{
+          innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>"+tmpArr[i]+"</a></li>"
+        }
+      }
+      $('[id="payrollYear"]').html(innerHtml);
+    }
+    const treeLoad = async (seq_no, biz_name, work_YY) => {
+      $('#accordionLeft').empty();
+      $.ajax({
+        url:"{% url 'path_to_pay' %}",
+        data:{
+          path:`static/cert_DS/${biz_name}/${work_YY}/인건비`
+        },
+        dataType:"Json",
+        method: "POST",
+        success:async function(data){
+          var Titles=data.titles;
+          var gridFile=data.nodes;
+
+          for(var s=0;s<Titles.length;s++){
+            const divcard = document.createElement("div")
+            divcard.setAttribute("class","card overflow-hidden mb-2 border-0")
+            divcard.setAttribute("id","collapseHead"+s)
+            const anchor1 = document.createElement('a');
+            anchor1.setAttribute("class","accordion-toggle panel-heading1 collapsed ")
+            anchor1.setAttribute("data-bs-toggle","collapse")
+            // anchor1.setAttribute("data-bs-parent","#accordionAcnt")
+            anchor1.setAttribute("aria-expanded","false")
+            anchor1.href="#collapse"+s     
+            anchor1.innerText = Titles[s].displayName
+            divcard.appendChild(anchor1)
+            const divTabpanel = document.createElement("div")
+            if(s==(Titles.length-1)){
+              divTabpanel.setAttribute("class","panel-collapse collapse show")
+              selectedSheetID = gridFile[gridFile.length-1].id
+              selectedPeriod = Titles[s].displayName
+            } else {
+              divTabpanel.setAttribute("class","panel-collapse collapse")
+            }
+            divTabpanel.setAttribute("id","collapse"+s)
+            divTabpanel.setAttribute("role","tabpanel")
+            divTabpanel.setAttribute("aria-expanded","false")
+            divTabpanel.setAttribute("data-bs-parent","#accordionAcnt")
+            divcard.appendChild(divTabpanel) 
+
+            const ul = document.createElement('ul');                  
+            ul.setAttribute("class","nav1 nav-column flex-column br-7")
+            ul.setAttribute("id","singoList"+s)
+            divTabpanel.appendChild(ul)
+            singoListDetail(ul,Titles[s].displayName,gridFile,Titles[s].displayName,selectedSheetID)
+              
+            document.getElementById('accordionLeft').appendChild(divcard);
+            setSelectedFolder("{{payrollYear}}년  >> "+selectedPeriod);
+          }
+        },
+        error:function(request,status,error){
+          console.log('fail:'+error);
+        }
+      })
+    };
+
+    const singoListDetail = async(ul,selGroup,gridFile,singoPeriod,selSheetID)=>{
+      return new Promise((resolve,reject)=>{
+        var tmpHTML="";
+
+        for(var i=0;i<gridFile.length;i++){
+          var activate="";
+          if(gridFile[i].id==selSheetID){
+            selectedSheetName = gridFile[i].파일명
+            activate = "active"
+          }
+          if(gridFile[i].group==selGroup){
+            const li = document.createElement("li");
+            li.setAttribute('id',"li"+gridFile[i].id);
+            li.setAttribute('class',"nav-item1 mt-0")
+
+            const anchor2 = document.createElement('a');
+            anchor2.href = "javascript:changeSheet('"+gridFile[i].id+"','"+singoPeriod+"','"+gridFile[i].파일명+"','"+gridFile[i].totalPath+"')";
+            anchor2.setAttribute('class',"nav-link thumb " +activate)
+            anchor2.setAttribute('id',gridFile[i].id);
+
+            const designI = document.createElement('i');
+            designI.setAttribute('class',"fa fa-window-restore")
+            if(gridFile[i].파일명.indexOf("납부")!=-1||gridFile[i].파일명.indexOf("소득세")!=-1||gridFile[i].파일명.indexOf("지방세")!=-1||gridFile[i].파일명.indexOf("주민세")!=-1){
+              anchor2.innerHTML = "<span class='badge badge-sm bg-danger badge-hide me-4'>납기:"+gridFile[i].dueDate+"</span>" + gridFile[i].파일명
+            }else if(gridFile[i].파일명.indexOf("대장")!=-1 || gridFile[i].파일명.indexOf("명세")!=-1){
+              anchor2.innerHTML = "<i class='fa fa-address-book text-success me-2'></i>" + gridFile[i].파일명
+            }else if(gridFile[i].파일명.indexOf("신고서")!=-1){
+              anchor2.innerHTML = "<i class='ion ion-grid text-info '></i>" + gridFile[i].파일명 + "<i class='ion ion-grid text-info ms-2'></i>"
+            }else{
+              anchor2.innerHTML = gridFile[i].파일명
+            }
+            li.appendChild(anchor2);  
+            ul.appendChild(li);
+            if(gridFile[i].id==selectedSheetID){
+              changeSheet(selSheetID,singoPeriod,selectedSheetName,gridFile[i].totalPath)
+            }
+          }
+        }
+      })
+    }
+
+    //############# 안내 카톡내용 생성
+    // 접수결과 기본은 false, 전자신고파일 업로드시 true
+    let resultAndFee = false;
+
+    const setMailContent = async (seq_no, work_YY, work_MM, flag) => {
+      $.ajax({
+        url: "{% url 'getMailContent' %}",
+        type: "POST",
+        data: {
+          seq_no: seq_no,
+          work_YY: work_YY,
+          work_MM: work_MM,
+          flag:flag,
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        dataType: "json",
+        success: function (data) {
+
+          var contentId = "introMailContent";
+          var headSubject = "급여대장 및 원천세 신고납부 안내"
+          var bodyContent = `<div class="email-body mt-5">${data.email_content}</div>`
+          let staticUrl = "https://daeseungtax.co.kr/static/assets/images/faces/";
+          let tmpHTML = `
+            <div class="card">
+              <div class="card-header border-bottom">
+                <h4 class="card-title fw-bold" id = "Subject">[${data.recordset_adminInfo.TXT_CorpName}] ${work_YY}년 ${work_MM}월 귀속 ${headSubject} - ${data.recordset_member.biz_name}</h4>
+              </div>
+              <div class="card-body">
+                <div class="email-media">
+                  <div class="mt-0 d-sm-flex">
+                    <img class="me-2 rounded-circle avatar-xl" src="${staticUrl}${ data.recordset_adminInfo.admin_name }.png" alt="avatar">
+                    <div class="media-body">
+                      <div class="media-title fw-bold mt-0">업무담당자 ${data.recordset_adminInfo.admin_name} <span class="tx-13 fw-semibold">(<i class="fe fe-phone-call"></i> ${data.recordset_adminInfo.admin_tel_no} )</span></div>
+                      <p class="mb-0"> <span class="text-muted">책임세무사 ${data.recordset_adminInfo.TXT_DutyCTA} (<i class="fe fe-smartphone"></i> ${data.recordset_adminInfo.TXT_DutyCTAHP} )</span> </p>
+                      <p class="mb-0"> <span class="text-muted">${data.recordset_adminInfo.TXT_OfficeAddress} </span> </p>
+                    </div>
+                  </div>
+                </div>
+                <!-- 이메일 본문 -->
+                ${bodyContent}
+              </div>
+            </div>
+          `;
+          
+          $('[id="' + contentId + '"]').html(tmpHTML);
+        },
+        error: function (request, status, error) {
+          console.log('fail: ' + error);
+        }
+      });
+    };
+
+    function getFiles(biz_name, work_YY, work_MM) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: '{% url "get_folder_files" %}',
+                type: "GET",
+                data: {
+                    biz_name: biz_name,
+                    work_YY: work_YY,
+                    work_MM: work_MM
+                },
+                dataType: "json",
+                success: function(response) {
+                    resolve(response.files);  // ✅ AJAX가 완료되면 `resolve()` 호출
+                },
+                error: function(xhr, status, error) {
+                    console.error("❌ 파일 목록 가져오기 오류:", xhr.responseText);
+                    reject(error);  // ✅ 오류 발생 시 `reject()` 호출
+                }
+            });
+        });
+    }
+
+    //접수증 마우스 클릭시 툴팁발생
+    function attachGridToolTip_JupsuSummit(grid,work_YY){
+      Ext.create('Ext.tip.ToolTip', {
+          target: grid.getEl(),
+          delegate: '.x-grid-cell', // 셀 위에 마우스를 올릴 때만 활성화
+          trackMouse: false, // 마우스를 따라다니지 않음
+          dismissDelay: 0, // 자동 닫힘 비활성화
+          autoHide: true, // 마우스가 떠나면 숨김
+          maxWidth: 600, // 최대 너비를 확장
+          minWidth: 300, // 최소 너비를 설정   
+          anchorToTarget: true, // 툴팁이 셀에 맞게 위치 조정
+          mouseOffset: [-350, -20], // 위치 미세 조정      
+          renderTo: Ext.getBody(),
+          listeners: {
+            beforeshow: function (tip) {
+              const cell = Ext.get(tip.triggerElement);
+              const record = grid.getView().getRecord(cell.parent());
+              const columnIndex = cell.dom.cellIndex;
+              const column = grid.headerCt.getHeaderAtIndex(columnIndex);
+            
+              if (column.dataIndex === 'isIssue') {
+                const seqNo = record.get('seq_no');
+                Ext.Ajax.request({
+                    url: '{% url "mng_corp_jupsuSummit" %}',//이 부분 수정해야한다
+                    method: 'POST',
+                    params: {
+                      seq_no:seqNo,
+                      work_YY:work_YY,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                    }, 
+                    success: function (response) {
+                        const data = Ext.decode(response.responseText);
+                        tip.update(`
+                    <div class="notifications-menu ps3 overflow-hidden">
+                        <div class="drop-heading border-bottom position-relative">
+                            <div class="d-flex">
+                                <div class="counter-icon bg-primary dash d-flex box-shadow-primary">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="fill-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M12,8c-2.2091675,0-4,1.7908325-4,4s1.7908325,4,4,4c2.208252-0.0021973,3.9978027-1.791748,4-4C16,9.7908325,14.2091675,8,12,8z M12,15c-1.6568604,0-3-1.3431396-3-3s1.3431396-3,3-3c1.6561279,0.0018311,2.9981689,1.3438721,3,3C15,13.6568604,13.6568604,15,12,15z M21.960022,11.8046875C19.9189453,6.9902344,16.1025391,4,12,4s-7.9189453,2.9902344-9.960022,7.8046875c-0.0537109,0.1246948-0.0537109,0.2659302,0,0.390625C4.0810547,17.0097656,7.8974609,20,12,20s7.9190063-2.9902344,9.960022-7.8046875C22.0137329,12.0706177,22.0137329,11.9293823,21.960022,11.8046875z M12,19c-3.6396484,0-7.0556641-2.6767578-8.9550781-7C4.9443359,7.6767578,8.3603516,5,12,5s7.0556641,2.6767578,8.9550781,7C19.0556641,16.3232422,15.6396484,19,12,19z"/></svg>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mt-1 mb-0 fs-15 text-dark">법인세 전자신고 접수증</h6>
+                                    <span class="text-muted">${Ext.String.htmlEncode(data.biz_name)} - ${Ext.String.htmlEncode(data.ceo_name)}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close position-absolute end-0 top-50 translate-middle-y me-2" aria-label="Close" id="tooltipCloseBtn"><i class="fe fe-x"></i></button>
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">${data.신고서종류}</span>
+                                </div>
+                            </div>                                                                                    
+                        </div>                                                                                    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">회계기간 종료월 ${data.과세년월}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>      
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고유형 : ${data.신고유형}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                              
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고번호</span>
+                                  <span class="notification-label ">${data.신고번호}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고시각 ${data.신고시각}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                          
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">접수ID ${data.사용자ID}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                              
+                    </div>
+                        `);
+                          // 닫기 버튼에 클릭 이벤트 추가
+                          Ext.defer(() => {
+                              const closeButton = document.getElementById("tooltipCloseBtn");
+                              if (closeButton) {
+                                  closeButton.addEventListener("click", function () {
+                                      tip.hide();
+                                  });
+                              }
+                          }, 100); // 약간의 지연을 줘서 DOM이 렌더링된 후 이벤트를 등록
+                    },
+                    failure: function () {
+                        tip.update('<p>데이터를 불러오는 데 실패했습니다.</p>');
+                    }
+                });
+              } else {
+                  return false; // 다른 열에서는 팝오버를 숨김
+              }
+            }
+          }
+      });  
+    }
+    //문자발송 모달열기 - 각 페이지에 구현해야해...
+    function smsModal (seq_no, hp_no)  {
+      $("#smsModal").modal('show');
+    };
+})();
+  </script>

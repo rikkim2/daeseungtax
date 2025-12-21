@@ -1,0 +1,636 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+{% block styles %}
+<style>
+    .icon-refresh {
+        color: white; /* 글자 색상을 흰색으로 변경 */
+    }
+</style>  
+{% endblock %}
+
+{% block content %}
+
+<div id="ext-grid-container"></div>
+
+{% endblock %}
+{% block scripts %}
+   
+
+<script>
+document.title = "법인세 : 신고서작성 도우미";
+var adminBizLevel = '{{ admin_biz_level }}';
+const isSuperuser = '{{ admin_grade }}' === 'SA';
+var ADID = '{{ ADID }}';        
+var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+var flag = '{{ flag }}';
+var work_YY = '{{ request.session.workyear }}';
+var work_MM = 3
+if(!work_YY){//ExtCommon.js에서 가져온다
+  work_YY = getWorkYearAndMonth('mng_corp').work_YY;
+}
+const currentYear = getWorkYearAndMonth('mng_corp').work_YY;
+
+var store = Ext.create('Ext.data.Store', {
+    storeId: 'memberStore', // 고유 Store ID (옵션)
+    autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+    proxy: {
+        type: 'ajax', // Ajax를 통해 서버와 통신
+        url: '{% url "mng_corp_helper" %}', // 데이터를 가져올 API URL
+        extraParams: {
+            ADID:ADID,
+            work_YY:work_YY
+        },        
+        reader: {
+            type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+            rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+            totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+        },
+    },   
+    fields: [ // 필드 정의 (데이터의 각 열)
+        {name: 'groupManager',type: 'string'},
+        {name: 'seq_no'},
+        {name: 'biz_name', type: 'string'}, 
+        {name: 'SALE',type: 'string'},
+		    {name: 'BENE',type: 'string'},
+		    {name: 'T817', type: 'string'},
+		    {name: 'S817', type: 'string'},
+        {name: 'AA', type: 'string'},
+        {name: 'BB', type: 'string'},
+        {name: 'CC',type: 'string'},
+        {name: 'DD', type: 'string'},
+        {name: 'EE', type: 'string'},
+        {name: 'FF', type: 'string'},
+        {name: 'GG', type: 'string'},
+        {name: 'HH', type: 'string'},
+        {name: 'JJ', type: 'string'},
+        {name: 'WW', type: 'string'},		//이자수익
+        {name: 'XX', type: 'string'},
+        {name: 'YY', type: 'string'},
+        {name: 'KK', type: 'string'},
+        {name: 'LL', type: 'string'},
+        {name: 'MM', type: 'string'},
+        {name: 'NN', type: 'string'},
+        {name: 'PP', type: 'string'},
+        {name: 'QQ', type: 'string'},
+        {name: 'VV', type: 'string'},
+        {name: 'RR', type: 'string'},
+        {name: 'SS', type: 'string'},
+        {name: 'ZZ', type: 'string'},
+        {name: 'AB', type: 'string'},
+        {name: 'AC', type: 'string'},
+        {name: 'inspect_issue', type: 'string'}
+    ],
+    ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+});
+var comboDataStore = Ext.create('Ext.data.Store', {
+    fields: ['id', 'name'],
+    data: [] // 초기 데이터는 비워둠
+});
+
+var checkboxRender =function(value) { 
+	return "<input type='checkbox'" + (value ? "checked='checked'" : "") + ">"; 
+};
+Ext.tip.QuickTipManager.init();
+Ext.onReady(function() {
+    //상단 담당자 선택 도커 시작*******************
+    // onItemClick 핸들러
+    function onItemClickHandler(item) {
+        ADID = item;
+        const data = {
+            flag: flag ,
+            ADID: item,
+            work_YY : work_YY,
+            work_MM : work_MM
+        };
+        // 로딩 마스크 생성 (대상: 그리드나 패널)
+        var targetComponent = Ext.getCmp('mainGrid') || Ext.getBody(); // 대상 설정 (그리드 ID나 body)
+        var loadMask = new Ext.LoadMask({
+            msg: '담당자를 변경중입니다...', 
+            target: targetComponent
+        });
+        Ext.Ajax.request({
+            url: '{% url "mng_corp_helper" %}',//이 부분 수정해야한다
+            method: 'GET',
+            params: data, // 데이터를 GET 파라미터로 전달
+            success: function (response) {
+                try {
+                    const jsonResponse = Ext.decode(response.responseText); // JSON 파싱
+                    store.loadData(jsonResponse); // 데이터 로드
+                    if (item=="전체"){
+                        location.reload();
+                    }                    
+                } catch (e) {
+                    console.error('Failed to parse response:', e, response.responseText);
+                } finally{
+                    loadMask.hide()
+                }
+            },
+            failure: function (response) {
+                console.error('Request failed:', response);
+                loadMask.hide()
+            }
+        });
+        // 선택된 메뉴 버튼 텍스트 업데이트
+        updateScrollMenuText(item);        
+    }
+
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}', // 동적으로 데이터를 가져올 API URL
+            method: 'GET',
+            success: function (response) {
+                const data = Ext.decode(response.responseText); // 응답 데이터를 파싱
+                comboDataStore.loadData(data); // store에 데이터 로드
+            },
+            failure: function () {
+                Ext.Msg.alert('오류', '데이터를 불러오는 데 실패했습니다.');
+            }
+        });
+    }
+    
+    // Docked Items Config 생성
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+    //상단 담당자 선택 도커 끝*******************
+
+    
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+          edit: function (editor, e) {
+              var record = e.record;
+              var field = e.field; 
+              var value = e.value; 
+
+              // ✅ 비고 값이 빈 문자열("")이면 그대로 전송
+              if (field === "bigo" && value === null) {
+                  value = "";
+              }
+              
+              var seq_no = record.get('seq_no');
+              var work_YY = currentYear;
+              var work_MM = field.startsWith("YN_") ? field.replace("YN_", "") : ""; 
+              var target = field === "bigo" ? "bigo" : field.replace("YN_", "");
+              Ext.Ajax.request({
+                  url: "{% url 'tbl_mng_jaroe_update' %}",
+                  method: "POST",
+                  params: {
+                      seq_no: seq_no,
+                      target: target,
+                      work_YY: work_YY,
+                      work_MM: work_MM,
+                      val: value,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                  },
+                  success: function (response) {
+                    Swal.fire({
+                      title: '작업 성공',
+                      text: '작업이 성공적으로 완료되었습니다.',
+                      icon: 'success',
+                      timer: 500,  // Set the timer to 3 seconds (3000 ms)
+                      showConfirmButton: false,  // Hide the confirm button
+                      willClose: () => {
+                        // Optional: Perform any other action after the alert closes
+                      }
+                    });
+                  },
+                  failure: function (response) {
+                    Swal.fire("오류", "전송오류 : " + jqXHR.responseJSON.message, "error");
+                  }
+              });
+          }
+      }
+    });
+    var mainGrid = Ext.create('Ext.grid.Panel', {
+      id: 'mainGrid',
+      renderTo: 'ext-grid-container',
+      title: '{{ gridTitle }}',
+      loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
+      tools: [  //최상단 오른쪽 툴바
+          {
+              xtype: 'textfield',
+              emptyText: '검색어 입력',
+              width: 200,
+              listeners: {
+                  change: function (field, newValue) {
+                      const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                      if (!newValue || newValue.trim() === '') {
+                          store.clearFilter(); // 필터 제거
+                      } else {
+                          store.clearFilter(true); // 기존 필터 제거
+                          const searchValue = newValue.trim().toLowerCase();
+                          store.filterBy(record => {
+                              const bizName = record.get('biz_name')?.toLowerCase() || '';
+                              const ceoName = record.get('ceo_name')?.toLowerCase() || '';
+                              return (
+                                  bizName.includes(searchValue) || ceoName.includes(searchValue)
+                              );
+                          });
+                      }
+                  }
+              }
+              
+          },
+          {
+              xtype: 'button',
+              iconCls: 'icon icon-refresh',
+              handler: function (btn) {
+                  location.reload();
+              },
+              style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },
+      ],            
+      width:'100%',
+      height: window.innerHeight - 120, // 초기 높이 설정
+      scrollable: 'y', // 세로 스크롤 활성화
+      store: store,
+      columnLines: true,
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),        
+      plugins: [cellEditing],
+      columns: [
+        {   xtype: 'rownumberer',width: 0,	sortable: false}, 
+        {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0        }, 
+        {   header: 'SEQ', dataIndex: 'seq_no',width: 0        }, 
+        {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',flex:1,minWidth: 120,locked   : true}, 
+        {   header: '<center>매출<br>16/17</center>', dataIndex: 'SALE', align:'right',width:100, renderer:tooltipRenderer2}, 
+        {   header: '<center>순손익<br></center>', dataIndex: 'BENE', align:'right',width:100, renderer:tooltipRenderer}, 
+        { header: '<center>세금과공과<br>6-11</center>', dataIndex: 'T817', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>벌과금<br>15</center>', dataIndex: 'S817', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>접대비<br>23-갑</center>', dataIndex: 'AA', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>기부금<br>21/22</center>', dataIndex: 'BB', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>대손상각<br>34</center>', dataIndex: 'CC', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>이자비용<br>26-갑</center>', dataIndex: 'DD', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>차입금</center>', dataIndex: 'EE', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>가지급<br>19-갑</center>', dataIndex: 'FF', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>가수금</center>', dataIndex: 'GG', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>선납세금</center>', dataIndex: 'HH', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>미수수익<br>19-을</center>', dataIndex: 'JJ', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>이자수익<br>10-갑</center>', dataIndex: 'WW', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>배당금수익<br>16-2</center>', dataIndex: 'XX', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>외화환산손익<br>40-갑/을</center>', dataIndex: 'YY', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>고정자산<br>20-1</center>', dataIndex: 'KK', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>감가상각<br>20-4</center>', dataIndex: 'LL', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>차량<br>20-2</center>', dataIndex: 'MM', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>재고자산<br>39</center>', dataIndex: 'NN', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>토지<br></center>', dataIndex: 'PP', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>중간배당<br>104</center>', dataIndex: 'QQ', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>최종분개<br>106</center>', dataIndex: 'VV', align:'center',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>결산분개<br>3-1~4</center>', dataIndex: 'RR', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>주식뱐동<br>54</center>', dataIndex: 'SS', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>법인세비용<br>15</center>', dataIndex: 'ZZ', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>세액감면율<br>4/8-2,3/91</center>', dataIndex: 'AB', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '<center>고용증대<br>91-1/10-8/11-5</center>', dataIndex: 'AC', align:'right',width:100, renderer:tooltipRenderer2}, 
+        { header: '', dataIndex: 'inspect_issue',  width: 0        }
+      ],                  
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          items: [...dockedItemsConfig,
+          ,{
+            xtype: 'buttongroup',              
+            columns: 5,
+            frame:false,
+            defaults: {
+                enableToggle: true,
+                toggleGroup: 'yearGroup',
+                margin: '0 5 0 0', // 버튼 간격 (오른쪽으로 5px 간격)
+                style: {
+                    border: '1px solid #ccc',
+                    padding: '5px 6px',
+                    borderRadius: '5px',
+                    transition: 'all 0.2s ease' // 부드러운 전환 효과
+                }
+            },
+            items: Array.from({ length: 5 }, (_, i) => ({
+              text: `${currentYear - i}년`,
+              pressed: currentYear - i === parseInt(work_YY, 10),
+              handler: function () {
+                var selectedYear = parseInt(this.text.replace('년', ''))
+                work_YY = selectedYear
+                const data = {
+                    ADID: ADID,
+                    work_YY : work_YY
+                };
+                // 로딩 마스크 생성 (대상: 그리드나 패널)
+                var targetComponent = Ext.getCmp('mainGrid') || Ext.getBody(); // 대상 설정 (그리드 ID나 body)
+                var loadMask = new Ext.LoadMask({
+                    msg: '연도를 변경중입니다...', 
+                    target: targetComponent
+                });
+                loadMask.show(); // 로딩 표시 시작
+                Ext.Ajax.request({
+                    url: '{% url "mng_corp_helper" %}',//이 부분 수정해야한다
+                    method: 'GET',
+                    params: data, // 데이터를 GET 파라미터로 전달
+                    success: function (response) {
+                        try {
+                            const jsonResponse = Ext.decode(response.responseText); // JSON 파싱
+                            store.loadData(jsonResponse); // 데이터 로드
+                        } catch (e) {
+                            console.error('Failed to parse response:', e, response.responseText);
+                        } finally {
+                            loadMask.hide(); // 로딩 종료
+                        }
+                    },
+                    failure: function (response) {
+                        alert('Request failed:', response);
+                        loadMask.hide(); // 로딩 종료
+                    }
+                });
+              }
+            })),
+          }]
+        } 
+      ]
+    });
+    //회원정보 팝업생성 assets/js/ExtToooltip.js
+    const grid = Ext.ComponentQuery.query('gridpanel')[0]; // 첫 번째 그리드 가져오기
+    const tooltipUrl = '{% url "kijang_member_popup" %}?seq_no={seq_no}';
+    if (grid) {
+      attachGridToolTip(grid, tooltipUrl);
+      attachGridToolTip_Helper(grid, work_YY);
+    }
+});
+// 상호에 마우스 오버시 툴팁 발생
+function attachGridToolTip_Helper(grid,work_YY) {
+  Ext.create('Ext.tip.ToolTip', {
+      target: grid.getEl(),
+      delegate: '.x-grid-cell', // 셀 위에 마우스를 올릴 때만 활성화
+      trackMouse: false, // 마우스를 따라다니지 않음
+      dismissDelay: 0, // 자동 닫힘 비활성화
+      autoHide: false, // 마우스가 떠나면 숨김
+      maxWidth: 600, // 최대 너비를 확장
+      minWidth: 300, // 최소 너비를 설정   
+      anchorToTarget: true, // 툴팁이 셀에 맞게 위치 조정
+      mouseOffset: [10, 0], // 위치 미세 조정      
+      renderTo: Ext.getBody(),
+      listeners: {
+        beforeshow: function (tip) {
+          const cell = Ext.get(tip.triggerElement);
+          const record = grid.getView().getRecord(cell.parent());
+          const columnIndex = cell.dom.cellIndex;
+          const column = grid.headerCt.getHeaderAtIndex(columnIndex);
+          if ((record.get('biz_name') || "").includes('(도움)')) {
+            if (column.dataIndex === 'biz_name') {
+              const seqNo = record.get('seq_no');
+
+              // AJAX로 데이터를 가져와 툴팁 업데이트
+              Ext.Ajax.request({
+                  url: '{% url "mng_corp_deduct_tooltip" %}',//이 부분 수정해야한다
+                  method: 'POST',
+                  params: {
+                    seq_no:seqNo,
+                    work_YY:work_YY,
+                    csrfmiddlewaretoken: "{{ csrf_token }}"
+                  }, 
+                  success: function (response) {
+                    const data = Ext.decode(response.responseText);
+                    tip.update(`
+                    <div class="notifications-menu ps3 overflow-hidden">
+                        <div class="drop-heading border-bottom position-relative">
+                            <div class="d-flex">
+                                <div class="counter-icon bg-primary dash d-flex box-shadow-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="fill-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M12,8c-2.2091675,0-4,1.7908325-4,4s1.7908325,4,4,4c2.208252-0.0021973,3.9978027-1.791748,4-4C16,9.7908325,14.2091675,8,12,8z M12,15c-1.6568604,0-3-1.3431396-3-3s1.3431396-3,3-3c1.6561279,0.0018311,2.9981689,1.3438721,3,3C15,13.6568604,13.6568604,15,12,15z M21.960022,11.8046875C19.9189453,6.9902344,16.1025391,4,12,4s-7.9189453,2.9902344-9.960022,7.8046875c-0.0537109,0.1246948-0.0537109,0.2659302,0,0.390625C4.0810547,17.0097656,7.8974609,20,12,20s7.9190063-2.9902344,9.960022-7.8046875C22.0137329,12.0706177,22.0137329,11.9293823,21.960022,11.8046875z M12,19c-3.6396484,0-7.0556641-2.6767578-8.9550781-7C4.9443359,7.6767578,8.3603516,5,12,5s7.0556641,2.6767578,8.9550781,7C19.0556641,16.3232422,15.6396484,19,12,19z"/></svg>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mt-1 mb-0 fs-15 text-dark">세액감면 공제 판단사항</h6>
+                                    <span class="text-muted">${Ext.String.htmlEncode(data.biz_name)} - ${Ext.String.htmlEncode(data.ceo_name)}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close position-absolute end-0 top-50 translate-middle-y me-2" aria-label="Close" id="tooltipCloseBtn"><i class="fe fe-x"></i></button>
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-yellow brround">
+                                    <i class="icon icon-magic-wand"></i>
+                                </div>
+                                <div>
+                                <span class="notification-label mb-1">중소기업 특별세액감면 ${data.SpecialDeduct === 'Y' ? '⭕' : '❌'}, 감면율 : ${data.SpecialDeductRate} %</span>
+                                <span class="notification-subtext text-muted">수도권외 ${data.isRural === 'Y' ? '⭕' : '❌'}, 소기업요건 ${data.isSmall === 'Y' ? '⭕' : '❌'}, 업종:${Ext.String.htmlEncode(data.upjong)}${data.isSpecialUpjong === 'Y' ? '⭕' : '❌'} </span>
+                                </div>
+                                                        
+                            </div>                                                                                    
+                        </div>                                                                                    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-red brround">
+                                    <i class="icon icon-fire"></i>
+                                </div>
+                                <div>
+                                <span class="notification-label mb-1">창업중소기업감면 ${data.ChangUpDeduct === 'Y' ? '⭕' : '❌'}, 감면율 :${data.ChangUpDeductRate } %</span>
+                                <span class="notification-subtext text-muted">과밀지역외 ${data.isKWAMIL === '' ? '⭕' : '❌'}, 대표자나이 : ${data.age}세, 개업요건 : ${data.kisu <=5 ? '⭕' : '❌'}(${data.kisu}기), 소규모창업 ${data.isLittle === 'Y' ? '⭕' : '❌'}, 업종:${Ext.String.htmlEncode(data.upjong)}${data.isSpecialUpjong === 'Y' ? '⭕' : '❌'}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>      
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                <span class="notification-label mb-1">청년여부 ${data.isYoung === 'Y' ? '⭕' : '❌'}</span>
+                                <span class="notification-label ">물류산업 ${data.isMyulyu === 'Y' ? '⭕' : '❌'}, 신성장산업 ${data.isNewGroth === 'Y' ? '⭕' : '❌'}, 지식기반산업 ${data.isKnowledge === 'Y' ? '⭕' : '❌'}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                              
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-green brround">
+                                    <i class="icon icon-graduation"></i>
+                                </div>
+                                <div>
+                                <span class="notification-label mb-1">기업부설연구소 보유여부 ${data.isRND === 'Y' ? '⭕' : '❌'}</span>
+                                <span class="notification-label ">벤처기업 인증여부 ${data.isVenture === 'Y' ? '⭕' : '❌'}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-yellow brround">
+                                    <i class="icon icon-people"></i>
+                                </div>
+                                <div>
+                                <span class="notification-label mb-1">고용증대 세액공제여부 ${data.cntGoyoungIncrease > 0 ? '⭕' : '❌'}</span>
+                                <span class="notification-label ">고용증가인원 : ${data.cntGoyoungIncrease} 명</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                          
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                <span class="notification-label mb-1">주소 :  ${data.addr}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                                                                
+                    </div>
+                    `);
+                      // 닫기 버튼에 클릭 이벤트 추가
+                      Ext.defer(() => {
+                          const closeButton = document.getElementById("tooltipCloseBtn");
+                          if (closeButton) {
+                              closeButton.addEventListener("click", function () {
+                                  tip.hide();
+                              });
+                          }
+                      }, 100); // 약간의 지연을 줘서 DOM이 렌더링된 후 이벤트를 등록
+                },
+                failure: function () {
+                    tip.update('<p>데이터를 불러오는 데 실패했습니다.</p>');
+                }
+              });
+            }
+          } else {
+              return false; // 다른 열에서는 팝오버를 숨김
+          }
+        }
+      }
+  });
+}
+
+//순손익 위에 미작성 정보 툴팁
+var tooltipRenderer = function(value, metaData,record) {
+	var issue_arr = record.get('inspect_issue').split('#');
+  
+	var tmpstr=issue_arr[0];
+  tmpstr += tooltip_detail(issue_arr);
+	
+	metaData.tdAttr = Ext.String.format('data-qtip="{0}"', tmpstr	);
+	return value;
+};
+//각 계정위에 작성된 서식정보 툴팁
+var tooltipRenderer2 = function(value, metaData,record) {
+  var strippedValue = value.replace(/<[^>]*>/g, "");
+	var issue_arr = strippedValue.split('/');
+  if(issue_arr.length>1){
+    issue_arr.pop();                  // 마지막 요소 제거
+  }
+  var tmpstr = tooltip_detail(issue_arr);
+  tmpstr = tmpstr.replace("미작성","")
+	metaData.tdAttr = Ext.String.format('data-qtip="{0}"', tmpstr	);
+	return value;
+};
+function tooltip_detail(issue_arr){
+  var tmpstr="";
+  for (var w=0;w<issue_arr.length ;w++ )	{
+		if (issue_arr[w]=='101') {
+			tmpstr = tmpstr +'*101 재무상태표 미작성<br>'
+		}else if (issue_arr[w]=='102') {
+			tmpstr = tmpstr + '*102 손익계산서 미작성<br>'
+		}else if (issue_arr[w]=='104') {
+			tmpstr = tmpstr + '*104 이익잉여금처분계산서 미작성<br>'
+		}else if (issue_arr[w]=='105') {
+			tmpstr = tmpstr + '*105 합계잔액시산표 미작성<br>'
+		}else if (issue_arr[w]=='106') {
+			tmpstr = tmpstr + '*106 결산 부속명세서 미작성<br>'
+		}else if (issue_arr[w]=='3-1') {
+			tmpstr = tmpstr + '*3-1 표준 재무상태표 미작성<br>'
+		}else if (issue_arr[w]=='3-2') {
+			tmpstr = tmpstr + '*3-2 표준 손익계산서 미작성<br>'
+		}else if (issue_arr[w]=='3-4') {
+			tmpstr = tmpstr + '*3-4 표준 잉여금처분계산서 미작성<br>'
+		}else if (issue_arr[w]=='16') {
+			tmpstr = tmpstr + "*16 수입금액조정명세서 미작성<br>" 
+		}else if (issue_arr[w]=='16-2') {
+			tmpstr = tmpstr + "*16-2 수입배당금액명세서 미작성<br>" 
+		}else if (issue_arr[w]=='17') {
+			tmpstr = tmpstr + "*17 조정후수입금액명세서 미작성<br>"
+		}else if (issue_arr[w]=='39') {
+			tmpstr = tmpstr + "*39 재고자산평가조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='29') {
+			tmpstr = tmpstr + "*29 업무용승용차관련비용명세서 미작성<br>"
+		}else if (issue_arr[w]=='20-4') {
+			tmpstr = tmpstr + "*20-4 감가상각비조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='110') {
+			tmpstr = tmpstr + "*110-127 유형자산감가상각비명세서(총괄) 미작성<br>"
+		}else if (issue_arr[w]=='19-1') {
+			tmpstr = tmpstr + "*19-1 가지급금 인정이자 조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='26-갑') {
+			tmpstr = tmpstr + "*26-갑 업무무관부동산등에관련한차입금이자조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='34') {
+			tmpstr = tmpstr + "*34 대손충당금및대손금조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='21') {
+			tmpstr = tmpstr + "*21 기부금명세서 미작성<br>"
+		}else if (issue_arr[w]=='22') {
+			tmpstr = tmpstr + "*22 기부금조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='23-갑') {
+			tmpstr = tmpstr + "*23-갑 접대비조정명세서 미작성<br>"
+		}else if (issue_arr[w]=='6-11') {
+			tmpstr = tmpstr + "*6-11 세금과공과금명세서 미작성<br>"
+		}else if (issue_arr[w]=='15') {
+			tmpstr = tmpstr + "*15 소득금액조정합계표 미작성<br>"
+		}else if (issue_arr[w]=='40-갑') {
+			tmpstr = tmpstr + "*40-갑 외화자산등평가차손익조정명세서(갑,을) 미작성<br>"
+		}else if (issue_arr[w]=='47-갑') {
+			tmpstr = tmpstr + "*47(갑) 주요계정명세서(갑) 미작성<br>"
+		}else if (issue_arr[w]=='47_2') {
+			tmpstr = tmpstr + "*47(을) 주요계정명세서(을)미작성<br>"
+		}else if (issue_arr[w]=='50-갑') {
+			tmpstr = tmpstr + "*50(갑) 자본금과적립금조정명세서(갑) 미작성<br>"
+		}else if (issue_arr[w]=='51') {
+			tmpstr = tmpstr + "*51 중소기업등기준검토표 미작성<br>"
+		}else if (issue_arr[w]=='54') {
+			tmpstr = tmpstr + "*54 주식이동상황명세서 미작성<br>"
+		}else if (issue_arr[w]=='85') {
+			tmpstr = tmpstr + "*85 지출증빙서류검토표 미작성<br>"
+		}else if (issue_arr[w]=='90') {
+			tmpstr = tmpstr + "*90 전산조직운영명세서 미작성<br>"
+		}else if (issue_arr[w]=='99') {
+			tmpstr = tmpstr + "*99 조정반신청서 미작성<br>"
+		}else if (issue_arr[w]=='4') {
+			tmpstr = tmpstr + "*4 최저한세조정명세서<br>"
+		}else if (issue_arr[w]=='8-갑') {
+			tmpstr = tmpstr + "*8-갑 공제감면세액및추가납부세액합계표(갑)<br>"
+		}else if (issue_arr[w]=='8-을') {
+			tmpstr = tmpstr + "*8-을 공제감면세액및추가납부세액합계표(을)<br>"
+		}else if (issue_arr[w]=='8-2') {
+			tmpstr = tmpstr + "*8-2 공제감면세액계산서(2)<br>"
+		}else if (issue_arr[w]=='8-3') {
+			tmpstr = tmpstr + "*8-3 공제감면세액계산서(3)<br>"
+		}else if (issue_arr[w]=='91-조-2') {
+			tmpstr = tmpstr + "*91-조-2 세액감면(면제)신청서<br>"
+		}else if (issue_arr[w]=='91-조-1') {
+			tmpstr = tmpstr + "*91-조-1 세액공제신청서<br>"
+		}else if (issue_arr[w]=='91-조-10-8') {
+			tmpstr = tmpstr + "*91-조-10-8 고용증대기업에대한공제세액계산서<br>"
+		}else if (issue_arr[w]=='91-조-11-5') {
+			tmpstr = tmpstr + "*91-조-11-5 고용증가인원에대한사회보험료세액공제공제세액계산서<br>"
+		}else if (issue_arr[w]=='3') {
+			tmpstr = tmpstr + "*3 법인세과세표준및세액조정계산서 미작성<br>"
+		}else if (issue_arr[w]=='1') {
+			tmpstr = tmpstr + "*1 법인세과세표준및신고서 미작성<br>"
+		}else if (issue_arr[w]=='92-지-43') {
+			tmpstr = tmpstr + "*92-지-43 지방세신고서 미작성<br>"
+		}else if (issue_arr[w]=='198') {
+			tmpstr = tmpstr + "*198 법인세신고접수증<br>"
+		}else if (issue_arr[w]=='199') {
+			tmpstr = tmpstr + "*199 지방세신고접수증<br>"
+		}
+	}
+  return tmpstr
+}
+//문자발송 모달열기 - 각 페이지에 구현해야해...
+function smsModal (seq_no, hp_no)  {
+  $("#smsModal").modal('show');
+};
+
+  </script>
+
+    {% endblock %}

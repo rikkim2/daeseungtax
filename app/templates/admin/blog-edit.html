@@ -1,0 +1,418 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">새블로그</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">고객지원</li>
+										<li class="breadcrumb-item"><a href="javascript:void(0);">블로그</a></li>
+										<li class="breadcrumb-item active" aria-current="page">새글업로드</li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+
+							<div class="row">
+
+								<div class="col-lg-12 col-md-12 col-md-12">
+									<div class="card ">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">블로그 작성</h3>
+										</div>
+
+										{% if post %}
+										<form action="{% url 'blog_edit' pk=post.id %}" method="post" enctype="multipart/form-data">
+										{% else %}
+										<form action="{% url 'blog_new' %}" method="post" enctype="multipart/form-data">
+										{% endif %}										
+											{% csrf_token %}
+										<div class="card-body">
+											<div class="form-group">
+												<label for="blogTitle" class="form-label text-dark">제목</label>
+												<input type="text" class="form-control" id="title" name="title" placeholder="제목을 입력하세요" value="{{ post.title }}">
+											</div>
+											<div class="form-group">
+												<label for="category" class="form-label text-dark">카테고리</label>
+												<select class="form-control select2 form-select" id="category" name="category" data-placeholder="Select">
+													{% for category in categories %}
+													<option value="{{ category.id }}" {% if request.POST.category == category.id %} selected {% endif %}>{{ category.name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+											<div class="form-group">
+												<label class="form-label text-dark" for="writer">작성자</label>
+												<select class="form-control select2 form-select" id="author" name="author" data-placeholder="Select" >
+													{% for admin_name in admin_names %}
+													<option value="{{ admin_name }}" {% if request.POST.author == admin_name %} selected {% endif %}>{{ admin_name }}</option>
+													{% endfor %}
+												</select>
+											</div>
+											<div class="form-group">
+												<label class="form-label text-dark">공개여부</label>
+												<div class="d-md-flex ad-post-details">
+													<label class="custom-control custom-radio mb-2 me-4">
+														<input type="radio" class="custom-control-input" name="is_public" value="True"  {% if post.is_public == True %} checked {% endif %}> 
+														<span class="custom-control-label"><a href="javascript:void(0)">공개 </a></span>
+												</label>
+												<label class="custom-control custom-radio mb-2">
+														<input type="radio" class="custom-control-input" name="is_public" value="False"  {% if post.is_public == False  or not post.is_public %} checked {% endif %}>
+														<span class="custom-control-label"><a href="javascript:void(0)">비공개</a></span>
+												</label>
+												</div>
+											</div>
+											<label class="form-label text-dark">상단이미지</label>
+											<div class="p-4 border mb-4 form-group">
+												<div>
+													<!-- <input id="titleImg" type="file" name="files" accept="image/jpeg, image/png, text/html, application/zip, text/css, text/js" multiple /> -->
+													<input id="titleImg" type="file" name="titleImg" class="dropify"  data-bs-height="100" multiple />
+												</div>
+												<div>
+														<strong>Uploaded Files:</strong>
+														<ul>
+																{% for attachment in attachments %}
+																<li>
+																		<a href="{{ attachment.file.url }}">{{ attachment.file.name }} ({{ attachment.uploaded_at | date:"y.m.d.H:i" }})</a>
+																		<a href="{% url 'delete_attachment' attachment.id %}" class="btn btn-danger btn-sm" title="첨부파일을 삭제합니다"><i class="fe fe-trash"></i></a>
+																		
+																</li>
+																{% endfor %}
+														</ul>
+												</div>
+											</div>
+											<!-- <div id="editor"></div> -->
+											<div id="summernote"></div>
+											<div>
+												<textarea id="content" name="content" style="display:none;"></textarea>
+											</div>											
+											<div class="form-group">
+												<label class="form-label text-dark">개정세법(작성내용 중 개정된 세법 내용이 포함된 경우)</label>
+												<div class="d-md-flex ad-post-details">
+													<label class="custom-control custom-radio mb-2 me-4">
+														<input type="radio" class="custom-control-input" name="new_law" value="True" {% if post.new_law == True %} checked {% endif %}>
+														<span class="custom-control-label"><a href="javascript:void(0)">예 </a></span>
+													</label>
+													<label class="custom-control custom-radio  mb-2">
+														<input type="radio" class="custom-control-input" name="new_law" value="False" {% if post.new_law == False or not post.new_law %} checked {% endif %}>
+														<span class="custom-control-label"><a href="javascript:void(0)">아니오(일반)</a></span>
+													</label>
+												</div>
+											</div>
+											<div class="control-group form-group  mb-0">
+												<label class="form-label text-dark">중요도</label>
+												<div class=" border p-3 br-7">
+													<div class="d-md-flex ad-post-details">
+														<label class="custom-control custom-radio mb-0 me-5">
+															<input type="radio" class="custom-control-input" name="important_grade" value="1" {% if post.important_grade == '1' %} checked {% endif %}>
+															<span class="custom-control-label">매우중요</span>
+														</label>
+														<label class="custom-control custom-radio  mb-0 me-4">
+															<input type="radio" class="custom-control-input" name="important_grade"  value="2" {% if post.important_grade == '2' %} checked {% endif %}>
+															<span class="custom-control-label">중요</span>
+														</label>
+														<label class="custom-control custom-radio  mb-0 me-4">
+															<input type="radio" class="custom-control-input" name="important_grade" value="3" {% if post.important_grade == '3' or not post.important_grade %} checked {% endif %}>
+															<span class="custom-control-label">기본</span>
+														</label>
+														<label class="custom-control custom-radio  mb-0">
+															<input type="radio" class="custom-control-input" name="important_grade"  value="4" {% if post.important_grade == '4' %} checked {% endif %}>
+															<span class="custom-control-label">상식</span></span>
+														</label>
+													</div>
+												</div>
+											</div>
+											<div class="form-group">
+												<label class="form-label" for="videoUrl">유튜브 URL</label>
+												<input type="text" class="form-control" id="youtube_url" name="youtube_url" placeholder="https://www.youtube.com" value="{{post.youtube_url}}">
+											</div>											
+										</div>
+
+										<div class="card-footer">
+											<button type="submit" class="btn btn-primary float-end mb-1 mb-sm-0">저장</button>
+											<a href="javascript:void(0)" class="btn btn-secondary float-end me-2 mb-1 mb-sm-0">미리보기</a>
+										</div>
+										</form>
+										{% if errors_json %}
+										<script>
+												// 뷰에서 전달된 JSON 형식의 에러 메시지를 사용
+												var errors = JSON.parse('{{ errors_json|safe }}');
+												alert(JSON.stringify(errors, null, 2));
+										</script>
+										{% endif %}								
+									</div>
+								</div>
+							</div>
+							<!-- /row -->
+
+        {% endblock %}
+
+    {% block scripts %}
+
+	
+		<!-- ckeditor JS -->
+		<!-- <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script> -->
+		<script src=" {% static 'assets/plugins/ckeditor5-build-classic-41.1.0/ckeditor5-build-classic/ckeditor.js' %} "></script>
+  
+		<!--Internal Fancy uploader js-->
+		<script src=" {% static 'assets/plugins/fancyuploder/jquery.ui.widget.js' %} "></script>
+		<script src=" {% static 'assets/plugins/fancyuploder/jquery.fileupload.js' %} "></script>
+		<script src=" {% static 'assets/plugins/fancyuploder/jquery.iframe-transport.js' %} "></script>
+		<script src=" {% static 'assets/plugins/fancyuploder/jquery.fancy-fileupload.js' %} "></script>
+		<script src=" {% static 'assets/plugins/fancyuploder/fancy-uploader.js' %} "></script>
+
+		<!-- SELECT2 JS -->
+		<script src=" {% static 'assets/plugins/select2/select2.full.min.js' %} "></script>
+
+		<!-- THEMECOLORS JS -->
+		<script src="{% static 'assets/js/themeColors.js'%}"></script>
+		<!-- INTERNAL Summernote Editor js -->
+		<script src=" {% static 'assets/plugins/summernote-editor/summernote1.js' %} "></script>
+		<script src=" {% static 'assets/js/summernote.js' %} "></script>
+
+		<!-- FILE UPLOAD JS -->
+        <script src=" {% static 'assets/plugins/fileuploads/js/fileupload.js' %} "></script>
+        <script src=" {% static 'assets/plugins/fileuploads/js/file-upload.js' %} "></script>
+<script>
+$(document).ready(function() {
+    // Summernote 에디터 초기화
+    $('#summernote').summernote({
+      height: 300,  // 에디터의 높이 설정
+			callbacks: {
+				onImageUpload: function(files) {
+					// 이미지 파일을 서버로 업로드하는 로직
+					var data = new FormData();
+					data.append('file', files[0]);  // 예제에서는 단일 파일 처리
+					$.ajax({
+						url: "{% url 'image_upload' %}",  // 이미지를 처리할 서버의 URL
+						type: 'POST',
+						data: data,
+						contentType: false,
+						processData: false,
+						success: function(data) {
+							alert(data.url)
+							alert(data.filename)
+							$('#summernote').summernote('insertImage', data.url, data.filename); // 서버로부터 받은 이미지 URL로 에디터에 이미지 삽입
+						}
+					});
+				}
+			}
+    });
+
+    // 서버로부터 불러온 블로그 내용
+    var content = '{{ post.content|safe }}';  // safe 필터를 사용하여 HTML을 그대로 유지
+    
+    if (content != "") {
+      var savedBlogContent = content;
+    } else {
+      var savedBlogContent = `
+			<center><h3>법률 해설 제목</h3></center>
+      <center><p><h4>작성일: [날짜], 법률 전문가: [이름]</h4></p></center>
+			<br>
+      <center><h3>법률 해설</h3></center>
+      <center><p><h4>여기에 해당 법률에 대한 해설을 입력하세요...</h4></p></center>
+			<br>
+      <center><h3>실제 사례</h3></center>
+      <center><p><h4>해당 법률이 적용된 실제 사례를 소개합니다...</h4></p></center>
+			<br>
+      <center><h3>근거 법령</h3></center>
+      <center><p><h4>해설과 사례에 근거한 법률 및 조항을 명시합니다...</h4></p></center>
+			`
+    }
+
+    // Summernote 에디터에 내용 설정
+    $('#summernote').summernote('code', savedBlogContent);
+});
+var form = document.querySelector('form');
+form.onsubmit = function(event) {
+    var title = document.getElementById('title').value.trim();
+
+    if (title === '') {
+        alert('제목을 입력해주세요.');
+        event.preventDefault(); // 폼 제출 방지
+    }
+
+    // Summernote 에디터의 내용을 가져옵니다.
+    var summernoteContent = $('#summernote').summernote('code');
+
+    // 에디터 내용이 비어있는지 확인합니다. (선택적)
+    if (!summernoteContent || $('<div>').html(summernoteContent).text().trim() === '') {
+        alert('내용을 입력해주세요.');
+        event.preventDefault(); // 폼 제출 방지
+    }else {
+			var content = document.querySelector('#content');
+			content.value = summernoteContent;
+		}
+
+};
+
+
+/*
+
+
+
+let editorInstance;
+ClassicEditor
+    .create( document.querySelector( '#editor' ), {
+        extraPlugins: [ MyCustomUploadAdapterPlugin ]
+    } )
+    .then(editor => {
+        // 에디터 인스턴스를 저장합니다.
+        editorInstance = editor;
+				var savedBlogContent;
+				// 서버로부터 불러온 블로그 내용
+				var content = '{{ post.content|safe }}';  // safe 필터를 사용하여 HTML을 그대로 유지	
+
+				if (content != "") {
+					savedBlogContent = content.replace(/"/g, "'");
+				} else {
+					savedBlogContent = "<h1>법률 해설 제목</h1>";
+          savedBlogContent += "<p><em>작성일: [날짜], 법률 전문가: [이름]</em></p>";
+          savedBlogContent +=  '<hr><h2>법률 해설</h2>';
+          savedBlogContent +=  '<p>여기에 해당 법률에 대한 해설을 입력하세요...</p>';
+          savedBlogContent +=  '<h2>실제 사례</h2>';
+          savedBlogContent +=  '<p>해당 법률이 적용된 실제 사례를 소개합니다...</p>';
+          savedBlogContent +=  '<h2>근거 법령</h2>';
+          savedBlogContent +=  '<p>해설과 사례에 근거한 법률 및 조항을 명시합니다...</p>';
+        		
+				}
+				
+				// CKEditor 인스턴스에 내용 설정
+				editorInstance.setData(savedBlogContent);				
+    })
+    .catch(error => {
+        console.error(error);
+    });
+
+var form = document.querySelector('form');
+form.onsubmit = function(e) {
+	var title = document.getElementById('title').value.trim();
+
+	if (title === '') {
+			alert('제목을 입력해주세요.');
+			event.preventDefault(); // 폼 제출 방지
+	}
+	var content = document.querySelector('#content');
+	if (editorInstance) {
+			var editorData = editorInstance.getData();
+			content.value = editorData;
+	} else {
+			console.error('에디터 인스턴스가 생성되지 않았습니다.');
+	}
+};	
+class MyUploadAdapter {
+    constructor( loader ) {
+        // The file loader instance to use during the upload.
+        this.loader = loader;
+    }
+
+    // Starts the upload process.
+    upload() {
+        return this.loader.file
+            .then( file => new Promise( ( resolve, reject ) => {
+                this._initRequest();
+                this._initListeners( resolve, reject, file );
+                this._sendRequest( file );
+            } ) );
+    }
+
+    // Aborts the upload process.
+    abort() {
+        if ( this.xhr ) {
+            this.xhr.abort();
+        }
+    }
+
+    // Initializes the XMLHttpRequest object using the URL passed to the constructor.
+    _initRequest() {
+        const xhr = this.xhr = new XMLHttpRequest();
+        // Note that your request may look different. It is up to you and your editor
+        // integration to choose the right communication channel. This example uses
+        // a POST request with JSON as a data structure but your configuration
+        // could be different.
+        xhr.open( 'POST', "{% url 'image_upload' %}", true );
+        xhr.responseType = 'json';
+    }
+
+    // Initializes XMLHttpRequest listeners.
+    _initListeners( resolve, reject, file ) {
+        const xhr = this.xhr;
+        const loader = this.loader;
+        const genericErrorText = `Couldn't upload file: ${ file.name }.`;
+
+        xhr.addEventListener( 'error', () => reject( genericErrorText ) );
+        xhr.addEventListener( 'abort', () => reject() );
+        xhr.addEventListener( 'load', () => {
+            const response = xhr.response;
+
+            // This example assumes the XHR server's "response" object will come with
+            // an "error" which has its own "message" that can be passed to reject()
+            // in the upload promise.
+            //
+            // Your integration may handle upload errors in a different way so make sure
+            // it is done properly. The reject() function must be called when the upload fails.
+            if ( !response || response.error ) {
+                return reject( response && response.error ? response.error.message : genericErrorText );
+            }
+
+            // If the upload is successful, resolve the upload promise with an object containing
+            // at least the "default" URL, pointing to the image on the server.
+            // This URL will be used to display the image in the content. Learn more in the
+            // UploadAdapter#upload documentation.
+            resolve( {
+                default: response.url
+            } );
+        } );
+
+        // Upload progress when it is supported. The file loader has the #uploadTotal and #uploaded
+        // properties which are used e.g. to display the upload progress bar in the editor
+        // user interface.
+        if ( xhr.upload ) {
+            xhr.upload.addEventListener( 'progress', evt => {
+                if ( evt.lengthComputable ) {
+                    loader.uploadTotal = evt.total;
+                    loader.uploaded = evt.loaded;
+                }
+            } );
+        }
+    }
+
+    // Prepares the data and sends the request.
+    _sendRequest( file ) {
+        // Prepare the form data.
+        const data = new FormData();
+
+        data.append( 'upload', file );
+
+        // Important note: This is the right place to implement security mechanisms
+        // like authentication and CSRF protection. For instance, you can use
+        // XMLHttpRequest.setRequestHeader() to set the request headers containing
+        // the CSRF token generated earlier by your application.
+
+        // Send the request.
+        this.xhr.send( data );
+    }
+}
+
+function MyCustomUploadAdapterPlugin( editor ) {
+    editor.plugins.get( 'FileRepository' ).createUploadAdapter = ( loader ) => {
+        // Configure the URL to the upload script in your back-end here!
+        return new MyUploadAdapter( loader );
+    };
+}
+*/
+
+</script>
+
+
+    {% endblock %}

@@ -1,0 +1,1028 @@
+{# templates/admin/member_form.html #}
+{% load static %}
+{% load humanize %}
+
+<style>
+  .datepicker {
+    width: auto !important;
+    min-width: 220px;
+    max-width: 280px;
+  }
+
+  /* 아바타 영역이 다른 form-group과 같은 흐름/간격을 타도록 */
+  .avatar-wrap{
+    position: relative;
+    display: inline-block;   /* 아바타 크기만큼만 */
+    line-height: 0;          /* 아래 여백 방지 */
+    margin-top: .25rem;      /* 라벨과 간격(다른 입력들과 비슷하게) */
+  }
+
+  .avatar-click{
+    cursor: pointer;
+  }
+
+  /* 카메라 버튼을 아바타 오른쪽 아래에 겹치기 */
+  .avatar-camera{
+    position: absolute;
+    right: -25px;
+    bottom: 9px;
+
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+
+    display: grid;
+    place-items: center;
+
+    border: 2px solid #fff;         /* 아바타 테두리 위로 깔끔하게 */
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+
+    background: #22c55e;            /* bg-success 느낌 */
+    color: #fff;
+    padding: 0;
+  }
+
+  .avatar-camera i{ font-size: 16px; line-height: 1; }
+</style>
+<script>
+(function(){
+  const memberForm = document.getElementById('memberForm');
+  const input = document.getElementById('realUpload');
+  const avatarEl = document.getElementById('avatarClick');
+  const uploadUrl = "{% url 'kijang_member_fileupload' %}";
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  }
+
+  function openPicker(e){
+    e.preventDefault();
+    e.stopPropagation();
+    input?.click();
+  }
+
+  document.getElementById('avatarClick')?.addEventListener('click', openPicker);
+  document.getElementById('cameraClick')?.addEventListener('click', openPicker);
+
+  input?.addEventListener('change', function(){
+    if (!input.files || input.files.length === 0) return;
+
+    // 회원 이미지 업로드는 페이지 이동 없이 Ajax로 처리
+    const formData = new FormData(memberForm);
+    const csrfToken = getCookie('csrftoken');
+    console.debug('[member_form] upload start', { uploadUrl });
+    fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+      },
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        console.debug('[member_form] upload response', { status: res.status, data });
+        if (!res.ok || !data || !data.ok) {
+          const msg = (data && (data.error || data.message)) || `Upload failed (${res.status})`;
+          throw new Error(msg);
+        }
+        if (data.image_url && avatarEl) {
+          const freshUrl = `${data.image_url}?v=${Date.now()}`;
+          avatarEl.setAttribute('data-bs-image-src', freshUrl);
+          avatarEl.style.backgroundImage = `url('${freshUrl}')`;
+          avatarEl.style.backgroundSize = 'cover';
+          avatarEl.style.backgroundPosition = 'center';
+        }
+        input.value = '';
+      })
+      .catch((err) => {
+        console.error(err);
+        alert(err?.message || '이미지 업로드에 실패했습니다.');
+      });
+
+    return;
+  });
+})();
+</script>
+
+<form id="memberForm">
+  {% csrf_token %}
+  <input type="hidden" name="seq_no" value="{{ user.seq_no|default_if_none:'' }}">
+
+  <div class="card">
+    <div class="card-header border-bottom">
+      <h4 class="mb-0 fw-bold">기본정보</h4>
+    </div>
+
+    <div class="card-body p-0 task-edit-main">
+
+      <div class="row p-5 border-bottom">
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+
+            <div class="avatar-wrap">
+              {% csrf_token %}
+              <span id="avatarClick"
+                    class="avatar avatar-xxl brround cover-image"
+                    data-bs-image-src="{% if userProfile %}{{ userProfile.image.url }}{% else %}{% static 'assets/images/faces/blank.jpg' %}{% endif %}"
+                    style="cursor:pointer; background-image: url('{% if userProfile %}{{ userProfile.image.url }}{% else %}{% static 'assets/images/faces/blank.jpg' %}{% endif %}'); background-size: cover; background-position: center;">
+              </span>
+              <input type="hidden" name="title" value="{{ user.seq_no }}">
+              <input type="hidden" name="description" value="{{ dateNow }}">
+              <input id="realUpload" type="file" name="image" accept="image/jpeg,image/png" class="d-none">
+              <span id="cameraClick" class="badge bg-success rounded-pill ms-6 avatar-icon-badge upload" style="cursor:pointer;">
+                <i class="fe fe-camera"></i>
+              </span>
+            </div>
+          </div>
+        </div>    
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">영업담당자</label>
+            <div class="input-group" id="Biz_Par_Chk">
+              <input type="text"
+                     class="form-control text-dark"
+                     id="Biz_Par_Chk"
+                     name="Biz_Par_Chk"
+                     value="{{ user.biz_par_chk|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+      {# ───────── 기본정보 ───────── #}
+      <div class="row p-5 border-bottom">
+    
+        <!-- 회원아이디 -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">
+              회원아이디 <span class="text-danger">*</span>
+            </label>
+            <div class="input-group" id="wrap_user_id">
+              <input type="text"
+                     class="form-control text-dark"
+                     id="user_id"
+                     name="user_id"
+                     value="{{ user.user_id|default_if_none:'' }}"
+                     placeholder="사업자번호, 비사업자는 주민번호 뒷자리">
+            </div>
+          </div>
+        </div>
+
+        <!-- 회원비밀번호 -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">회원비밀번호:</label>
+            <div class="input-group" id="wrap_user_pwd">
+              <input type="password"
+                     class="form-control text-dark input-password"
+                     id="user_pwd"
+                     name="user_pwd"
+                     value="{{ user.user_pwd|default_if_none:'' }}"
+                     placeholder="최초암호는 1입니다">
+              <span class="input-group-text btn btn-primary text-white show-password">
+                <i class="fe fe-eye eye-open"></i>
+                <i class="fe fe-eye-off eye-close d-none"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 세무사랑 코드 -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">세무사랑 코드:</label>
+            <div class="input-group" id="wrap_duzon_id">
+              <input type="text"
+                     class="form-control text-dark"
+                     id="duzon_id"
+                     name="duzon_id"
+                     value="{{ user.duzon_id|default_if_none:'' }}"
+                     placeholder="세무사랑 회사코드를 입력해주세요">
+            </div>
+          </div>
+        </div>
+
+        <!-- 담당자 (MemDeal.biz_manager) -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">
+              담당자 <span class="text-danger">*</span>
+            </label>
+            <select class="form-control select2 form-select text-dark"
+										id="biz_manager"
+										name="biz_manager"
+										tabindex="-1"
+										aria-hidden="true"
+										data-selected="{{ deal.biz_manager|default_if_none:'' }}">
+						</select>
+          </div>
+        </div>
+
+        <!-- 관리유형 : MemDeal.kijang_yn -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">관리유형</label>
+            {% with kijang_val=deal.kijang_yn|default:'Y' %}
+            <div class="d-flex align-items-center mt-3">
+              <label class="custom-control custom-radio me-3">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="kijang_yn"
+                       value="Y"
+                       {% if kijang_val == 'Y' %}checked{% endif %}>
+                <span class="custom-control-label">기장</span>
+              </label>
+              <label class="custom-control custom-radio">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="kijang_yn"
+                       value="N"
+                       {% if kijang_val == 'N' %}checked{% endif %}>
+                <span class="custom-control-label">신고대리</span>
+              </label>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+
+        <!-- 사업개시일 : MemUser.reg_date -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">
+              사업개시일
+              <span class="text-danger">* (개시연 = 현연도-기수+1)</span>
+            </label>
+            <div class="input-group">
+              <div class="input-group date" data-date-format="yyyy-mm-dd">
+                <span class="input-group-addon input-group-text bg-primary-transparent">
+                  <i class="fe fe-calendar text-primary-dark"></i>
+                </span>
+                <input class="form-control datepicker_noval"
+									id="reg_date"
+									name="reg_date"
+									type="text"
+									value="{{ user.reg_date|date:'Y-m-d'|default_if_none:'' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 기장시작일 : MemDeal.createddate -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label for="createddate" class="form-label text-muted">기장시작일 :</label>
+            <div class="input-group date" data-date-format="yyyy-mm-dd">
+              <span class="input-group-addon input-group-text bg-primary-transparent">
+                <i class="fe fe-calendar text-primary-dark"></i>
+              </span>
+              <input class="form-control datepicker_val"
+                     id="createddate"
+                     name="createddate"
+                     type="text"
+                     value="{% if deal.createddate %}{{ deal.createddate|date:'Y-m-d' }}{% endif %}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 기장료 : MemDeal.feeamt -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">기장료</label>
+            <div class="input-group" id="feeamt">
+              <input type="text"
+                     class="form-control text-dark text-right"
+                     name="feeamt"
+                     value="{% if deal.feeamt %}{{ deal.feeamt|floatformat:0|intcomma }}{% endif %}"
+                     placeholder="0">
+              <span class="input-group-text bg-primary-transparent text-primary">
+                <i class="fa fa-won text-primary-dark"></i>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 계속관리 : MemDeal.keeping_yn -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">계속관리</label>
+            {% with keep_val=deal.keeping_yn|default:'Y' %}
+            <div class="d-flex align-items-center mt-3">
+              <label class="custom-control custom-radio me-3">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="keeping_yn"
+                       value="Y"
+                       {% if keep_val == 'Y' %}checked{% endif %}>
+                <span class="custom-control-label">계속</span>
+              </label>
+              <label class="custom-control custom-radio">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="keeping_yn"
+                       value="N"
+                       {% if keep_val == 'N' %}checked{% endif %}>
+                <span class="custom-control-label">해임</span>
+              </label>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+
+        <!-- 해임일 : MemDeal.taltyoedate -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label for="taltye_date" class="form-label text-muted">해임일 :</label>
+            <div class="input-group date" data-date-format="yyyy-mm-dd">
+              <span class="input-group-addon input-group-text bg-primary-transparent">
+                <i class="fe fe-calendar text-primary-dark"></i>
+              </span>
+              <input class="form-control datepicker_noval"
+                     id="taltye_date"
+                     name="taltyoedate"
+                     type="text"
+                     value="{{ deal.taltyoedate|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 해임사유 : MemDeal.taltyoereason -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">해임사유:</label>
+            {% with reason_val=deal.taltyoereason|default:'empty' %}
+            <select class="form-control select2 form-select text-dark"
+                    id="taltye_reason"
+                    name="taltyoereason">
+              <option value="empty" {% if reason_val == 'empty' %}selected{% endif %}>---</option>
+              <option value="1" {% if reason_val == '1' %}selected{% endif %}>폐업</option>
+              <option value="2" {% if reason_val == '2' %}selected{% endif %}>타세무사이관</option>
+              <option value="3" {% if reason_val == '3' %}selected{% endif %}>사무실귀책</option>
+            </select>
+            {% endwith %}
+          </div>
+        </div>
+
+        <!-- CMS 자동이체 : MemDeal.cms_yn -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">CMS 자동이체</label>
+            {% with cms_val=deal.cms_yn|default:'Y' %}
+            <div class="d-flex align-items-center mt-3">
+              <label class="custom-control custom-radio me-3">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="cms_yn"
+                       value="Y"
+                       {% if cms_val == 'Y' %}checked{% endif %}>
+                <span class="custom-control-label">적용</span>
+              </label>
+              <label class="custom-control custom-radio">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="cms_yn"
+                       value="N"
+                       {% if cms_val == 'N' %}checked{% endif %}>
+                <span class="custom-control-label">미적용</span>
+              </label>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+
+      {# ───────── 회사정보 ───────── #}
+      <div class="row p-5 border-bottom">
+        <div class="col-xl-12">
+          <h4 class="mb-4 fw-bold">회사정보</h4>
+        </div>
+
+        <!-- 사업자유형 : MemUser.biz_type -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">사업자유형 :</label>
+            {% with biz_type_val=user.biz_type|stringformat:"s"|default:"empty" %}
+            <select class="form-control select2 form-select text-dark"
+                    id="biz_type"
+                    name="biz_type">
+              <option value="empty" {% if biz_type_val == 'empty' %}selected{% endif %}>---</option>
+              <option value="1" {% if biz_type_val == '1' %}selected{% endif %}>법인-일반</option>
+              <option value="2" {% if biz_type_val == '2' %}selected{% endif %}>법인-면세</option>
+              <option value="3" {% if biz_type_val == '3' %}selected{% endif %}>법인-비영리</option>
+              <option value="4" {% if biz_type_val == '4' %}selected{% endif %}>개인-일반</option>
+              <option value="5" {% if biz_type_val == '5' %}selected{% endif %}>개인-간이</option>
+              <option value="6" {% if biz_type_val == '6' %}selected{% endif %}>개인-면세</option>
+              <option value="7" {% if biz_type_val == '7' %}selected{% endif %}>개인-비사업</option>
+            </select>
+            {% endwith %}
+          </div>
+        </div>
+
+        <!-- 사업자번호 : MemUser.biz_no -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">사업자번호 :</label>
+            <div class="input-group">
+              <div class="input-group-text bg-primary-transparent text-primary">
+                <i class="fa fa-building text-primary-dark"></i>
+              </div>
+              <input class="form-control"
+                     id="biz_no"
+                     name="biz_no"
+                     placeholder="000-00-00000"
+                     type="text"
+                     value="{{ user.biz_no|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 상호 : MemUser.biz_name -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">상 호 :</label>
+            <div class="input-group" id="wrap_biz_name">
+              <input type="text"
+                     class="form-control text-dark"
+                     id="biz_name"
+                     name="biz_name"
+                     value="{{ user.biz_name|default_if_none:'' }}"
+                     placeholder="(주)나 주식회사는 입력하지 마세요 ">
+            </div>
+          </div>
+        </div>
+
+        <!-- 대표자 : MemUser.ceo_name -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">대표자 :</label>
+            <div class="input-group" id="wrap_ceo_name">
+              <input type="text"
+                     class="form-control text-dark"
+                     id="ceo_name"
+                     name="ceo_name"
+                     value="{{ user.ceo_name|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 주민번호 : MemUser.ssn -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-danger fw-bold">주민번호:</label>
+            <div class="input-group">
+              <div class="input-group-text bg-primary-transparent text-primary">
+                <i class="fa fa-address-card-o text-primary-dark"></i>
+              </div>
+              <input type="text"
+                     class="form-control text-dark"
+                     id="ssn"
+                     name="ssn"
+                     placeholder="000000-0000000"
+                     value="{{ user.ssn|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 사업장 주소 : MemUser.biz_zipcode, biz_addr1, biz_addr2 -->
+        <div class="col-sm-12 col-md-12 col-xl-6">
+          <div class="form-group">
+            <label class="form-label text-muted">사업장 주소 :</label>
+            <div class="input-group">
+              <input type="text"
+                     name="biz_zipcode"
+                     id="sample6_postcode"
+                     class="form-control text-dark"
+                     style="width:60px;"
+                     readonly
+                     value="{{ user.biz_zipcode|default_if_none:'' }}">
+              <button type="button"
+                      class="input-group-text btn btn-primary text-white"
+                      onclick="sample6_execDaumPostcode()">검색</button>
+              <input type="text"
+                     name="biz_addr1"
+                     id="sample6_address"
+                     class="form-control text-dark"
+                     style="width:400px;"
+                     maxlength="50"
+                     value="{{ user.biz_addr1|default_if_none:'' }}">
+              <input type="text"
+                     name="biz_addr2"
+                     id="sample6_detailAddress"
+                     class="form-control text-dark"
+                     style="ime-mode:active;width:200px;"
+                     maxlength="100"
+                     value="{{ user.biz_addr2|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 우편물 수령지 : MemUser.zipcode, addr1, addr2 -->
+        <div class="col-sm-12 col-md-12 col-xl-6">
+          <div class="form-group">
+            <label class="form-label text-muted">우편물 수령지 :</label>
+            <div class="input-group">
+              <input type="text"
+                     name="zipcode"
+                     id="sample7_postcode"
+                     class="form-control text-dark"
+                     style="width:60px;"
+                     readonly
+                     value="{{ user.zipcode|default_if_none:'' }}">
+              <button type="button"
+                      class="input-group-text btn btn-primary text-white"
+                      onclick="sample7_execDaumPostcode()">검색</button>
+              <input type="text"
+                     name="addr1"
+                     id="sample7_address"
+                     class="form-control text-dark"
+                     style="width:400px;"
+                     maxlength="50"
+                     value="{{ user.addr1|default_if_none:'' }}">
+              <input type="text"
+                     name="addr2"
+                     id="sample7_detailAddress"
+                     class="form-control text-dark"
+                     style="ime-mode:active;width:200px;"
+                     maxlength="100"
+                     value="{{ user.addr2|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 업종코드 : MemUser.uptaecd -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">업종코드 :</label>
+            <div class="input-group">
+              <input type="number"
+                     class="form-control text-dark"
+                     name="uptaecd"
+                     value="{{ user.uptaecd|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 업태 : MemUser.uptae -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">업태 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="uptae"
+                     value="{{ user.uptae|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 종목 : MemUser.jongmok -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">종목 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="jongmok"
+                     value="{{ user.jongmok|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 회계기간 종료월 : MemDeal.fiscalmm -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">회계기간 종료월:</label>
+            {% with fiscal_val=deal.fiscalmm|default:'12' %}
+            <select class="form-control select2 form-select text-dark"
+                    id="fiscalmm"
+                    name="fiscalmm">
+              <option value="12" {% if fiscal_val == '12' %}selected{% endif %}>12월</option>
+              <option value="3"  {% if fiscal_val == '3'  %}selected{% endif %}>3월</option>
+              <option value="6"  {% if fiscal_val == '6'  %}selected{% endif %}>6월</option>
+            </select>
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+
+      {# ───────── 연락처 및 조사관 ───────── #}
+      <div class="row p-5 border-bottom">
+        <div class="col-xl-12">
+          <h4 class="mb-4 fw-bold">연락처 및 조사관</h4>
+        </div>
+
+        <!-- 업무담당자 이름 : MemUser.name -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">업무담당자 이름 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="name"
+                     value="{{ user.name|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 이메일 : MemUser.email -->
+        <div class="col-sm-12 col-md-12 col-xl-4">
+          <div class="form-group">
+            <label class="form-label text-muted">이메일 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="email"
+                     value="{{ user.email|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 업무용 전화번호 : MemUser.tel_no -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">업무용 전화번호 :</label>
+            <div class="input-group">
+              <div class="input-group-text bg-primary-transparent text-primary">
+                업무
+              </div>
+              <input class="form-control"
+                     id="phoneMask"
+                     name="tel_no"
+                     placeholder="(000)0000-0000"
+                     type="text"
+                     value="{{ user.tel_no|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 업무용 휴대번호 : MemUser.hp_no -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+						
+            <label class="form-label text-danger fw-bold">업무용 휴대번호 : <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     id="hp_no"
+                     name="hp_no"
+                     placeholder="000-0000-0000"
+                     value="{{ user.hp_no|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 회사 전화/팩스 : MemUser.biz_tel, biz_fax -->
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">회사 전화번호 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="biz_tel"
+                     value="{{ user.biz_tel|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-3">
+          <div class="form-group">
+            <label class="form-label text-muted">회사 팩스번호 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="biz_fax"
+                     value="{{ user.biz_fax|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 조사관 : MemDeal.taxmgr_* -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">조사관 이름 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="taxmgr_name"
+                     value="{{ deal.taxmgr_name|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">조사관 전화 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="taxmgr_tel"
+                     value="{{ deal.taxmgr_tel|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">조사관 팩스 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="taxmgr_fax"
+                     value="{{ deal.taxmgr_fax|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ───────── 세무관리 / 인사급여 ───────── #}
+      <div class="row p-5 border-bottom">
+        <div class="col-xl-12">
+          <h4 class="mb-4 fw-bold">세무관리 / 인사급여</h4>
+        </div>
+
+        <!-- 홈택스 수임동의 : MemDeal.hometaxagree -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">홈택스 수임동의</label>
+            {% with ht_val=deal.hometaxagree|default:'N' %}
+            <div class="d-flex align-items-center mt-3">
+              <label class="custom-control custom-radio me-3">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="hometaxagree"
+                       value="Y"
+                       {% if ht_val == 'Y' %}checked{% endif %}>
+                <span class="custom-control-label">동의</span>
+              </label>
+              <label class="custom-control custom-radio">
+                <input type="radio"
+                       class="custom-control-input"
+                       name="hometaxagree"
+                       value="N"
+                       {% if ht_val == 'N' %}checked{% endif %}>
+                <span class="custom-control-label">미동의</span>
+              </label>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+
+        <!-- 홈택스 ID/PW : MemDeal.hometaxid, hometaxpw -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">홈택스 아이디 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="hometaxid"
+                     value="{{ deal.hometaxid|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">홈택스 패스워드 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="hometaxpw"
+                     value="{{ deal.hometaxpw|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 환급 은행/계좌 : MemDeal.taxsaveid, taxsavepw -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">환급 은행 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="taxsaveid"
+                     value="{{ deal.taxsaveid|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">환급 계좌번호 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="taxsavepw"
+                     value="{{ deal.taxsavepw|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 기업부설연구소 / 벤처기업 : MemUser.isrnd, isventure -->
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">기업부설연구소 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="isrnd"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if user.isrnd == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-azure"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">벤처기업 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="isventure"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if user.isventure == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-green"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 정규/일용/사업/반기/귀속지급차이 : MemDeal.goyoung_* -->
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">정규직 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="goyoung_jungkyu"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if deal.goyoung_jungkyu == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-yellow"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">일용직 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="goyoung_ilyoung"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if deal.goyoung_ilyoung == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-yellow"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">사업소득 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="goyoung_sayoup"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if deal.goyoung_sayoup == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-yellow"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">반기신고 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="goyoung_banki"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if deal.goyoung_banki == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-red"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">귀속지급차이 :</label>
+            <div class="input-group">
+              <label class="colorinput">
+                <input name="goyoung_diff"
+                       type="checkbox"
+                       value="Y"
+                       class="colorinput-input"
+                       {% if deal.goyoung_diff == 'Y' %}checked{% endif %}/>
+                <span class="colorinput-color bg-red"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 급여일 / 급여 주의사항 : MemDeal.ediid, edipw -->
+        <div class="col-sm-12 col-md-12 col-xl-1">
+          <div class="form-group">
+            <label class="form-label text-muted">급여일 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="ediid"
+                     value="{{ deal.ediid|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">급여 주의사항 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="edipw"
+                     value="{{ deal.edipw|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 매출TI 수신자 : MemUser.saletiname, saletimail -->
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">매출TI 발행대행 수신자상호 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="SaleTIName"
+                     value="{{ user.saletiname|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-2">
+          <div class="form-group">
+            <label class="form-label text-muted">매출TI 발행대행 수신자이메일 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="SaleTIMail"
+                     value="{{ user.saletimail|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 부가세/회계 주의사항 -->
+        <div class="col-sm-12 col-md-12 col-xl-6">
+          <div class="form-group">
+            <label class="form-label text-muted">부가가치세 신고 주의사항 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="sinca_sale"
+                     value="{{ deal.tel_sincasale|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-sm-12 col-md-12 col-xl-6">
+          <div class="form-group">
+            <label class="form-label text-muted">회계처리 주의사항 :</label>
+            <div class="input-group">
+              <input type="text"
+                     class="form-control text-dark"
+                     name="coution_account"
+                     value="{{ user.coution_account|default_if_none:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- 특이사항 : MemUser.etc -->
+        <div class="col-sm-12 col-md-12 col-xl-12">
+          <div class="form-group">
+            <textarea name="etc"
+                      class="form-control mb-4"
+                      placeholder="특이사항을 기록해주세요"
+                      rows="3">{{ user.etc|default_if_none:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+
+
+    </div> <!-- card-body -->
+  </div>   <!-- card -->
+</form>

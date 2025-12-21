@@ -1,0 +1,152 @@
+{% extends 'components/mobile-base.html' %}
+{% load static humanize %}
+
+{% block content %}
+<style>
+  .mail-container { width: {{ totalWidth }}px; margin: 0 auto; }
+  table { border-collapse: collapse; width: 100%; }
+  .header { background:#217648; color:#fff; }
+  .header td { font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif; font-size:14px; line-height:26px; padding:10px 6px; }
+  .title-left  { width:40%; text-align:left;  }
+  .title-right { width:60%; text-align:right; }
+  .divider { border-bottom: 1px solid #dadada; height:1px; }
+  .grid th, .grid td {
+    font-family: Roboto, Helvetica, Arial, Tahoma, Verdana, sans-serif;
+    font-size:12px; line-height:26px; padding:0 6px; background:#f9f9f9; color:#000;
+    border-bottom:1px solid #dadada;
+  }
+  .grid th { background:#f3f3f3; color:#054059; font-weight:bold; }
+  .grid .group-sales   td { color:#ff0000; }
+  .grid .group-purchase td { color:#3366ff; }
+  .grid .left  { text-align:left;  }
+  .grid .right { text-align:right; }
+  .grid .center{ text-align:center; }
+  .grid .bold { font-weight:bold; }
+  .grid .br { border-right:1px solid #dadada; }
+</style>
+
+<div class="mail-container">
+
+  <!-- 헤더 -->
+  <table class="header">
+    <tr>
+      <td class="title-left">부가가치세 신고결과</td>
+      <td class="title-right">{{ biz_name }}</td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- 결과 표 -->
+  <table class="grid" style="margin:10px 0;">
+    <colgroup>
+      <col style="width:40px">
+      <col style="width:90px">
+      <col style="width:90px">
+			<col style="width:90px">
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="center br" colspan="2">구&nbsp;&nbsp;&nbsp;&nbsp;분</th>
+        <th class="center br">공급가액</th>
+        <th class="center">세&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;액</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- 매출세액 -->
+      <tr class="group-sales">
+        <td class="center br bold" rowspan="5" style="background:#f3f3f3;">
+          매<br>출<br>세<br>액
+        </td>
+        <td class="left br" style="background:#f3f3f3;">매출세금계산서</td>
+        <td class="right br">{{ rs1.매출세금계산서|floatformat:0|intcomma }}</td>
+				<td class="right">{{ rs1.매출세금계산서세액|floatformat:0|intcomma }}</td>
+      </tr>
+      <tr class="group-sales">
+        <td class="left br" style="background:#f3f3f3;">신용카드·현금영수증·기타</td>
+        <td class="right br">{{ rs1.기타매출|floatformat:0|intcomma }}</td>
+        <td class="right">{{ rs1.기타매출세액|floatformat:0|intcomma }}</td>
+      </tr>
+      <tr class="group-sales">
+        <td class="left br" style="background:#f3f3f3;">영세율 매출</td>
+        <td class="right br">{{ rs1.영세율매출|floatformat:0|intcomma }}</td>
+        <td class="right">0</td>
+      </tr>
+      <tr class="group-sales">
+        <td class="left br" style="background:#f3f3f3;">면세 매출</td>
+        <td class="right br">{{ rs1.면세매출|floatformat:0|intcomma }}</td>
+        <td class="right">0</td>
+      </tr>
+      <tr class="group-sales bold">
+        <td class="center br" style="background:#f3f3f3;">합&nbsp;&nbsp;&nbsp;&nbsp;계</td>
+        <td class="right br">{{ rs1.매출세금계산서|floatformat:0|intcomma }}</td>
+        <td class="right">{{ rs1.산출세액|floatformat:0|intcomma }}</td>
+      </tr>
+
+      <!-- 매입세액 -->
+      <tr class="group-purchase">
+        <td class="center br bold" rowspan="5" style="background:#f3f3f3;">
+          매<br>입<br>세<br>액
+        </td>
+        <td class="left br" style="background:#f3f3f3;">매입세금계산서</td>
+        <td class="right br">{{ rs1.매입세금계산서|floatformat:0|intcomma }}</td>
+        <td class="right">{{ rs1.매입세금계산서세액|floatformat:0|intcomma }}</td>
+      </tr>
+      <tr class="group-purchase">
+        <td class="left br" style="background:#f3f3f3;">신용카드·현금영수증</td>
+        <td class="right br">{{ rs1.기타매입|floatformat:0|intcomma }}</td>
+        <td class="right">{{ rs1.기타매입세액|floatformat:0|intcomma }}</td>
+      </tr>
+      <tr class="group-purchase">
+        <td class="left br" style="background:#f3f3f3;">불공제 매입세액</td>
+        <td class="right br">{{ rs1.불공제|floatformat:0|intcomma }}</td>
+        <td class="right">{{ rs1.불공제세액|floatformat:0|intcomma }}</td>
+      </tr>
+      <tr class="group-purchase">
+        <td class="left br" style="background:#f3f3f3;">면세 매입</td>
+        <td class="right br">{{ rs1.면세매입|floatformat:0|intcomma }}</td>
+        <td class="right">0</td>
+      </tr>
+      <tr class="group-purchase bold">
+        <td class="center br" style="background:#f3f3f3;">합&nbsp;&nbsp;&nbsp;&nbsp;계</td>
+        <td class="right br">{{ 면세합계|floatformat:0|intcomma }}</td>
+        <td class="right">{{ rs1.차감합계세액|floatformat:0|intcomma }}</td>
+      </tr>
+
+      <!-- 기타 항목 -->
+      <tr>
+        <td class="center br" colspan="2" style="background:#f3f3f3;">경감 공제세액</td>
+        <td class="right bold" colspan="2">{{ rs1.경감공제세액|floatformat:0|intcomma }}</td>
+      </tr>
+
+      {% if work_mm == "2" or work_mm == "4" %}
+      <tr>
+        <td class="center br" colspan="2" style="background:#f3f3f3;">예정 고지세액</td>
+        <td class="right bold" colspan="2">{{ rs1.예정고지세액|floatformat:0|intcomma }}</td>
+      </tr>
+      <tr>
+        <td class="center br" colspan="2" style="background:#f3f3f3;">예정 미환급세액</td>
+        <td class="right bold" colspan="2">{{ rs1.예정신고미환급세액|floatformat:0|intcomma }}</td>
+      </tr>
+      {% endif %}
+
+      <tr>
+        <td class="center br bold" colspan="2" style="background:#f3f3f3;">납부세액(환급세액)</td>
+        <td class="right bold" colspan="2">{{ rs1.실제납부할세액|floatformat:0|intcomma }}</td>
+      </tr>
+
+    </tbody>
+  </table>
+
+  <!-- 로고 -->
+  <table>
+    <tr>
+      <td style="text-align:right; padding-top:6px;">
+        <img src="{% static 'assets/images/brand/DS_LOGO_full.png' %}" alt="logo" style="height:28px;">
+      </td>
+    </tr>
+  </table>
+
+</div>
+{% endblock %}

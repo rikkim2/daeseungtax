@@ -1,0 +1,285 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+                  {% if isCorp %}
+									<h1 class="page-title">법인세</h1>
+                  {% else %}
+                  <h1 class="page-title">종합소득세</h1>
+                  {% endif %}
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+                    {% if isCorp %}
+                    <li class="breadcrumb-item">법인세</li>
+                    {% else %}
+                    <li class="breadcrumb-item">종합소득세</li>
+                    {% endif %}
+										<li class="breadcrumb-item active" aria-current="page"><a href="javascript:void(0);">신고·납부서</a></li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-lg-4 col-xl-3">
+									<div class="card mb-4">
+										<div class="card-header border-bottom d-flex flex-row-reverse">
+                      <div class="btn-group">
+                        <button id="btn_selectedYear"  type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                           {{corpYear}} 년<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li class="dropdown-plus-title">
+                            작업연도
+                            <b class="fa fa-angle-up" aria-hidden="true"></b>
+                          </li>
+													<div class="list-group">
+														{% for node in corpYears %}
+															<li class='list-group-item list-group-item-action'><a href='javascript:handleButtonClose({{node}})' >{{node}}년</a></li>
+														{% endfor %}
+													</div>
+                        </ul>
+                      </div>
+										</div>
+										<div class="card-body">
+                      <div class="panel-group1" id="accordionLeft" role="tablist" aria-expanded="false"></div>
+										</div>
+                  </div>
+								</div>
+                <!-- 우측내용 -->
+								<div class="col-lg-8 col-xl-9">
+									<div class="row">
+										<div class="col-xl-12 col-lg-12 col-md-12">
+											<div class="card custom-card overflow-hidden">
+												<div class="card-body p-3 d-flex">
+													<div class="breadcrumb-main">
+														<nav aria-label="breadcrumb">
+															<ol class="breadcrumb mb-0" id="corpYear">
+															</ol>
+														</nav>
+													</div>
+                          <div class="btn-list  ms-auto">
+                            <button type="button" class="btn btn-info mb-1" onclick="printDiv('divImage')"><i class="si si-printer"></i> 출력</button>
+                          </div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!-- 신고서보기 -->
+									<div class="row">
+										<div class="col-xl-12 ">
+											<div class="card">
+												<div class="card-body h-100">
+                          <div id="divImage"></div>
+                        </div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- End Row -->
+              
+													
+        {% endblock %}
+
+        {% block scripts %}
+
+        <script>
+        var root_dir = "{{root_dir|escapejs}}"
+				var biz_name = "{{ memuser.biz_name }}";
+				var corpYear,selectedPeriod,selectedSheetID,selectedSheetName="";
+
+				$(document).ready(function(){
+          corpYear = "{{corpYear}}"
+					treeLoad(corpYear);
+				});
+
+				const setSelectedFolder = async(strFolder) => {
+          var innerHtml=""
+          var tmpArr = strFolder.split(">>")
+          for(var i=0;i<tmpArr.length;i++){
+            if(i<(tmpArr.length-1)){
+              innerHtml += "<li class='breadcrumb-item'>"+tmpArr[i]+"</li>"
+            }else{
+              innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>"+tmpArr[i]+"</a></li>"
+            }
+          }
+					$('[id="corpYear"]').html(innerHtml);
+				}
+        const treeLoad =(selYear)=>{
+          $('#accordionLeft').empty();
+          $.ajax({
+						url:"{% url 'path_to_corp' %}",
+            data:{
+              path:root_dir + "/"+ selYear + "/세무조정계산서",
+              csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+						dataType:"Json",
+						success:async function(data){
+              var Titles=data.titles;
+              var gridFile=data.nodes;
+
+              for(var s=0;s<Titles.length;s++){
+                const divcard = document.createElement("div")
+                divcard.setAttribute("class","card overflow-hidden mb-2 border-0")
+                divcard.setAttribute("id","collapseHead"+s)
+                const anchor1 = document.createElement('a');
+                anchor1.setAttribute("class","accordion-toggle panel-heading1 collapsed ")
+                anchor1.setAttribute("data-bs-toggle","collapse")
+                anchor1.setAttribute("aria-expanded","false")
+                anchor1.href="#collapse"+s     
+                anchor1.innerText = Titles[s].displayName
+                divcard.appendChild(anchor1)
+                const divTabpanel = document.createElement("div")
+                if(s==0){
+                  divTabpanel.setAttribute("class","panel-collapse collapse show")
+                  selectedSheetID = gridFile[0].id
+                  selectedPeriod = Titles[s].displayName
+                } else {
+                  divTabpanel.setAttribute("class","panel-collapse collapse")
+                }
+                divTabpanel.setAttribute("id","collapse"+s)
+                divTabpanel.setAttribute("role","tabpanel")
+                divTabpanel.setAttribute("aria-expanded","false")
+                divTabpanel.setAttribute("data-bs-parent","#accordionAcnt")
+                divcard.appendChild(divTabpanel) 
+
+                const ul = document.createElement('ul');                  
+                ul.setAttribute("class","nav1 nav-column flex-column br-7")
+                ul.setAttribute("id","singoList"+s)
+                divTabpanel.appendChild(ul)
+                singoListDetail(ul,Titles[s].displayName,gridFile,Titles[s].displayName,selectedSheetID)
+                  
+                document.getElementById('accordionLeft').appendChild(divcard);
+                setSelectedFolder("{{corpYear}}년  >> "+selectedPeriod);
+              }
+            },
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+				} 
+				
+        const singoListDetail = async(ul,selGroup,gridFile,singoPeriod,selSheetID)=>{
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+
+            for(var i=0;i<gridFile.length;i++){
+              var activate="";
+              if(gridFile[i].id==selSheetID){
+                selectedSheetName = gridFile[i].파일명
+                activate = "active"
+              }
+              if(gridFile[i].group==selGroup){
+                const li = document.createElement("li");
+                li.setAttribute('id',"li"+gridFile[i].id);
+                li.setAttribute('class',"nav-item1 mt-0")
+
+                const anchor2 = document.createElement('a');
+                anchor2.href = "javascript:changeSheet('"+gridFile[i].id+"','"+singoPeriod+"','"+gridFile[i].파일명+"','"+gridFile[i].totalPath+"')";
+                anchor2.setAttribute('class',"nav-link thumb " +activate)
+                anchor2.setAttribute('id',gridFile[i].id);
+
+                const designI = document.createElement('i');
+                designI.setAttribute('class',"fa fa-window-restore")
+                if(gridFile[i].파일명.indexOf("납부서")!=-1){
+                  anchor2.innerHTML = "<span class='badge badge-sm bg-danger badge-hide me-4'>납기:"+gridFile[i].dueDate+"</span>"+gridFile[i].파일명
+                }else if(gridFile[i].파일명.indexOf("신고서")!=-1){
+                  anchor2.innerHTML = "<i class='ion ion-grid text-info '></i>" + gridFile[i].파일명 + "<i class='ion ion-grid text-info ms-2'></i>"
+                }else{
+                  anchor2.innerHTML = "<i class='typcn typcn-minus-outline text-info '></i>" + gridFile[i].파일명
+                }
+                li.appendChild(anchor2);  
+                ul.appendChild(li);
+                if(gridFile[i].id==selectedSheetID){
+                  changeSheet(selSheetID,singoPeriod,selectedSheetName,gridFile[i].totalPath)
+                }
+              }
+            }
+    
+          })
+        }
+        function changeSheet(selSheetID,selPeriod,selSheetName,file_path){
+          //좌측 컨트롤
+          if(document.getElementById(selectedSheetID)){
+            document.getElementById(selectedSheetID).setAttribute('class',"nav-link thumb")
+          }
+          if(document.getElementById(selSheetID)){
+            document.getElementById(selSheetID).setAttribute('class',"nav-link thumb active")
+          }
+          $('#divImage').empty();
+          $.ajax({
+            url:"{% url 'originSizeSheet' %}",
+            data:{url:file_path},
+            dataType:"text",
+            success:function(data){
+              var pyJson = JSON.parse(data);
+              openedFile = pyJson;
+              setSelectedFolder(corpYear+" 년" + " >> "+ selPeriod + " >> " + selSheetName)
+              $('[id="divImage"]').html("<img id='openedImg' src=\'" + pyJson.fileName + "\' > ")
+            },
+            error:function(request,status,error){
+              console.log('fail:'+error);
+            },
+            beforeSend: function () {
+              var width = 0;
+              var height = 0;
+              var left = 0;
+              var top = 0;
+              width = 50;
+              height = 50;
+              top = ( $(window).height() - height ) / 2 + $(window).scrollTop()-20;
+              left = ( $(window).width() - width ) / 2 + $(window).scrollLeft();
+              if($("#div_ajax_load_image").length != 0) {
+                $("#div_ajax_load_image").css({
+                  "top": top+"px",
+                  "left": left+"px"
+                });
+                $("#div_ajax_load_image").show();
+              }
+              else {
+                $('[id="divImage"]').append('<div id="div_ajax_load_image" class="dimmer active"><div class="lds-heart"><div></div></div></div>  ');
+              }
+            },
+            complete: function () {
+              $("#div_ajax_load_image").hide();
+            } 
+          })
+          selectedSheetID = selSheetID;
+          selectedPeriod = selPeriod;
+          selectedSheetName = selSheetName;
+
+        }
+				const handleButtonClose = (ev) => {
+					const btnElement  = document.getElementById('btn_selectedYear');
+  				btnElement.innerHTML = ev+" 년";
+					corpYear = ev;
+					setSelectedYear(ev);
+					setSelectedFolder(corpYear+" 년" + " >>> "+ selectedPeriod + " >> " + selectedSheetName)
+				};  
+
+				const setSelectedYear = (selYear) => {
+          corpYear = selYear;
+          treeLoad(corpYear);
+				}
+        function printDiv(divName) {
+          var printContents = document.getElementById(divName).innerHTML;
+          var originalContents = document.body.innerHTML;
+          document.body.innerHTML = printContents;
+          window.print();
+          document.body.innerHTML = originalContents;
+        }
+        </script>
+
+        {% endblock %}
+

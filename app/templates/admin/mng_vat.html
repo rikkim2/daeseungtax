@@ -1,0 +1,2718 @@
+{% load static %}
+<style>
+.icon-refresh { color: white; }
+.modal-xxl { min-width: 1200px; max-width: 1400px; }    
+#chartdiv { width: 100%; height: 500px; }
+</style>  
+
+<div class="ext-grid-wrapper" style="width:100%;"></div>
+            
+<div class="modal fade unique-summit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xxl modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-demo">
+      <div class="modal-header ">
+        <div class="summitModalTitle"></div> <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body p-0 border-top-0" >
+        <div class="tabs-menu4 tabsMenu"></div> <div class="tab-content tabContent"></div> </div>
+    </div>
+  </div>
+</div>	
+
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+
+<script>
+(function() {
+  // ───────────── [1] DOM 요소 확보 (안전한 방식) ─────────────
+  // 내용물이 없는(아직 그리드가 안 그려진) 마지막 래퍼를 찾습니다.
+    var renderTarget = $('.ext-grid-wrapper').filter(function() {
+        return $(this).children().length === 0;
+    }).last()[0];
+
+    // 2. 못 찾았다면, 활성 탭 내부에서 비어있는 래퍼를 다시 찾음 (ChatGPT 해결책)
+    if (!renderTarget) {
+        renderTarget = $('div.tab-pane.active .ext-grid-wrapper')
+            .filter(function () { return $(this).children().length === 0; })
+            .last()[0];
+    }
+    
+    // 3. 그래도 없으면 중단 (중복 실행 방지)
+    if (!renderTarget) {
+        // console.warn('렌더 타겟이 없어서 그리드를 만들지 않습니다.');
+        return;
+    }
+
+    // 모달 ID 생성 및 할당
+    var $wrapper = $(renderTarget).parent(); 
+    var modalUniqueId = 'summitModal_' + Math.floor(Math.random() * 100000);
+    var $modal = $wrapper.find('.unique-summit-modal');
+    $modal.attr('id', modalUniqueId);
+
+    function findInModal(selector) { return $modal.find(selector); }
+    // ───────────── [2] 높이 계산 ─────────────
+    function getGridHeight() {
+        var height = window.innerHeight - 160;
+        return height > 200 ? height : 200;
+    }
+    // ───────────── [2] 변수 설정 ─────────────
+    var adminBizLevel = '{{ admin_biz_level }}';
+    const isSuperuser = '{{ admin_grade }}' === 'SA';
+    var ADID = '{{ ADID }}';        
+    var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+    var flag = '{{ flag }}';
+    var work_YY = '{{ request.session.workyearVat }}';
+    var work_QT = '{{ request.session.work_QT }}';
+    
+    if(!work_YY && window.getWorkYearAndMonth){
+        work_YY = window.getWorkYearAndMonth('mng_vat').work_YY;
+    }
+    const currentYear = work_YY;
+    let selectedSheetID = null;
+    let selectedPeriod = null;
+    let selectedSheetName = null;    
+    // ───────────── [3] 함수 정의 (Ext.create 이전에 선언 필수!) ─────────────
+
+    // 1. renderTopic (업체명 클릭 렌더러) - window에 할당하여 전역 호출 가능하게 함
+    window.renderTopic = function(value, p, record) {
+        let recordKey = `record_${record.data.seq_no}`;
+        window[recordKey] = record.data; 
+        const headerText = p.column?.text || '';
+        
+        return Ext.String.format(
+            `<div style="cursor:pointer; color:blue;" 
+                onclick="window.summitModal(window['${recordKey}'], ${record.data.seq_no}, '${Ext.String.htmlEncode(record.data.ceo_name)}', '${Ext.String.htmlEncode(record.data.biz_name)}', ${work_YY}, ${work_QT}, 'Vat', '${headerText}')">
+                ${Ext.String.htmlEncode(value)}
+            </div>`
+        );
+    };
+    // 2. checkboxRender
+    var checkboxRender = function(value) { 
+        return "<input type='checkbox'" + (value ? "checked='checked'" : "") + ">"; 
+    };
+    // 3. formatDate
+    function formatDate(value){
+        return value ? Ext.Date.dateFormat(value, 'y-m-d') : '';
+    }
+    // 4. summitmodal
+    window.summitModal = async function(record, seq_no,  ceo_name, biz_name, work_YY, work_QT, flag, headerText = '') {
+      showLoading("loading...");
+
+      let tmpHead = `
+        <nav aria-label='breadcrumb'>
+          <ol class='breadcrumb breadcrumb-style'>
+            <li class='breadcrumb-item'>${biz_name}</li>
+            <li class='breadcrumb-item'>${work_YY}년 ${work_QT}분기</li>
+            <li class='breadcrumb-item active'>부가가치세신고</li>
+          </ol>
+        </nav>
+      `;  
+      findInModal('.summitModalTitle').html(tmpHead);
+ 
+      // 탭 메뉴 HTML 생성
+      let prePay = (record.YN_15 > 0) ? record.YN_15 : 0;
+      let hasFee = (record.YN_12 > 0);
+      let tmpTab = `
+        <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-0">부가세신고서</a>
+          ${prePay>0? `
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-8">예정고지 안내</a>
+          `: `
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-1">신고도움 안내</a>
+          `}
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">분석</a>
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-3">검증</a>
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-6">통합조회</a>
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-7">신고결과 안내</a>
+          ${hasFee ? `
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-4">수수료 안내</a>
+          ` : ''}
+          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-5">보낸 메일</a>
+        </nav>
+      `;
+      let tmpTab_Content = `
+        <!--  #0 . 신고서  -->
+        <div class="tab-pane active task-files-tab" id="task-0">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3 mt-2 ps-5" style="flex-basis: 35%;">
+              <div class="btn-group">
+                <button id="btn_selectedYear"  type="button" class="btn btn-info dropdown-toggle mb-2" data-bs-toggle="dropdown">
+                  ${work_YY} 년 <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                  <li class="dropdown-plus-title">
+                    작업연도
+                    <b class="fa fa-angle-up" aria-hidden="true"></b>
+                  </li>
+                  <div class="list-group">
+                    {% for node in vatYears %}
+                      <li class="list-group-item list-group-item-action">
+                        <a href="javascript:handleButtonClose(${seq_no}, '${ceo_name}', '${biz_name}',{{ node }})">{{ node }}년</a>
+                      </li>
+                    {% endfor %}
+                  </div>
+                </ul>
+              </div>          
+              <div class="panel-group1" id="accordionLeft" role="tablist" aria-expanded="false" style="max-height: 860px; overflow-y: auto;"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 65%;">
+              <div class="card-body" >
+                <iframe id="singoseoPDFIframe" width="100%" height="850px" frameborder="0"></iframe>
+              </div>
+            </div>
+          </div>              
+        </div>
+        <!--  #1 . 신고도움  -->
+        <div class="tab-pane task-files-tab" id="task-1">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+              <div class="container" id = "VatIntro"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 50%;">
+              <div class="card-body" >
+                <iframe id="VatIntroPDFIframe" width="100%" height="800px" frameborder="0"></iframe>
+              </div>
+            </div>
+          </div>              
+          <div class="modal-footer justify-content-center" id="btnKakaoSend1"></div>
+        </div>
+        <!--  #8 . 예정고지  -->
+        <div class="tab-pane task-files-tab" id="task-8">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+              <div class="container" id = "VatPrepay"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 50%;">
+              <div class="card-body" >
+                <iframe id="VatPrepayPDFIframe" width="100%" height="800px" frameborder="0"></iframe>
+              </div>
+            </div>
+          </div>              
+          <div class="modal-footer justify-content-center" id="btnKakaoSend9"></div>
+        </div>    
+        <!-- #2. 분석  -->
+        <div class="tab-pane task-files-tab" id="task-2">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3" style="flex-basis: 60%;">
+              <div class="card">
+                <div class="card-body">
+                  <div class="sales-stats d-flex">
+                    <div>
+                      <div class="text-muted fs-13">
+                        <span class="p-2 br-5 text-success ms-3"><i class="fe fe-alert-circle"></i></span>
+                        막대그래프를 클릭하시면 해당 기수별 상세내역을 확인할 수 있습니다.
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- chart 영역 -->
+                  <div id="chartdiv" style="height: 400px;"></div>
+
+                  <!-- 카드 2개 나란히 -->
+                  <div class="d-flex mt-4 gap-3">
+                    <!-- 왼쪽 카드: 탭 패널 -->
+                    <div class="card flex-fill">
+                      <div class="card-body">
+                        <div class=" tab-menu-heading border-bottom-0 ms-3" style="border-left:0px">
+                          <div class="tabs-menu1 ">
+                            <ul class="nav panel-tabs">
+                              <li><a id="anchor1" href="#tab1" data-bs-toggle="tab" class="active me-1 text-default my-1" >매출내역</a></li>
+                              <li><a id="anchor2" href="#tab2" data-bs-toggle="tab" class="me-1 text-default my-1">매입내역</a></li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div class="panel-body tabs-menu-body border-1  mb-0">
+                          <div class="tab-content" id="tabContent_SaleCost"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 오른쪽 카드: 점검사항 -->
+                    <div class="card flex-fill">
+                      <div class="card-header border-bottom d-flex align-items-center">
+                        <h4 class="card-title fw-semibold mb-0">점검사항</h4>
+                        <a href="#" class="ms-auto" id="anchor3">자세히</a>
+                      </div>
+                      <div class="card-body p-2" id="divListGroup">
+                        <!-- 점검 리스트 내용 -->
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 40%;">
+              <div class="card-body" >             
+                <div id="donut_sale" style="width: 100%; height: 300px;"></div>    
+                <div id="donut_cost" style="width:100%; height:300px; margin-top:20px;"></div>
+
+              </div>
+            </div>        
+          </div>              
+          <div class="modal-footer justify-content-center" id="btnKakaoSend2"></div>
+        </div>    
+        <!-- #3. 검증 -->
+        <div class="tab-pane task-files-tab" id="task-3">
+          <div class="d-flex">
+            <div class="flex-grow-1 ps-5 mt-5 d-flex flex-column" style="flex-basis: 20%; height: 100%;">
+              <div id="InspectVat_LeftTop" class="card-body bg-primary-transparent p-3 " style="max-height: 500px; overflow-y: auto;"></div>
+              <div id="InspectVat_LeftBottom" class="card-body bg-light-transparent p-3" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 80%;">
+              <div class="card-body" >
+                <div class="container" id = "InspectVat_Right"></div>
+              </div>
+            </div>
+          </div>              
+        </div>    
+        <!-- #6. 통합조회 -->
+        <div class="tab-pane task-files-tab" id="task-6">
+          <div class="d-flex">
+            <div class="flex-grow-1 ps-5 mt-5 d-flex flex-column" style="flex-basis: 20%; height: 100%;">
+              <div id="tongVat_LeftTop" class="card-body bg-primary-transparent p-3 " style="max-height: 700px; overflow-y: auto;"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 80%;">
+              <div class="card-body" >
+                <div class="container" id = "TongVat_Right"></div>
+              </div>
+            </div>
+          </div>              
+        </div>      
+        <!-- #7. 신고결과  -->
+        <div class="tab-pane task-files-tab" id="task-7">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+              <div class="container" id = "VatResult"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 50%;">
+              <div class="card-body" >
+                <iframe id="VatResultPDFIframe" width="100%" height="800px" frameborder="0"></iframe>
+              </div>
+            </div>        
+          </div>              
+          <div class="modal-footer justify-content-center" id="btnKakaoSend7"></div>
+        </div>    
+        <!-- #4. 수수료  -->
+        <div class="tab-pane task-files-tab" id="task-4">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3" style="flex-basis: 70%;">
+              <div class="container" id = "feeDiagnosys"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 30%;">
+              <div class="card-header border-bottom">
+                <h4 class="card-title fw-bold" id = "FeeHeader">미수 수수료 청구하기</h4>
+              </div>
+              <div class="card-body" >
+                <div class="container" id = "unpaidList"></div>
+              </div>
+            </div>
+          </div> 
+          <div class="modal-footer justify-content-center" id="btnKakaoSend8"></div>
+        </div>
+        <!-- #5. 보낸메일  -->
+        <div class="tab-pane  task-files-tab" id="task-5">
+          <div class="d-flex">
+            <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+              <div class="container" id = "sentMailTable"></div>
+            </div>
+            <div class="flex-grow-0" style="flex-basis: 50%;">
+              <div class="card-body" >
+                <iframe id="mailIframe" width="100%" height="850px" frameborder="0"></iframe>
+              </div>
+            </div>
+          </div>    
+        </div>  
+      `;
+      
+      // 모달 내부 DOM 업데이트
+      findInModal('.tabsMenu').html(tmpTab); 
+      findInModal('.tabContent').html(tmpTab_Content);
+
+      $modal.modal('show');
+      // ⏱ 헤더 텍스트에 따른 탭 ID 매핑
+      const headerToTabId = {
+        '업체명': 'task-0',
+        '검증결과': 'task-3',
+        '통합조회': 'task-6',
+        '메일통보': 'task-5'
+      };
+
+      const tabId = headerToTabId[headerText] || 'task-0';
+      setTimeout(() => {
+        const $targetTab = $(`[data-bs-toggle="tab"][href="#${tabId}"]`);
+        if ($targetTab.length) {
+          $targetTab.tab('show');
+        }
+      }, 100);  
+
+      await treeLoad(ADID,seq_no,ceo_name,biz_name,work_YY);   //#0 신고서보기
+      if(prePay>0){
+        await setMailContent(seq_no,work_YY,work_QT,'VatPrepay');   //#8. 예정고지메일 내용생성
+        await setPDFIframe(ADID, seq_no,ceo_name,biz_name,work_YY,work_QT,'VatPrepay');  //#8. 예정고지 서비스 파일 로딩
+      }else{
+        await setMailContent(seq_no,work_YY,work_QT,'VatIntro');   //#1. 안내메일 내용생성
+        await setPDFIframe(ADID, seq_no,ceo_name,biz_name,work_YY,work_QT,'VatIntro');  //#1. 신고도움 서비스 파일 로딩
+      }
+
+      await setPDFIframe(ADID, seq_no,ceo_name,biz_name,work_YY,work_QT,'VatResult');  //#7. 납부서
+      setAnaly(record, seq_no, work_YY, work_QT); //2. 분석
+      setInspectVat_LeftTop(record, seq_no, work_YY, work_QT); //3. 검증
+      setTongVat_LeftTop(record, seq_no, work_YY, work_QT); //6. 통합조회
+      setFee(record,seq_no,work_YY,work_QT);      //4. 할인율 적용
+
+      // #1.신고도움 하단 보내기버튼  
+      let tmpBtn1 = `<button class="btn btn-info" onclick="sendMailAndKakao('${ADID}',${seq_no},'${ceo_name}','${biz_name}', ${work_YY}, ${work_QT}, 'VatIntro')">
+        <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+        </button> 
+        <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+      $('[id="btnKakaoSend1"]').html(tmpBtn1);     
+      // #8. 예정고지 하단 보내기버튼  
+      let tmpBtn8 = `<button class="btn btn-info" onclick="sendMailAndKakao('${ADID}',${seq_no},'${ceo_name}','${biz_name}', ${work_YY}, ${work_QT}, 'VatPrepay')">
+        <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+        </button> 
+        <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+      $('[id="btnKakaoSend9"]').html(tmpBtn8);     
+      //#2. 결과안내 하단 보내기버튼
+      await setMailContent(seq_no, work_YY, work_QT, 'VatResult');  
+      let tmpBtn2 = `<button class="btn btn-info" onclick="sendMailAndKakao('${ADID}',${seq_no},'${ceo_name}','${biz_name}', ${work_YY}, ${work_QT}, 'VatResult')">
+        <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+        </button> 
+        <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+      $('[id="btnKakaoSend7"]').html(tmpBtn2);   
+      //#4. 수수료메일 작성
+      await setMailContent(seq_no, work_YY, work_QT, 'VatFee');     
+      let tmpBtn4 = `<button class="btn btn-warning" onclick="sendMailAndKakao('${ADID}',${seq_no},'${ceo_name}','${biz_name}', ${work_YY}, ${work_QT}, 'VatFee')">
+        <i class="fa fa-comment" style="color: black;"></i> 수수료 카톡(문자) 보내기
+        </button> 
+        <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+      $('[id="btnKakaoSend8"]').html(tmpBtn4);   // 수수료안내 하단 보내기버튼   
+      //#5. 보낸메일 확인하기
+      await sentMailList(seq_no, flag,"{% url 'getSentMails' %}");  
+      hideLoading(); // 로딩 마스크 숨김
+    };
+    // 5. check 함수 (체크박스 변경 시)
+    window.check = function(seq_no, target, wYY, wQT, val) {
+        $.ajax({
+            url: "{% url 'mng_vat_update' %}",
+            type: "POST",
+            data: {
+                seq_no: seq_no, target: target, work_YY: wYY, work_QT: wQT, val: val,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function(res) { if(res.status !== "success") console.error(res.message); }
+        });
+    };
+
+    var store = Ext.create('Ext.data.Store', {
+        storeId: 'vatStore_' + Math.random(),
+        autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+        proxy: {
+            type: 'ajax', // Ajax를 통해 서버와 통신
+            url: '{% url "mng_vat" %}', // 데이터를 가져올 API URL
+            extraParams: {
+                ADID:ADID,
+                work_YY:work_YY,
+                work_QT:work_QT
+            },        
+            reader: {
+                type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+                rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+                totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+            },
+        },   
+        fields: [ // 필드 정의 (데이터의 각 열)
+            {name: 'groupManager',type: 'string'},
+            {name: 'seq_no'},
+            {name: 'ceo_name', type: 'string'}, 
+            {name: 'biz_name', type: 'string'}, 
+            {name: 'biz_type', type: 'string'}, 
+            {name: 'YN_7', type: 'bool'},   //수기자료
+            {name: 'YN_8',type: 'bool'},    //신고서
+            {name: 'Tel_sincaSale', type: 'string'},
+            {name: 'mailSent', type: 'string'},		//메일통보
+            {name: 'kakao', type: 'string'},		//카톡통보
+            {name: 'SMS', type: 'string'},		//문자통보
+            {name: 'YN_14',type: 'string'},		//통합조회
+            {name: 'YN_15',type: 'string'},		//예정고지
+            {name: 'YN_18',type: 'string'},		//납부/환급세액
+            {name: 'YN_10',type: 'bool'},     //결재완료
+            {name: 'YN_13',type: 'string'},   //비고
+            {name: 'isIssue', type: 'string'},
+            {name: 'inspect_issue', type: 'string'},
+            {name: 'inspect_elec', type: 'string'},
+            {name: 'inspect_labor', type: 'string'},
+            {name: 'JupsuID',type: 'string'},
+            {name: 'YN_12',type: 'number'},   //수수료
+            {name: 'YN_11',type: 'bool'},     //수금
+            {name: 'YN_1',type: 'date', dateFormat: 'Y-m-d'},     //결재일
+            {name: 'YN_2',type: 'bool'},         //발행
+            {name: 'YN_3', type: 'date', dateFormat: 'Y-m-d'},       //발행일
+            {name: 'YN_4',type: 'bool'},         //입금
+            {name: 'YN_5',type: 'bool'},         //카드
+            {name: 'YN_6',type: 'bool'},         //cms
+            {name: 'YN_Kisu',type: 'string'}
+        ],
+        ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+    });
+    var comboDataStore = Ext.create('Ext.data.Store', {
+        fields: ['id', 'name'],
+        data: [] // 초기 데이터는 비워둠
+    });
+
+    // ───────────── [4] 초기화 및 그리드 생성 ─────────────
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}',
+            method: 'GET',
+            success: function (response) { comboDataStore.loadData(Ext.decode(response.responseText)); }
+        });
+    }
+    
+    // 도커 핸들러 (필터 유지)
+    const onItemClickHandlerWithFilter = function(newADID) {
+        ADID = newADID;
+        store.getProxy().extraParams.ADID = ADID;
+        store.load();
+        updateScrollMenuText(newADID);        
+    };
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandlerWithFilter);
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+          edit: function (editor, e) {
+              var field = e.field; 
+              var value = e.value; 
+              if (field === "Tel_sincaSale" && value === null) value = "";
+              Ext.Ajax.request({
+                  url: "{% url 'mng_vat_update' %}",
+                  method: "POST",
+                  params: {
+                      seq_no: e.record.get('seq_no'),
+                      target: target,
+                      work_YY: work_YY,
+                      work_QT: work_QT,
+                      val: value,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                  },
+                  success: function (response) {
+                    Swal.fire({
+                      title: '작업 성공',
+                      text: '작업이 성공적으로 완료되었습니다.',
+                      icon: 'success',
+                      timer: 500,  // Set the timer to 3 seconds (3000 ms)
+                      showConfirmButton: false,  // Hide the confirm button
+                      willClose: () => {
+                        // Optional: Perform any other action after the alert closes
+                      }
+                    });
+                  },
+                  failure: function (response) {
+                    Swal.fire("오류", "전송오류 : " + response.message, "error");
+                  }
+              });
+          }
+      }
+    });
+    var mainGrid = Ext.create('Ext.grid.Panel', {
+      renderTo: renderTarget,
+      title: '{{ gridTitle }}',
+      //header: false,  // 현대적 디자인 (헤더 숨김)
+      width:'100%',
+      height: getGridHeight(),
+      scrollable: 'y', // 세로 스크롤 활성화
+      store: store,
+      columnLines: true,
+      loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
+      tools: [  //최상단 오른쪽 툴바
+          {
+            xtype: 'button',
+            text: '접수번호저장',
+            iconCls: 'fa fa-floppy-o',
+            handler: function (btn) {
+              Ext.create('Ext.window.Window', {
+                title: '데이터 붙여넣기',
+                modal: true,
+                frame:false,
+                width: 800,
+                height: 200,
+                layout: 'fit',
+                items: [{
+                    xtype: 'textarea',
+                    name: 'clipboardData',
+                    emptyText: '홈택스 전자신고 결과를 드래그 복사해서 붙여넣으세요.'
+                }],
+                buttons: [
+                  {
+                    text: '저장',
+                    handler: function(btn) {
+                        var win = btn.up('window');
+                        var clipboardData = win.down('textarea').getValue();
+                        Ext.Ajax.request({
+                          url: "{% url 'save_clipboard_Vat' %}",
+                          method: 'POST',
+                          params: {
+                              clipboardData: clipboardData,
+                              csrfmiddlewaretoken: "{{ csrf_token }}"
+                          },
+                          success: function(response) {
+                            win.close();
+                            Swal.fire({
+                              title: '작업 성공',
+                              text: '전자신고파일이 성공적으로 저장되었습니다.',
+                              icon: 'success',
+                              //timer: 500,  // Set the timer to 3 seconds (3000 ms)
+                              showConfirmButton: true,  // Hide the confirm button
+                              willClose: () => {
+                                let store = Ext.getCmp('mainGrid').getStore();
+                                Ext.each(response.sqnos, function (item) {
+                                    let record = store.findRecord('seq_no', item.seq_no);
+                                    if (record) {
+                                        record.set('isIssue', "💙"); // userID의 마지막 두 자리
+                                    }
+                                });
+                                store.commitChanges(); // 변경 사항 적용
+                              }
+                            });                              
+                          },
+                          failure: function(response) {
+                            Swal.fire("오류", "저장오류 : " + response.message, "error");
+                          }
+                        });
+                        win.close();
+                    }
+                  },
+                  {
+                    text: '취소',
+                    handler: function(btn) {
+                        btn.up('window').close();
+                    }
+                  }]
+              }).show();
+            },
+            style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },      
+          {
+            xtype: 'button',
+            text: '전자신고파일 업로드',
+            iconCls: 'fa fa-cloud-upload',
+            handler: function () {
+              let uploadWindow = Ext.create('Ext.window.Window', {
+                    title: '파일 업로드',
+                    modal: true,
+                    layout: 'fit',
+                    items: [{
+                        xtype: 'form',
+                        bodyPadding: 10,
+                        fileUpload: true,
+                        items: [{
+                            xtype: 'filefield',
+                            name: 'uploadFile',
+                            fieldLabel: '파일 선택',
+                            labelWidth: 70,
+                            msgTarget: 'side',
+                            allowBlank: false,
+                            anchor: '100%',
+                            buttonText: '파일 찾기...'
+                        }],
+                        buttons: [{
+                            text: '업로드',
+                            handler: function (btn) {
+                                var form = btn.up('form').getForm();
+                                if (form.isValid()) {
+                                  form.submit({
+                                    url: "{% url 'save_elecfile_Vat' %}", // Django 업로드 URL
+                                    params: {
+                                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                                    },
+                                    waitMsg: '파일 업로드 중...',
+                                    success: function (form, action) {
+                                        Ext.Msg.alert('성공', '파일이 성공적으로 업로드되었습니다.');
+                                        let response = action.result;
+                                        uploadWindow.close();
+                                        let store = Ext.getCmp('mainGrid').getStore();
+                                        let record = store.findRecord('seq_no', response.seq_no);
+                                        record.set('JupsuID', response.userID.slice(-2));  
+                                        store.commitChanges(); // 변경 사항 적용
+                                    },
+                                    failure: function (form, action) {
+                                        Ext.Msg.alert('실패', '파일 업로드에 실패했습니다.');
+                                    }
+                                  });
+                                }
+                            }
+                        }]
+                    }]
+                }).show();
+            },
+            style: 'margin-right: 10px;'
+          },              
+          {
+              xtype: 'textfield',
+              emptyText: '검색어 입력',
+              width: 200,
+              listeners: {
+                  change: function (field, newValue) {
+                      const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                      if (!newValue || newValue.trim() === '') {
+                          store.clearFilter(); // 필터 제거
+                      } else {
+                          store.clearFilter(true); // 기존 필터 제거
+                          const searchValue = newValue.trim().toLowerCase();
+                          store.filterBy(record => {
+                              const bizName = record.get('biz_name')?.toLowerCase() || '';
+                              return (
+                                bizName.includes(searchValue) 
+                              );
+                          });
+                      }
+                  }
+              }
+              
+          },
+          {
+              xtype: 'button',
+              iconCls: 'icon icon-refresh',
+              handler: function (btn) {
+                  location.reload();
+              },
+              style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },
+      ],            
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),        
+      plugins: [cellEditing],
+      columns: [
+        {   xtype: 'rownumberer',width: 0,	sortable: false}, 
+        {   dataIndex: 'groupManager',header: '<center>관리자</center>', hidden:true       }, 
+        {   header: 'SEQ', dataIndex: 'seq_no',width: 50        }, 
+        {   header: 'ceo_name', dataIndex: 'ceo_name',width: 0        }, 
+        {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',flex:1,minWidth: 130,renderer: renderTopic 
+        },{   header: '<center>유형</center>', dataIndex: 'biz_type',  width: 60,align:'center'  ,      
+              renderer: function (value) {
+                  if (value === '1') return '<i class="mdi mdi-domain" style="color: green;"></i>';
+                  if (value === '2') return '<i class="mdi mdi-domain" style="color: red;">면세</i>';
+                  if (value === '3') return '<i class="mdi mdi-domain" style="color: red;">비영리</i>';
+                  if (value === '4') return '<i class="mdi mdi-account" style="color: green;"></i>';
+                  if (value === '5') return '<i class="mdi mdi-account-outline" style="color: blue;">간이</i>';
+                  if (value === '6') return '<i class="mdi mdi-account-outline" style="color: red;">면세</i>';
+                  return '<i class="mdi mdi-account-off" style="color: red;">비사업</i>';
+              }
+        }, {   
+          header: '<center>방문<br>자료</center>', dataIndex: 'YN_4',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, width: 40,align:'center',
+          listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'YN_4',work_YY,work_QT,checked);	}}
+        }, {
+          header: '<center>매출<br>매입</center>', dataIndex: 'YN_5',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, width: 40,align:'center',
+          listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'YN_5',work_YY,work_QT,checked);	}}
+        }, {   
+          header: '<center>카드<br>매출</center>', dataIndex: 'YN_6',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, width: 40,align:'center',
+          listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'YN_6',work_YY,work_QT,checked);	}}              
+        }, {
+          header: '<center>카드<br>매입</center>', dataIndex: 'YN_7',  xtype: 'checkcolumn',renderer : checkboxRender, width: 40,
+          listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'YN_7',work_YY,work_QT,checked);	}}
+        }, {
+          header: '<center>신고<br>서</center>', dataIndex: 'YN_8',  xtype: 'checkcolumn',renderer : checkboxRender, width: 40,
+          listeners: {checkchange: function (column, recordIndex, checked) {	check(store.getAt(recordIndex).get('seq_no'),'YN_8',work_YY,work_QT,checked);	}}
+        },{
+          header: '<center>주의사항</center>', dataIndex: 'Tel_sincaSale',  width: 150,  align:'left', editor: { allowBlank: true }, renderer:tooltipRenderer2
+        },{
+          header: '<center>예정고지</center>', dataIndex: 'YN_15',  width: 80,xtype: 'numbercolumn', align:'right',format:'0,000', editor: { allowBlank: false }
+        }, {
+          header: '<center>납부세액<br>(환급세액)</center>', dataIndex: 'YN_18',  width: 90,xtype: 'numbercolumn', align:'right',format:'0,000', editor: { allowBlank: false }
+        }, {
+          header: '<center>결재</center>', dataIndex: 'YN_10', width: 40,align:'center',
+          xtype:  (isSuperuser) ? 'checkcolumn' : 'gridcolumn',
+          renderer: (isSuperuser) ? checkboxRender : function (value) {
+              return value ? "✍️" : '';  //  값이 true이면 ✍️, false이면 빈 문자열
+          },
+          listeners: (isSuperuser) ? {
+              checkchange: function (column, recordIndex, checked) {
+                  check(store.getAt(recordIndex).get('seq_no'), 'YN_10', work_YY,work_QT, checked);
+              }
+          } : {}
+        }, {
+          header: '<center>검증<br>결과</center>', dataIndex: 'inspect_issue',  width: 35,
+          renderer: function (value, metaData, record) {
+            if (!value) return ''; // 값 없으면 공백
+
+            const issue_arr = value.split('#');
+            let tooltipText = '';
+            let feelingGrade = 0
+            issue_arr.forEach(issueCode => {
+              const code = parseInt(issueCode, 10);
+              if (!isNaN(code)) {
+                switch (code) {
+                  case 1:
+                    feelingGrade += 1;
+                    break;
+                  case 2:
+                    tooltipText += '<b>*</b> 홈택스에서 조회된 신용카드+현금영수증<br>매출과 신고서 작성금액 차이<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 3:
+                    tooltipText += '<b>*</b> 예정고지 또는 미환급세액을 신고서에<br>반영하지 않았거나 반영하면 안되는 환급금을 반영하였음<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 4:
+                    tooltipText += '<b>*</b> 직전 신고기간에 종이 매입세금계산서가<br>있었으니 당기 매입세금계산서 확인<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 5:
+                    tooltipText += '<b>*</b> 면세매출이 있으나 공통매입세액<br>안분계산을 하지 않았음<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 6:
+                    tooltipText += '<b>*</b> 신용카드발행세액공제 한도 초과<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 7:
+                    tooltipText += '<b>*</b> 매출세금계산서 중 전자외 발행분 재검토<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 8:
+                    tooltipText += '<b>*</b> 직전 과세기간에 건별매출이 있었으니<br>당기 현금 건별 또는 온라인 매출 확인요망<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 9:
+                    tooltipText += '<b>*</b> 환급액 500만원 초과로<br>환급조사 대비 확인<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 10:
+                    tooltipText += '<b>*</b> 직전 과세기간에 의제매입공제가 있었으나<br>당기에는 미적용했으니 확인요망<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 11:
+                    tooltipText += '<b>*</b> 직전 과세기간에 재활용폐자원공제가 있었으나<br>당기에는 미적용했으니 확인요망<br>';
+                    feelingGrade += 1;
+                    break;
+                  case 12:
+                    tooltipText += '<b>*</b> 직전 과세기간에 불공제 매입이 있었으나<br>당해 신고시는 발생하지 않음<br>';
+                    feelingGrade += 1;
+                    break;
+                }
+              }
+            });
+            metaData.tdAttr = Ext.String.format('data-qtip="{0}"', tooltipText);
+            const emojis = {
+                0: "❌",  // value = -1
+                5: "😡",
+                1: "✅", 
+                2: "⚠️",  
+                3: "⚠️",   
+                4: "⚠️"   
+            };
+            const emoji = emojis[feelingGrade] || "❌";
+            return Ext.String.format(
+              `<div style="cursor:pointer;" onclick="summitModal(window['record_{0}'], {0}, '{1}', '{2}', {3}, {4}, 'Vat', '검증결과');">
+                {5}
+              </div>`,
+              record.data.seq_no,
+              Ext.String.htmlEncode(record.data.ceo_name),
+              Ext.String.htmlEncode(record.data.biz_name),
+              work_YY,
+              work_QT,
+              emoji
+            );
+          }
+        }, {
+          header: '<center>통합<br>조회</center>', dataIndex: 'YN_14',  width: 40, align:'center',
+          renderer: function(value, metaData, record) {
+            const intVal = parseInt(value, 10); // ✅ 문자열을 정수로 변환
+            let feelingGrade = 4 - intVal;
+            if (feelingGrade<1){
+              feelingGrade = 1;
+            }
+            const kisu = record.get('YN_Kisu');
+            if (kisu==""){
+              feelingGrade = 0;
+            }
+            const emojis = {
+                0: "❌",  // value = -1
+                5: "📌",
+                4: "✅", 
+                3: "😄",  
+                2: "😞",   
+                1: "😡"   
+            };
+            const emoji = emojis[feelingGrade] || "❌";
+            return Ext.String.format(
+              `<div style="cursor:pointer;" onclick="summitModal(window['record_{0}'], {0}, '{1}', '{2}', {3}, {4}, 'Vat', '통합조회');">
+                {5}
+              </div>`,
+              record.data.seq_no,
+              Ext.String.htmlEncode(record.data.ceo_name),
+              Ext.String.htmlEncode(record.data.biz_name),
+              work_YY,
+              work_QT,
+              emoji
+            );
+          }
+        }, {
+          header: '<center>메일<br>통보</center>', dataIndex: 'mailSent',   width: 40, align:'center',
+          renderer: function(value, metaData, record) {
+            let feelingGrade = 1; // 기본값 (불쾌)
+            if (value.includes("신고 접수결과")) {
+                feelingGrade = 4;
+            } else if (value.includes("예정고지")) {
+                feelingGrade = 3;
+            } else if (value.includes("신고 준비안내")) {
+                feelingGrade = 2;
+            }
+            const emojis = {
+                1: "❌",  // 불쾌
+                2: "😞",  // 시무룩
+                3: "😄",  // 기쁨
+                4: "✅"   // 매우 좋음
+            };
+            const emoji = emojis[feelingGrade] || "❌";
+            return Ext.String.format(
+              `<div style="cursor:pointer;" onclick="summitModal(window['record_{0}'], {0}, '{1}', '{2}', {3}, {4}, 'Vat', '메일통보');">
+                {5}
+              </div>`,
+              record.data.seq_no,
+              Ext.String.htmlEncode(record.data.ceo_name),
+              Ext.String.htmlEncode(record.data.biz_name),
+              work_YY,
+              work_QT,
+              emoji
+            );
+          }
+        }, {
+          header: '<center>카톡<br>통보</center>', dataIndex: 'kakao',   width: 40, align:'center',
+          renderer: function(value) {
+            let feelingGrade = 0; // 기본값 (불쾌)
+            if (value.includes("[부가가치세 신고 안내]")) {
+                feelingGrade = 1;
+            } else if (value.includes("[부가가치세 고지 안내]") || value.includes("부가가치세 신고수수료 안내]")) {
+                feelingGrade = 3;
+            } else if (value.includes("[부가가치세 신고 접수]")) {
+                feelingGrade = 2;
+            }
+            const emojis = {
+                0: "❌",  // 불쾌
+                1: "😞",
+                2: "😄",  // 기쁨
+                3: "☑️"   // 매우 좋음
+            };
+            return value.trim() ?  emojis[feelingGrade] : "";  // 등급에 따른 이모지 반환
+          }
+        }, {
+          header: '<center>문자<br>통보</center>', dataIndex: 'SMS',   width: 40, align:'center',
+          renderer: function(value) {
+            return value.trim() ?  "👍" : "";  // 등급에 따른 이모지 반환
+          }
+        },{  
+          header: '<center>비고</center>', dataIndex: 'YN_13',  width: 150, editor: { allowBlank: true }, renderer:tooltipRenderer2          
+        }, {
+          header: '<center>의무<br>전자</center>', dataIndex: 'inspect_elec',  width: 35,
+          renderer: function (value) {
+            return parseInt(value, 10) === 1 ? '⚠️' : '';
+          }
+        }, {
+          header: '<center>성실<br>신고</center>', dataIndex: 'inspect_labor',  width: 35,
+          renderer: function (value) {
+            return parseInt(value, 10) === 1 ? '⚠️' : '';
+          }
+        },{  
+          header: '<center>전자<br>신고</center>', dataIndex: 'isIssue',  width: 40,align:'center',renderer: value => value ? "💙" : ""     
+        }, {  
+          header: '<center>접수<br>ID</center>', dataIndex: 'JupsuID',  width: 40,
+          renderer: function(value) {
+            // 값이 존재하면 끝에서 두 자리만 반환합니다.
+            if (value && value.length >= 2) {
+                return value.slice(-2);
+            }
+            return value;
+          }
+        },{  
+          header: '<center>수수료</center>', dataIndex: 'YN_12',  width: 90,xtype: 'numbercolumn', align:'right',format:'0,000', editor: { allowBlank: true }        
+          , summaryType: 'sum', summaryRenderer: function(value) {  return Ext.util.Format.number(value, '0,000');}
+        }, {
+          header: '<center>수금</center>', dataIndex: 'YN_11',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender,align:'center',
+          listeners: {
+              checkchange: function(checkColumn, rowIndex, checked) {
+                  var grid = this.up('grid'),
+                      store = grid.getStore(),
+                      rec = store.getAt(rowIndex);
+                  
+                  // 기존 처리 함수 호출 (seq_no 값을 사용)
+                  check(rec.get('seq_no'), 'YN_11', work_YY,work_QT, checked);
+                  
+                  if (checked) {
+                      // 체크 시 오늘 날짜를 YYYY-MM-DD 형식으로 설정
+                      var today = Ext.Date.format(new Date(), 'Y-m-d');
+                      rec.set('YN_1', today);
+                  } else {
+                      // 체크 해제 시 결재일 초기화
+                      rec.set('YN_1', '');
+                  }
+              }
+          }
+        },{  
+          header: '<center>수금일</center>', dataIndex: 'YN_1',  width: 90 ,renderer: formatDate, editor: {		xtype: 'datefield',	format: 'y-m-d'		},allowBlank: true	
+        },{
+          text: '세금계산서',
+          columns: [
+          {   header: '<center>발행</center>', dataIndex: 'YN_2',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, width: 40,align:'center',
+              listeners: {
+                  checkchange: function(checkColumn, rowIndex, checked) {
+                      var grid = this.up('grid'),
+                          store = grid.getStore(),
+                          rec = store.getAt(rowIndex);
+                      
+                      check(rec.get('seq_no'), 'YN_2', work_YY,work_QT, checked);
+                      
+                      if (checked) {
+                          // 체크 시 오늘 날짜를 YYYY-MM-DD 형식으로 설정
+                          var today = Ext.Date.format(new Date(), 'Y-m-d');
+                          rec.set('YN_3', today);
+                      } else {
+                          // 체크 해제 시 결재일 초기화
+                          rec.set('YN_3', '');
+                      }
+                  }
+              }          
+          },{  
+            header: '<center>발행일</center>', dataIndex: 'YN_3',  width: 90,renderer: formatDate, editor: {		xtype: 'datefield',	format: 'y-m-d'		},allowBlank: true	}
+        ]},
+        {
+          header: '<center>YN_Kisu</center>', dataIndex: 'YN_Kisu',  width: 0
+        }
+      ],      
+      viewConfig: {
+        emptyText: '<div style="text-align:center;padding:50px;font-size:16px; font-weight:bold;">조회된 데이터가 없습니다.</div>'
+      },                  
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          items: 
+          [...dockedItemsConfig,
+            {
+              xtype: 'buttongroup',              
+              columns: 5,
+              frame:false,
+              defaults: {
+                enableToggle: true,
+                toggleGroup: 'yearGroup',
+                margin: '0 5 0 0', // 버튼 간격 (오른쪽으로 5px 간격)
+                style: {
+                    border: '1px solid #ccc',
+                    padding: '5px 6px',
+                    borderRadius: '5px',
+                    transition: 'all 0.2s ease' // 부드러운 전환 효과
+                }
+              },
+              items: Array.from({ length: 5 }, (_, i) => ({
+                text: `${currentYear - i}년`,
+                pressed: currentYear - i === parseInt(work_YY, 10),
+                handler: function () {
+                  var grid = this.up('grid');
+                  work_YY = parseInt(this.text.replace('년', ''));
+                  grid.getStore().getProxy().extraParams.work_YY = work_YY;
+                  grid.getStore().reload();
+
+                  // const store = grid.getStore();
+                  // const selectedBiz = getSelectedBizType(grid);  // ★ 선택값 보관
+
+                  // const selectedYear = parseInt(this.text.replace('년', ''));
+                  // work_YY = selectedYear;                  
+
+                  // const data = {
+                  //     ADID: ADID,
+                  //     work_YY : work_YY,
+                  //     work_QT : work_QT
+                  // };
+                  // // 로딩 마스크 생성 (대상: 그리드나 패널)
+                  // var targetComponent = Ext.getCmp('mainGrid') || Ext.getBody(); // 대상 설정 (그리드 ID나 body)
+                  // var loadMask = new Ext.LoadMask({
+                  //     msg: '연도를 변경중입니다...', 
+                  //     target: targetComponent
+                  // });
+                  // loadMask.show(); // 로딩 표시 시작
+                  // Ext.Ajax.request({
+                  //     url: '{% url "mng_vat" %}',//이 부분 수정해야한다
+                  //     method: 'GET',
+                  //     params: data, // 데이터를 GET 파라미터로 전달
+                  //     success: function (response) {
+                  //         try {
+                  //             const jsonResponse = Ext.decode(response.responseText); // JSON 파싱
+                  //             store.loadData(jsonResponse); // 데이터 로드
+                  //             applyBizTypeFilter(store, selectedBiz);  // ★ 재적용
+                  //         } catch (e) {
+                  //             console.error('Failed to parse response:', e, response.responseText);
+                  //         } finally {
+                  //             loadMask.hide(); // 로딩 종료
+                  //         }
+                  //     },
+                  //     failure: function (response) {
+                  //         alert('Request failed:', response);
+                  //         loadMask.hide(); // 로딩 종료
+                  //     }
+                  // });
+                }//handler
+              }))//items
+            },
+            '->',  // 우측 정렬을 위한 tbfill
+            {
+              xtype: 'displayfield',
+              fieldLabel: '전체',
+              itemId: 'totalCommissionDisplay',
+              value: '0'
+            },{
+              xtype: 'displayfield',
+              fieldLabel: '수금',
+              itemId: 'collectedCommissionDisplay',
+              margin: '0 10 0 10',
+              value: '0',
+              
+            }     
+          ]//dockeditems
+        },
+        {
+          xtype: 'toolbar',
+          items:[{
+            xtype: 'radiogroup',
+            itemId: 'bizTypeGroup',           // ★ 식별자
+            layout: 'hbox',
+            defaults: {
+                name: 'bizTypeGroup',
+                margin: '0 10 0 0'
+            },
+            value: { bizTypeGroup: 'all' }, // ✅ 기본값 '전체' 설정
+            items: [
+                { boxLabel: '전체', inputValue: 'all' },
+                { boxLabel: '법인', inputValue: 'corp' },
+                { boxLabel: '개인', inputValue: 'person' }
+            ],
+            style: {
+                background: '#fff', // 그룹 배경색 지정
+                border: '0px #fff',
+            },
+            listeners: {
+              change: function (group, newValue, oldValue) {
+                  // ★ 여기서 grid 변수 에러 발생함 -> group.up('grid')로 수정
+                  const grid = group.up('grid');
+                  const store = grid.getStore();
+                  const selected = newValue.bizTypeGroup;
+
+                  if (selected === 'corp') {
+                      store.clearFilter();
+                      store.filterBy(record => parseInt(record.get('biz_type'), 10) <= 3);
+                  } else if (selected === 'person') {
+                      store.clearFilter();
+                      store.filterBy(record => parseInt(record.get('biz_type'), 10) >= 4);
+                  } else {
+                      store.clearFilter();
+                  }
+              }
+            }
+          },{
+            xtype: 'buttongroup',
+            title: null, // 제목 제거
+            columns: 4, // 한 줄에 버튼 4개 (분기 기준)
+            frame:false,
+            border:0,
+            defaults: {
+                enableToggle: true,
+                toggleGroup: 'quarterGroup',
+                margin: '0 5 0 0', // 버튼 간격 (오른쪽 5px)
+                style: {
+                    border: '1px solid #ccc', // 버튼 테두리 색상
+                    padding: '5px 6px', // 버튼 내부 여백
+                    borderRadius: '5px' // 버튼 둥글게 처리
+                }
+            },
+            // Array.from을 사용해 4개의 버튼 생성 ("1분기" ~ "4분기")
+            items: Array.from({ length: 4 }, (_, i) => ({
+                text: `${i + 1}분기`,
+                // 분기 선택 변수 work_QT와 비교 (숫자로 변환)
+                pressed: (i + 1) === parseInt(work_QT, 10),
+                handler: function () {
+                    var grid = this.up('grid');
+                    if (!grid) return;
+                    var store = grid.getStore();
+                    // 2. 선택된 분기 값 갱신
+                    var selectedQuarter = parseInt(this.text.replace('분기', ''), 10);
+                    work_QT = selectedQuarter;
+
+                    // 3. 스토어 파라미터 갱신 및 리로드 (핵심!)
+                    var proxy = store.getProxy();
+                    proxy.extraParams.work_QT = work_QT;
+                    store.load(); // 또는 store.reload();
+                }
+            })),
+            style: {
+                background: '#fff', // 그룹 배경색 지정
+                //border: '1px solid #ccc',
+                //padding: '6px'
+            }
+          }]
+        }      
+      ],
+      listeners: {
+        afterrender: function(grid) {
+          grid.getStore().on('datachanged', function() {
+              var total = 0, collected = 0;
+              store.each(function(rec) {
+                  var comm = rec.get('YN_12') || 0;
+                  total += comm;
+                  if (rec.get('YN_11')) collected += comm;
+              });
+              // 하단 displayfield가 있다면 값 업데이트 (ID가 아니라 itemId로 찾아야 함)
+              var totalDisp = grid.down('#totalCommissionDisplay');
+              if(totalDisp) totalDisp.setValue(Ext.util.Format.number(total, '0,000'));
+          });
+          // 창 크기 변경 시 높이 재계산 (반응형 처리)
+          Ext.EventManager.onWindowResize(function() {
+              if(grid && !grid.isDestroyed) {
+                  grid.setHeight(getGridHeight());
+                  grid.doLayout();
+              }
+          });        
+        }
+      }
+    });
+
+    if (mainGrid) {
+      attachGridToolTip(mainGrid, '{% url "kijang_member_popup" %}?seq_no={seq_no}');
+      attachGridToolTip_JupsuSummit(mainGrid,work_YY,work_QT);
+    }
+
+    // ───────────── [5] 전역 노출 함수 (onclick 대응) ─────────────
+
+
+    // ── bizTypeGroup 현재 선택값 읽기
+    function getSelectedBizType(mainGrid) {
+      const rg = mainGrid && mainGrid.down && mainGrid.down('#bizTypeGroup');
+      return (rg && rg.getValue && rg.getValue().bizTypeGroup) || 'all';
+    }
+
+    // ── 선택값에 따른 필터 적용
+    function applyBizTypeFilter(store, selected) {
+      // Ext 4/5/6 호환 초기화
+      if (store.getFilters && store.getFilters().removeAll) {
+        store.getFilters().removeAll();
+      } else if (store.clearFilter) {
+        store.clearFilter();
+      }
+
+      if (selected === 'corp') {
+        store.filterBy(r => {
+          const t = parseInt(r.get('biz_type'), 10);
+          return t >= 1 && t <= 3;
+        });
+      } else if (selected === 'person') {
+        store.filterBy(r => {
+          const t = parseInt(r.get('biz_type'), 10);
+          return t >= 4 && t <= 6;
+        });
+      }
+    }
+
+    var tooltipRenderer2 = function(value, metaData,record) {
+      metaData.tdAttr = Ext.String.format('data-qtip="{0}"', value	);
+      return value;
+    };
+
+    // 디바운스 함수 정의
+    const debounce = (func, delay) => {
+      let timeoutId;
+      return function (...args) {
+        const context = this;
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(context, args), delay);
+      };
+    };
+
+    //############# 0.신고서 보기
+    const treeLoad = (ADID,seq_no,ceo_name,biz_name,work_YY) => {
+      srcpath = biz_name
+      if (ADID=="화물") {
+        srcpath = `화물연대/${ceo_name}`
+      }
+      $('#accordionLeft').empty();// 기존 요소 비우기
+      $.ajax({
+        url: "{% url 'path_to_vat_admin' %}",
+        type: "POST",
+        data: {
+          seq_no:seq_no,
+          path: `static/cert_DS/${srcpath}/${work_YY}/부가세/`
+        },
+        dataType: "json",
+        success: function (data) {
+          const gridData = data.nodes;
+          const fragment = document.createDocumentFragment(); // ✅ 여기서 사용
+          let selectedSheetID = "";
+          let selectedPeriod = "";
+
+          gridData.forEach((item, index) => {
+            const divCard = document.createElement("div");
+            divCard.className = "card overflow-hidden mb-2 border-0";
+            divCard.id = "collapseHead" + index;
+
+            // Anchor (Header)
+            const anchor = document.createElement("a");
+            anchor.className = "accordion-toggle panel-heading1 collapsed";
+            anchor.setAttribute("data-bs-toggle", "collapse");
+            anchor.setAttribute("aria-expanded", "false");
+            anchor.href = "#collapse" + index;
+            anchor.innerText = `${item.displayName} :: ${item.singoDur}`;
+            divCard.appendChild(anchor);
+
+            // Panel body
+            const divPanel = document.createElement("div");
+            divPanel.className = "panel-collapse collapse" + (index === gridData.length - 1 ? " show" : "");
+            divPanel.id = "collapse" + index;
+            divPanel.setAttribute("role", "tabpanel");
+            divPanel.setAttribute("aria-expanded", "false");
+            divPanel.setAttribute("data-bs-parent", "#accordionAcnt");
+
+            // Sheet 선택 처리
+            if (index === gridData.length - 1) {
+              selectedSheetID = `${gridData.length}@0`;
+              selectedPeriod = item.displayName;
+            }
+
+            // ul 태그
+            const ul = document.createElement("ul");
+            ul.className = "nav1 nav-column flex-column br-7";
+            ul.id = "singoList" + index;
+
+            divPanel.appendChild(ul);
+            divCard.appendChild(divPanel);
+            document.getElementById('accordionLeft').appendChild(divCard);
+
+            singoListDetail(ul, item.totalPath, item.displayName, index + 1, item.dueDate, selectedSheetID);
+          });
+
+          // ✅ 한 번만 DOM에 추가 (리페인트 최소화)
+          document.getElementById('accordionLeft').appendChild(fragment);
+        },
+        error: function (xhr, status, error) {
+          console.error('📛 부가세 폴더 로드 실패:', error);
+        }
+      });
+    };
+
+    const singoListDetail = async (ul, path, singoPeriod, quarter, dueDate, selSheetID) => {
+      try {
+        const response = await $.ajax({
+          url: "{% url 'path_to_file_admin' %}",
+          data: {
+            path: path,
+            singoPeriod: singoPeriod,
+            quarter: quarter
+          },
+          dataType: "json"
+        });
+
+        ul.innerHTML = ""; // 초기화 (중복 삽입 방지)
+        let selectedRow = null;
+
+        response.rows.forEach(row => {
+          const { id, 파일명, totalPath, fileNum } = row;
+
+          const li = document.createElement("li");
+          li.id = `li${id}`;
+          li.className = "nav-item1 mt-0";
+
+          const anchor = document.createElement("a");
+          anchor.href = `javascript:changeSheet('${id}','${singoPeriod}','${파일명}','${totalPath}')`;
+          anchor.className = `nav-link thumb ${id === selSheetID ? 'active' : ''}`;
+          anchor.id = id;
+
+          // 표시 텍스트 구성
+          let content = 파일명;
+
+          if (fileNum === "200") {
+            content += `<span class="badge badge-sm bg-danger badge-hide ms-4">납기:${dueDate}</span>`;
+          } else if (fileNum === "300") {
+            content += `<span class="badge badge-sm bg-secondary badge-hide ms-6">NTS</span>`;
+          } else if (fileNum === "0") {
+            content = `<i class="fa fa-star text-yellow me-2"></i>${파일명}<i class="fa fa-star text-yellow ms-2"></i>`;
+          }
+
+          anchor.innerHTML = content;
+          li.appendChild(anchor);
+          ul.appendChild(li);
+
+          if (id === selSheetID) {
+            selectedRow = row; // 루프 끝난 후 changeSheet 호출
+          }
+        });
+
+        // 마지막에 changeSheet 실행
+        if (selectedRow) {
+          changeSheet(selectedRow.id, singoPeriod, selectedRow.파일명, selectedRow.totalPath);
+        }
+      } catch (error) {
+        console.error('📛 singoListDetail 실패:', error);
+      }
+    };
+
+    window.changeSheet = function(selSheetID, selPeriod, selSheetName, file_path) {
+      selPeriod = decodeURIComponent(selPeriod);
+      selSheetName = decodeURIComponent(selSheetName);
+      file_path = decodeURIComponent(file_path);
+
+      if (selectedSheetID) {
+        const prev = document.getElementById(selectedSheetID);
+        if (prev) prev.className = "nav-link thumb";
+      }
+      const current = document.getElementById(selSheetID);
+      if (current) current.className = "nav-link thumb active";
+
+      const iframe = document.getElementById("singoseoPDFIframe");
+      if (iframe) iframe.src = file_path;
+
+      selectedSheetID = selSheetID;
+      selectedPeriod = selPeriod;
+      selectedSheetName = selSheetName;
+    };
+
+
+    window.handleButtonClose = function(seq_no, ceo_name, biz_name,ev)  {
+      const btnElement  = document.getElementById('btn_selectedYear');
+      btnElement.innerHTML = ev+" 년";
+      treeLoad(ADID,seq_no,ceo_name,biz_name,ev)
+    };  
+    //############# 2. 분석
+    function setAnaly(record, seq_no, work_YY, work_QT){
+      // 왼쪽 막대그래프
+      $.ajax({
+        url: "{% url 'get_IssueVatList_Analy' %}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+          seq_no: seq_no,
+          work_YY: work_YY,
+          work_QT: work_QT
+        }),
+        success: function (response) {
+          const reversedList = [...(response.totIssueList || [])].reverse();
+          changeAll(response.totIssueList[0])
+          am5.ready(function() {
+            var root = am5.Root.new("chartdiv");
+            var data = reversedList;
+            root.setThemes([
+              am5themes_Animated.new(root)
+            ]);
+            root.numberFormatter.setAll({
+              numberFormat: "#a",
+              bigNumberPrefixes: [
+                { "number": 1e+4, "suffix": "만" },
+                { "number": 1e+6, "suffix": "백만" },
+                { "number": 1e+8, "suffix": "억" }
+              ],
+              smallNumberPrefixes: []
+            });
+            var chart = root.container.children.push(am5xy.XYChart.new(root, {
+              panX: true,
+              panY: false,
+              wheelX: "panX",
+              wheelY: "zoomX",
+              layout: root.verticalLayout
+            }));
+
+            //상단스크롤바
+            // chart.set("scrollbarX", am5.Scrollbar.new(root, {
+            //   orientation: "horizontal"
+            // }));
+            var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+              categoryField: "과세기간",
+              renderer: am5xy.AxisRendererX.new(root, {}),
+              tooltip: am5.Tooltip.new(root, {
+                themeTags: ["axis"],
+                animationDuration: 200
+              })
+            }));
+            xAxis.data.setAll(data);
+
+            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+              min: 0,
+              renderer: am5xy.AxisRendererY.new(root, {})
+            }));
+            var zAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+              min: 0,
+              renderer: am5xy.AxisRendererY.new(root, {})
+            }));
+
+            var series0 = chart.series.push(am5xy.ColumnSeries.new(root, {
+              name: "매입합계",
+              xAxis: xAxis,
+              yAxis: yAxis,
+              valueYField: "매입합계",
+              categoryXField: "과세기간",
+              clustered: false,
+              tooltip: am5.Tooltip.new(root, {
+                labelText: "매입합계: {valueY}"
+              })
+            }));
+            series0.columns.template.setAll({
+              width: am5.percent(80),
+              tooltipY: 0
+            });
+            series0.data.setAll(data);
+            
+            var series1 = chart.series.push(am5xy.ColumnSeries.new(root, {
+              name: "매출합계",
+              xAxis: xAxis,
+              yAxis: yAxis,
+              valueYField: "매출합계",
+              categoryXField: "과세기간",
+              clustered: false,
+              tooltip: am5.Tooltip.new(root, {
+                labelText: "매출합계: {valueY}"
+              })
+            }));
+            series1.columns.template.setAll({
+              width: am5.percent(50),
+              tooltipY: 0
+            });
+            series1.data.setAll(data);
+
+            var series2 = chart.series.push(am5xy.LineSeries.new(root, {
+              name: "납부세액",
+              xAxis: xAxis,
+              yAxis: yAxis,
+              valueYField: "납부세액",
+              categoryXField: "과세기간",
+              clustered: false,
+              tooltip: am5.Tooltip.new(root, {
+                labelText: "납부세액: {valueY}"
+              })
+            }));
+            series2.strokes.template.setAll({ strokeWidth: 2 });
+            series2.bullets.push(function() {
+              return am5.Bullet.new(root, {
+                sprite: am5.Circle.new(root, {
+                  strokeWidth: 3,
+                  stroke: series2.get("stroke"),
+                  radius: 5,
+                  fill: root.interfaceColors.get("background")
+                })
+              });
+            });
+            series2.data.setAll(data);  
+
+            //색상
+            series0.set("fill", am5.color(0xFF9E9B));   //매입액
+            series1.set("fill", am5.color(0x87cefa));   //매출액
+            series2.set("fill", am5.color(0x50b300));   //납부세액
+
+            series1.columns.template.events.on("click", function(ev) {
+              changeAll(ev.target._dataItem.dataContext);
+            });
+            series0.columns.template.events.on("click", function(ev) {
+              changeAll(ev.target._dataItem.dataContext);
+            });
+            var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
+            chart.appear(1000, 100);
+            series0.appear();
+            series1.appear();
+          }); 
+        },
+        error: function (xhr, status, error) {
+          alert("데이터 로딩 실패: " + error);
+        }
+      });
+
+      am5.addLicense("AM5C372573951");
+    }
+    const setDivInspect = (tmpIssueList) => {
+      var costCard = tmpIssueList.신용카드수취기타카드*1 + tmpIssueList.신용카드수취현금영수증*1 + tmpIssueList.신용카드수취화물복지*1 + tmpIssueList.신용카드수취사업용카드*1;
+      $("#divListGroup").empty();
+      var tmpHtml="";
+      tmpHtml += "            <div class='list-group py-1'>"
+      tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+      tmpHtml += "                <div class='list-group-item border-0'>"
+      tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+      tmpHtml += "                    <div class='transaction-icon'><i class='fe fe-chevrons-right'></i>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                    <div class='media-body'>"
+      tmpHtml += "                      <div class='d-flex align-items-center'>"
+      tmpHtml += "                        <div class='mt-0'>"
+      tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>부가율</h5>"
+      tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>(납부세액+고정자산매입세액)/매출세액</p>"
+      tmpHtml += "                        </div>"
+      tmpHtml += "                        <span class='ms-auto fs-13'>"
+      tmpHtml += "                          <span class='float-end text-dark'>"+((tmpIssueList.납부환급세액+tmpIssueList.매입세금계산서수취고정자산세액)/tmpIssueList.산출세액*100).toFixed(2)+" %</span>"
+      tmpHtml += "                        </span>"
+      tmpHtml += "                      </div>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                  </div>"
+      tmpHtml += "                </div>"
+      tmpHtml += "              </a>"
+      tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+      tmpHtml += "                <div class='list-group-item border-0'>"
+      tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+      tmpHtml += "                    <div class='transaction-icon'>"
+      tmpHtml += "                      <i class='fe fe-scissors'></i>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                    <div class='media-body'>"
+      tmpHtml += "                      <div class='d-flex align-items-center'>"
+      tmpHtml += "                        <div class='mt-0'>"
+      tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>매입세액 <span class='fs-13 fw-semibold ms-1'>불공제</span></h5>"
+      tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>승용차관련·접대비·토지관련 등</p>"
+      tmpHtml += "                        </div>"
+      tmpHtml += "                        <span class='ms-auto fs-13'>"
+      tmpHtml += "                          <span class='float-end text-dark'>"+numberWithCommas(tmpIssueList.불공제)+"</span>"
+      tmpHtml += "                        </span>"
+      tmpHtml += "                      </div>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                  </div>"
+      tmpHtml += "                </div>"
+      tmpHtml += "              </a>"
+      tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+      tmpHtml += "                <div class='list-group-item border-0'>"
+      tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+      tmpHtml += "                    <div class='transaction-icon'><i class='fe fe-briefcase'></i>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                    <div class='media-body'>"
+      tmpHtml += "                      <div class='d-flex align-items-center'>"
+      tmpHtml += "                        <div class='mt-0'>"
+      tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>신용카드 <span class='fs-13 fw-semibold ms-1'>매입세액 공제율</span></h5>"
+      tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>총 카드사용액 "+numberWithCommas(tmpIssueList.카드현영사용총액)+"</p>"
+      tmpHtml += "                        </div>"
+      tmpHtml += "                        <span class='ms-auto fs-13'>"
+      tmpHtml += "                          <span class='float-end text-dark'>"+(costCard/tmpIssueList.카드현영사용총액*100).toFixed(2)+" %</span>"
+      tmpHtml += "                        </span>"
+      tmpHtml += "                      </div>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                  </div>"
+      tmpHtml += "                </div>"
+      tmpHtml += "              </a>"
+      tmpHtml += "              <a href='javascript:void(0);' class='border-0'>"
+      tmpHtml += "                <div class='list-group-item border-0'>"
+      tmpHtml += "                  <div class='media mt-0 align-items-center'>"
+      tmpHtml += "                    <div class='transaction-icon'><i class='fe fe-file-text'></i>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                    <div class='media-body'>"
+      tmpHtml += "                      <div class='d-flex align-items-center'>"
+      tmpHtml += "                        <div class='mt-0'>"
+      tmpHtml += "                          <h5 class='mb-1 fs-13 fw-normal text-dark'>부가가치세 <span class='fs-13 fw-semibold ms-1'>가산세</span></h5>"
+      tmpHtml += "                          <p class='mb-0 fs-12 text-muted'>전자세금계산서관련·불성실 등</p>"
+      tmpHtml += "                        </div>"
+      tmpHtml += "                        <span class='ms-auto fs-13'>"
+      tmpHtml += "                          <span class='float-end text-dark'>"+numberWithCommas(tmpIssueList.가산세액계)+"</span>"
+      tmpHtml += "                        </span>"
+      tmpHtml += "                      </div>"
+      tmpHtml += "                    </div>"
+      tmpHtml += "                  </div>"
+      tmpHtml += "                </div>"
+      tmpHtml += "              </a>"
+      tmpHtml += "            </div>"
+      document.getElementById('divListGroup').innerHTML = tmpHtml;
+    }
+    const setDivTitle = (tmpIssueList) => {  
+      var anchor3 = document.getElementById("anchor3")
+      anchor3.innerText = tmpIssueList.과세기간.substring(0,5)+" "+tmpIssueList.startDt + " ~ " + tmpIssueList.endDt
+    }
+    const setTabContent = (tmpIssueList) => {
+      var totalSale = tmpIssueList.매출합계;
+      var saleTI = tmpIssueList.매출세금계산서;
+      var saleNonTI = tmpIssueList.면세매출;
+      var saleZeroTI = tmpIssueList.영세율매출;
+      var saleCard = tmpIssueList.카드매출;
+      var saleKita = tmpIssueList.기타매출;
+      var anchor1 = document.getElementById("anchor1")
+      var anchor2 = document.getElementById("anchor2")  
+      anchor1.setAttribute("class","active me-1 text-default my-1");
+      anchor2.setAttribute("class","me-1 text-default my-1");  
+      $("#tabContent_SaleCost").empty();
+      var tmpHtml="";
+      tmpHtml += "<div class='tab-pane active' id='tab1'>"
+      tmpHtml += "	<div class='storage-percent'>"
+      tmpHtml += "	  <div class='progress fileprogress h-auto ps-0 shadow1'>"
+      if (Math.round(saleTI / totalSale *100)>0 ) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(saleTI / totalSale *100)+" bg-primary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      if (Math.round((saleNonTI+saleZeroTI) / totalSale *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round((saleNonTI+saleZeroTI) / totalSale *100)+" bg-secondary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      if (Math.round(saleCard / totalSale *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(saleCard / totalSale *100)+" bg-custom-yellow' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      if (Math.round(saleKita / totalSale *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(saleKita / totalSale *100)+" bg-teritary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      tmpHtml += "	  </div>"
+      tmpHtml += "	  <div class='remaining-storage'>"
+      tmpHtml += "		<div class='text-muted fs-13 mb-1 mt-3'>매출 공급가액</div>"
+      tmpHtml += "		<div class='fw-semibold fs-14 mb-1 mt-3'>"+numberWithCommas(totalSale)+"</div>"
+      tmpHtml += "	  </div>"
+      tmpHtml += "	</div>"
+      tmpHtml += "	<div class='content-main mt-5'>"
+      tmpHtml += "	  <ul class='task-list1 row mx-auto'>"
+      tmpHtml += "		<li class='col-xl-6'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-primary me-3'></i>세금계산서</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(saleTI)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "		<li class='col-xl-6'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-secondary'></i>영세율·계산서</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(saleZeroTI+saleNonTI)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "		<li class='col-xl-6'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-custom-yellow'></i>카드·현금영수증</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(saleCard)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "		<li class='col-xl-6 mb-xl-0'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-teritary'></i>기타(온라인·현금)</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(saleKita)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "	  </ul>"
+      tmpHtml += "	</div>"
+      tmpHtml += "</div>"
+
+      //var totalCost = tmpIssueList.매입합계;
+      var costTI = tmpIssueList.매입세금계산서 - tmpIssueList.불공제;
+      var costNonTI = tmpIssueList.면세매입;
+      var costBulgong = tmpIssueList.불공제;
+      var costCard = tmpIssueList.신용카드수취기타카드*1 + tmpIssueList.신용카드수취현금영수증*1 + tmpIssueList.신용카드수취화물복지*1 + tmpIssueList.신용카드수취사업용카드*1;
+      var costRevive = tmpIssueList.의제매입세액공제*1 + tmpIssueList.재활용폐자원등매입세액*1
+      var costGongje = tmpIssueList.경감공제세액;
+      var totalCost = costTI + costNonTI + costCard + costRevive
+
+      tmpHtml += "<div class='tab-pane ' id='tab2'>"
+      tmpHtml += "	<div class='storage-percent'>"
+      tmpHtml += "	  <div class='progress fileprogress h-auto ps-0 shadow1'>"
+      if (Math.round(costTI / totalCost *100)>0 ) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costTI / totalCost *100)+" bg-primary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      if (Math.round(costNonTI / totalCost *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costNonTI / totalCost *100)+" bg-secondary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      if (Math.round(costCard / totalCost *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costCard / totalCost *100)+" bg-custom-yellow' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      if (Math.round(costRevive / totalCost *100)) tmpHtml += "		<span class='progress-bar progress-bar-xs wp-"+Math.round(costRevive / totalCost *100)+" bg-teritary' role='progressbar'  aria-valuemin='0' aria-valuemax='100'></span>"
+      tmpHtml += "	  </div>"
+      tmpHtml += "	  <div class='remaining-storage'>"
+      tmpHtml += "		<div class='text-muted fs-13 mb-1 mt-3'>매입 공급가액</div>"
+      tmpHtml += "		<div class='fw-semibold fs-14 mb-1 mt-3'>"+numberWithCommas(totalCost)+"</div>"
+      tmpHtml += "	  </div>"
+      tmpHtml += "	</div>"
+      tmpHtml += "	<div class='content-main mt-5'>"
+      tmpHtml += "	  <ul class='task-list1 row mx-auto'>"
+      tmpHtml += "		<li class='col-xl-6'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-primary me-3'></i>세금계산서</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(costTI)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "		<li class='col-xl-6'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-secondary'></i>계산서</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(costNonTI)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "		<li class='col-xl-6'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-custom-yellow'></i>카드·현금영수증</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(costCard)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "		<li class='col-xl-6 mb-xl-0'>"
+      tmpHtml += "		  <span class='mb-0 fs-13 me-1'><i class='task-icon1 bg-teritary'></i>의제·재활용매입</span>"
+      tmpHtml += "		  <span class='text-success fw-semibold fs-12'>"
+      tmpHtml += "			<span class=''>"+numberWithCommas(costRevive)+"</span>"
+      tmpHtml += "		  </span>"
+      tmpHtml += "		</li>"
+      tmpHtml += "	  </ul>"
+      tmpHtml += "	</div>"
+      tmpHtml += "</div>"
+      document.getElementById('tabContent_SaleCost').innerHTML = tmpHtml;
+    }
+    const setTraderList = (tmpIssueList) => {
+      // 오른쪽 도넛그래프
+      $.ajax({
+        url: "{% url 'get_TraderList' %}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+          seq_no: tmpIssueList.seq_no,
+          work_YY: tmpIssueList.work_YY,
+          period: tmpIssueList.과세기간,
+          youhyung: tmpIssueList.과세유형
+        }),
+        success: function(data) {
+          // ✅ sale, cost, card 데이터 각각 도넛으로 표시
+          createDonut("donut_sale", data.sale, "매출",tmpIssueList.work_YY+"년 "+tmpIssueList.work_QT, "#87CBF4")
+          createDonut("donut_cost", data.cost, "매입",tmpIssueList.work_YY+"년 "+tmpIssueList.work_QT, "#F3A1A1")
+          //createDonut("donut_card", data.card, "카드 (Card)", "#f5c04f"); // 노랑계열
+        },
+        error: function(xhr, status, error) {
+          console.error("데이터 불러오기 실패:", error);
+        }
+      });
+
+      // ✅ 공통 도넛차트 생성 함수
+      function createDonut(divId, sourceData, MainText,SubText, baseColor) {
+        // 데이터 정리 (Top5 + 기타)
+        var sortedData = sourceData.sort((a, b) => Number(b.금액) - Number(a.금액));
+        var top5 = sortedData.slice(0, 5);
+        var others = sortedData.slice(5);
+        if (others.length > 0) {
+          var otherSum = others.reduce((acc, cur) => acc + Number(cur.금액), 0);
+          top5.push({ 거래처명: "기타", 금액: otherSum });
+        }
+
+        var chartData = top5.map(item => ({
+          category: item.거래처명,
+          value: Number(item.금액) || 0
+        }));
+
+        am5.ready(function() {
+          am5.registry.rootElements.forEach(root => {
+            if (root.dom.id === divId) root.dispose();
+          });
+
+          var root = am5.Root.new(divId);
+          root.setThemes([am5themes_Animated.new(root)]);
+
+          // ✅ 도넛 크기 고정
+          var chart = root.container.children.push(
+            am5percent.PieChart.new(root, {
+              layout: root.verticalLayout,
+              innerRadius: am5.percent(50),  // 도넛 두께
+              radius: am5.percent(70)        // ✅ 도넛 크기 일정하게 유지
+            })
+          );
+
+          var series = chart.series.push(
+            am5percent.PieSeries.new(root, {
+              valueField: "value",
+              categoryField: "category"
+            })
+          );
+
+          var colorSet = am5.ColorSet.new(root, {
+            colors: [am5.color(baseColor)]
+          });
+          series.set("colors", colorSet);
+
+          series.data.setAll(chartData);
+
+          // ✅ 메인 라벨 (큰 글씨)
+          series.children.push(
+            am5.Label.new(root, {
+              text: MainText,
+              fontSize: 22,       // ✅ 크게
+              fontWeight: "bold",
+              centerX: am5.p50,
+              centerY: am5.p50,
+              textAlign: "center"
+            })
+          );
+
+          // ✅ 서브 라벨 (작은 글씨, 아래쪽으로 살짝 이동)
+          series.children.push(
+            am5.Label.new(root, {
+              text: SubText,
+              fontSize: 14,       // ✅ 작게
+              centerX: am5.p50,
+              centerY: am5.p50,
+              dy: 18,             // ✅ 아래쪽으로 18px 내려서 배치
+              textAlign: "center"
+            })
+          );
+
+          // ✅ 범례 (차트 아래쪽 배치)
+          var legend = chart.children.push(
+            am5.Legend.new(root, {
+              centerX: am5.p50,
+              x: am5.p50,
+              marginTop: 10,
+              maxHeight: 100,
+              scrollable: true
+            })
+          );
+          legend.data.setAll(series.dataItems);
+        });
+      }
+
+
+      am5.addLicense("AM5C372573951");
+    }
+    const changeAll = (tmpIssueList)=>{
+      console.log(tmpIssueList)
+      setDivInspect(tmpIssueList);    //점검사항
+      setDivTitle(tmpIssueList);      //신고기간 타이틀 설정
+      setTabContent(tmpIssueList);    //매출/매입내역  
+      setTraderList(tmpIssueList);    //왼쪽 거래처별 도넛
+    }
+    //############# 3. 검증
+    function setInspectVat_LeftTop(record, seq_no, work_YY, work_QT) {
+      $.ajax({
+        url: "{% url 'get_IssueVatList' %}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ seq_no: seq_no, work_YY: work_YY, work_QT: work_QT }),
+        dataType: "json",
+        success: function (res) {
+          if (res.status !== "success" || !Array.isArray(res.data)) {
+            console.error("응답 오류:", res);
+            return;
+          }
+
+          const selectedClass = 'selected-row-inspect';
+
+          const rowsHtml = res.data.map((row, index) => `
+            <tr class="hoverable-row inspect-row" data-index="${index}" data-skgb="${row.과세유형 || ''}">
+              <td>${row.과세기간 || ""}</td>
+              <td>${row.신고구분 || ""}</td>
+              <td>${row.환급구분 || ""}</td>
+              <td style="display:none;">${row.과세유형 || ""}</td>
+            </tr>
+          `).join("");
+
+          const tmpTable = `
+            <div class="table-responsive">
+              <table class="table text-nowrap text-md-nowrap table-bordered">
+                <thead>
+                  <tr>
+                    <th class="wp-20">과세기간</th>
+                    <th class="wp-20">신고구분</th>
+                    <th class="wp-20">구분</th>
+                    <th class="wp-0" style="display:none;">과세유형</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+          `;
+
+          $('#InspectVat_LeftTop').html(tmpTable);
+
+          // ✅ 첫 행 선택
+          const firstRow = $('#InspectVat_LeftTop .inspect-row').first();
+          if (firstRow.length) {
+            firstRow.addClass(selectedClass).css({
+              'background-color': '#ffd700',
+              'font-weight': 'bold'
+            });
+
+            const rowIndex = firstRow.data('index');
+            const selectedRow = res.data[rowIndex];
+            handleInspectRowClick(seq_no, work_YY, work_QT, selectedRow);
+          }
+
+          // ✅ 이벤트 바인딩
+          $('#InspectVat_LeftTop .inspect-row')
+            .on('mouseenter', function () {
+              if (!$(this).hasClass(selectedClass)) {
+                $(this).css({
+                  'background-color': '#fffacd',
+                  'font-weight': 'bold'
+                });
+              }
+            })
+            .on('mouseleave', function () {
+              if (!$(this).hasClass(selectedClass)) {
+                $(this).css({
+                  'background-color': '',
+                  'font-weight': ''
+                });
+              }
+            })
+            .on('click', function () {
+              $('#InspectVat_LeftTop .inspect-row').removeClass(selectedClass).css({
+                'background-color': '',
+                'font-weight': ''
+              });
+
+              $(this).addClass(selectedClass).css({
+                'background-color': '#ffd700',
+                'font-weight': 'bold'
+              });
+
+              const rowIndex = $(this).data('index');
+              const selectedRow = res.data[rowIndex];
+              handleInspectRowClick(seq_no, work_YY, work_QT, selectedRow);
+            });
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX 오류:", error);
+        }
+      });
+    }
+    function handleInspectRowClick(seq_no, work_YY, work_QT,selectedRow){
+      kwasekikan = selectedRow.과세기간
+      SKGB = selectedRow.신고구분
+      KSUH = selectedRow.과세유형
+      $.ajax({
+          url: "{% url 'get_InspectVat' %}",  // Django API 엔드포인트
+          type: "POST",
+          contentType: "application/json",  // JSON 형식으로 전송
+          data: JSON.stringify({ seq_no: seq_no, work_YY:work_YY, work_QT:work_QT, kwasekikan:kwasekikan, SKGB:SKGB, KSUH:KSUH }),  // JSON 데이터로 변환
+          dataType: "json",
+          success: function (res) {
+            if (res.status !== "success" ) {
+              $('#InspectVat_Right').html(res.data);
+            }
+            let result = res.data;
+            let tmpTable = `
+              <h4>📋 부가가치세 신고 검증 결과 :: ${kwasekikan} ${SKGB}</h4>
+              <table border="1" cellspacing="0" cellpadding="5" style="width:100%; border-collapse:collapse;">
+                <thead style="background-color:#f2f2f2;">
+                  <tr>
+                    <th  style="width:50%;"">점검사항</th>
+                    <th>검증대상금액</th>
+                    <th>신고서 작성금액</th>
+                    <th>적합여부</th>
+                    <th>차이 원인</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+            // 배열인지 확인
+            if (!Array.isArray(result)) {
+              console.error("서버 응답이 배열이 아님:", result);
+              $('#InspectVat_Right').html(`<p style="color:red;">⚠️ 서버에서 받은 데이터 형식이 올바르지 않습니다.</p>`);
+              return;
+            }        
+            result.forEach((row, idx) => {
+              const [
+                item, targetAmt, reportedAmt, status, message
+              ] = row;
+
+              // Decimal 객체가 문자열로 넘어올 수 있으므로 숫자 변환 시 처리
+              const formatAmt = (val) => {
+                if (typeof val === "number") return val.toLocaleString();
+                if (typeof val === "string" && !isNaN(val)) return parseFloat(val).toLocaleString();
+                return val; // '-', null 등 그대로 출력
+              };
+
+              const rowColor = status === "⚠️" ? ' style="background-color:#fff3cd;"' : "";
+
+              tmpTable += `
+                <tr${rowColor}>
+                  <td>${item}</td>
+                  <td style="text-align:right;">${formatAmt(targetAmt)}</td>
+                  <td style="text-align:right;">${formatAmt(reportedAmt)}</td>
+                  <td style="text-align:center;">${status}</td>
+                  <td>${message || "-"}</td>
+                </tr>`;
+            });
+            tmpTable += `
+                </tbody>
+              </table>
+            `;
+            $('#InspectVat_Right').html(tmpTable);
+          },
+          error: function (xhr, status, error) {
+              console.error("AJAX 오류:", error);
+          }
+      });
+    }
+    //############# 4. 통합조회
+    function setTongVat_LeftTop(record, seq_no, work_YY, work_QT) {
+      $.ajax({
+        url: "{% url 'get_IssueVatList' %}",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ seq_no: seq_no, work_YY: work_YY, work_QT: work_QT }),
+        dataType: "json",
+        success: function (res) {
+          if (res.status !== "success" || !Array.isArray(res.data)) {
+            console.error("응답 오류:", res);
+            return;
+          }
+
+          const selectedClass = 'selected-row-tong';
+
+          const rowsHtml = res.data.map((row, index) => `
+            <tr class="hoverable-row tong-row" data-index="${index}" data-skgb="${row.과세유형 || ''}">
+              <td>${row.과세기간 || ""}</td>
+              <td>${row.신고구분 || ""}</td>
+              <td>${row.환급구분 || ""}</td>
+              <td style="display:none;">${row.과세유형 || ""}</td>
+            </tr>
+          `).join("");
+
+          const tmpTable = `
+            <div class="table-responsive">
+              <table class="table text-nowrap text-md-nowrap table-bordered">
+                <thead>
+                  <tr>
+                    <th class="wp-20">과세기간</th>
+                    <th class="wp-20">신고구분</th>
+                    <th class="wp-20">구분</th>
+                    <th class="wp-0" style="display:none;">과세유형</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+          `;
+
+          // ✅ 잘못된 위치 수정
+          $('#tongVat_LeftTop').html(tmpTable);
+
+          // ✅ 최초 자동 선택
+          const $firstRow = $('#tongVat_LeftTop .tong-row').first();
+          if ($firstRow.length) {
+            $firstRow.addClass(selectedClass).css({
+              'background-color': '#ffd700',
+              'font-weight': 'bold'
+            });
+
+            const rowIndex = $firstRow.data('index');
+            const selectedRow = res.data[rowIndex];
+            handleTongRowClick(seq_no, work_YY, work_QT, selectedRow);
+          }
+
+          // ✅ 이벤트 바인딩은 tong-row에만
+          $('#tongVat_LeftTop .tong-row')
+            .on('mouseenter', function () {
+              if (!$(this).hasClass(selectedClass)) {
+                $(this).css({
+                  'background-color': '#fffacd',
+                  'font-weight': 'bold'
+                });
+              }
+            })
+            .on('mouseleave', function () {
+              if (!$(this).hasClass(selectedClass)) {
+                $(this).css({
+                  'background-color': '',
+                  'font-weight': ''
+                });
+              }
+            })
+            .on('click', function () {
+              $('#tongVat_LeftTop .tong-row').removeClass(selectedClass).css({
+                'background-color': '',
+                'font-weight': ''
+              });
+
+              $(this).addClass(selectedClass).css({
+                'background-color': '#ffd700',
+                'font-weight': 'bold'
+              });
+
+              const rowIndex = $(this).data('index');
+              const selectedRow = res.data[rowIndex];
+              handleTongRowClick(seq_no, work_YY, work_QT, selectedRow);
+            });
+        },
+        error: function (xhr, status, error) {
+          console.error("AJAX 오류:", error);
+        }
+      });
+    } 
+    function handleTongRowClick(seq_no, work_YY, work_QT,selectedRow){
+      kwasekikan = selectedRow.과세기간
+      SKGB = selectedRow.신고구분
+      KSUH = selectedRow.과세유형
+      if (KSUH === '') {
+        KSUH = 'C07';
+        if (parseInt(work_QT) === 1 || parseInt(work_QT) === 3) {
+          KSUH = 'C17';
+        }
+      }
+      $.ajax({
+          url: "{% url 'get_TongVat' %}",  // Django API 엔드포인트
+          type: "POST",
+          contentType: "application/json",  // JSON 형식으로 전송
+          data: JSON.stringify({ seq_no: seq_no, work_YY:work_YY, work_QT:work_QT, kwasekikan:kwasekikan, SKGB:SKGB, KSUH:KSUH }),  // JSON 데이터로 변환
+          dataType: "json",
+          success: function (res) {
+            if (res.status === "success") {
+              renderTongVatRightLayout(res);
+            } else {
+              $('#TongVat_Right').html(`<div class="alert alert-warning">${res.data}</div>`);
+            }
+          },
+          error: function (xhr, status, error) {
+              console.error("AJAX 오류:", error);
+          }
+      });
+    }
+    function renderCard_Tong(title, height, headers, rows) {
+      return `
+        <div class="card mb-3">
+          <div class="card-header">${title}</div>
+          <div class="card-body p-0">
+            <table class="table table-bordered text-center mb-0">
+              <thead>
+                <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+              </thead>
+              <tbody>
+                ${rows.map(row => `
+                  <tr>
+                    ${row.map(cell => {
+                      const cleaned = String(cell).replace(/,/g, '').trim();
+                      const isNumber = cleaned !== '' && !isNaN(cleaned);
+                      const cls = isNumber ? 'text-end' : '';
+                      return `<td class="${cls}">${cell}</td>`;
+                    }).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+    function renderTongVatRightLayout(data) {
+      let leftCards = '';
+      leftCards += renderCard_Tong("매출 조회 결과",350, ["구분", "공급대가", "공급가액", "세액", "전자신고 공급가액", "검증"], data.sales_result);
+      leftCards += renderCard_Tong("매입 조회 결과",400, ["구분", "공급대가", "공급가액", "세액", "검증"], data.purchase_result);
+      leftCards += renderCard_Tong("예정세액 조회 결과",200, ["구분", "예정고지", "예정미환급", "예정부과간이", "예정신고간이", "매입자특례납부", "검증"], data.expected_tax_result);
+
+      let rightCards = '';
+      rightCards += renderCard_Tong("전체매출(신카+판매대행+현영) 합계",300, ["구분", "공급대가", "공급가액", "세액", "건 수"], data.total_result);
+      rightCards += renderCard_Tong("신용카드매출",300, ["구분", "공급대가", "공급가액", "세액", "건 수"], data.sinca_result);
+      rightCards += renderCard_Tong("현금영수증 매출",300, ["구분", "공급대가", "공급가액", "세액", "건 수"], data.cash_result);
+      rightCards += renderCard_Tong("판매대행 매출",300, ["구분", "매출액계", "신용카드중복", "구매대행카드", "건 수", "대행사"], data.pmdh_result);
+
+      const html = `
+        <div class="row">
+          <div class="col-md-6">${leftCards}</div>
+          <div class="col-md-6">${rightCards}</div>
+        </div>
+      `;
+
+      $('#TongVat_Right').html(html);
+    }
+    //############# 4. 수수료 
+    function setFee(record, seq_no, work_YY, work_QT){
+      $.ajax({
+          url: "{% url 'get_Fee_data'%}",  // Django API 엔드포인트
+          type: "POST",
+          data: {
+            seq_no: seq_no,
+            work_YY: work_YY,
+            work_QT:work_QT,
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+          },
+          dataType: "json",
+          success: function (data) {
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+
+            // 📌 테이블을 동적으로 생성한 후 데이터 적용
+            let tmpTable = `
+              <style>
+                .fee-table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 20px;
+                  font-size: 14px;
+                }
+
+                .fee-table thead {
+                  background-color: #f8f9fa;
+                }
+
+                .fee-table th, .fee-table td {
+                  padding: 10px;
+                  border: 1px solid #dee2e6;
+                  text-align: center;
+                }
+
+                .fee-table tbody tr:nth-child(even) {
+                  background-color: #f6fafd;
+                }
+
+                .fee-table tbody tr:nth-child(odd) {
+                  background-color: #ffffff;
+                }
+
+                .fee-table td.status-yes {
+                  color: #2e8b57;
+                  font-weight: bold;
+                }
+
+                .fee-table td.status-no {
+                  color: #dc3545;
+                  font-weight: bold;
+                }
+
+                .fee-table td.empty {
+                  color: #bbb;
+                }
+              </style>
+
+              <div class="table-responsive">
+                <table class="fee-table">
+                  <thead>
+                    <tr>
+                      <th>분류</th>
+                      <th>귀속년도</th>
+                      <th>구분</th>
+                      <th>수수료</th>
+                      <th>수금여부</th>
+                      <th>수금일</th>
+                      <th>발행여부</th>
+                      <th>발행일</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+            `;
+
+            // ▶ 1. 분류별로 그룹핑
+            const groups = {};
+            data.forEach(row => {
+              if (!groups[row.분류]) groups[row.분류] = [];
+              groups[row.분류].push(row);
+            });
+
+            // ▶ 2. 그룹별로 rowspan 계산 후 렌더링
+            for (const 분류 in groups) {
+              const rows = groups[분류];
+              const rowspan = rows.length;
+
+              rows.forEach((row, index) => {
+                tmpTable += `<tr>`;
+
+                // 첫 줄에만 분류 + rowspan 출력
+                if (index === 0) {
+                  tmpTable += `<td rowspan="${rowspan}">${분류}</td>`;
+                }
+
+                tmpTable += `
+                  <td>${row.귀속년도 || ''}</td>
+                  <td>${row.구분 || ''}</td>
+                  <td>${Number(row.수수료 || 0).toLocaleString()}원</td>
+                  <td class="${row.수금여부 === '1' ? 'status-yes' : row.수금여부 === '0' ? 'status-no' : 'empty'}">
+                    ${row.수금여부 === '1' ? '예' : row.수금여부 === '0' ? '아니오' : '-'}
+                  </td>
+                  <td class="${row.수금일 === '0' || !row.수금일 ? 'empty' : ''}">
+                    ${row.수금일 && row.수금일 !== '0' ? row.수금일 : '-'}
+                  </td>
+                  <td class="${row.발행여부 === '1' ? 'status-yes' : row.발행여부 === '0' ? 'status-no' : 'empty'}">
+                    ${row.발행여부 === '1' ? '예' : row.발행여부 === '0' ? '아니오' : '-'}
+                  </td>
+                  <td class="${row.발행일 === '0' || !row.발행일 ? 'empty' : ''}">
+                    ${row.발행일 && row.발행일 !== '0' ? row.발행일 : '-'}
+                  </td>
+                </tr>`;
+              });
+            }
+
+            tmpTable += `
+                  </tbody>
+                </table>
+              </div>
+            `;
+
+            // 📌 #4 수수료내역 왼쪽
+            $('[id="feeDiagnosys"]').html(tmpTable);
+
+            // 📌 #4 수수료내역 오른쪽 - 지난 미수금 
+            const unpaidList = [];
+            const selectedSeq = [];  // 청구할 항목들
+
+            let unpaidHtml = `<ul class="list-group list-group-flush">`;
+
+            data.forEach((row, idx) => {
+              const unpaid = row.수금여부 !== "1";  // 미수 상태
+
+              if (unpaid) {
+                unpaidList.push(row);
+                const uid = `chk_${idx}`;
+
+                unpaidHtml += `
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="${idx}" id="${uid}" onchange="toggleUnpaidSelection(this)">
+                      <label class="form-check-label" for="${uid}">
+                        [${row.분류}] ${row.귀속년도} ${row.구분} - ${Number(row.수수료 || 0).toLocaleString()}원
+                      </label>
+                    </div>
+                  </li>`;
+              }
+            });
+
+            unpaidHtml += `</ul>`;
+            $('[id="unpaidList"]').html(unpaidHtml);
+            // document.getElementById("unpaidList").innerHTML = unpaidHtml;
+
+          },
+          error: function (xhr, status, error) {
+              console.error("AJAX 오류:", error);
+          }
+      });
+    }
+    // 숫자를 세자리 콤마 형식으로 변환
+    window.formatNumberInput = function(input) {
+      // 음수와 숫자만 허용
+      let value = input.value.replace(/[^0-9-]/g, '');
+
+      // 음수 처리
+      let isNegative = value.startsWith('-');
+      if (isNegative) {
+        value = value.slice(1).replace(/[^0-9]/g, '');
+      } else {
+        value = value.replace(/[^0-9]/g, '');
+      }
+
+      // 빈 입력 처리
+      if (!value) {
+        input.value = '';
+        return;
+      }
+
+      // 포맷팅
+      let number = Number(value);
+      input.value = (isNegative ? '-' : '') + number.toLocaleString('en-US', { minimumFractionDigits: 0 });
+    }
+
+    //############# 안내 카톡내용 생성
+    // 접수결과 기본은 false, 전자신고파일 업로드시 true
+    let resultAndFee = false;
+    const setMailContent = async (seq_no, work_YY, work_QT, flag) => {
+      $.ajax({
+        url: "{% url 'getMailContent' %}",
+        type: "POST",
+        data: {
+          seq_no: seq_no,
+          work_YY: work_YY,
+          work_QT: work_QT,
+          flag:flag,
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        dataType: "json",
+        success: function (data) {
+          var bodyContent = data.email_content
+          $('[id="' + flag + '"]').html(bodyContent);
+        },
+        error: function (request, status, error) {
+          console.log('fail: '+flag + error);
+        }
+      });
+    };
+    const setPDFIframe = async (ADID, seq_no,ceo_name,biz_name,work_YY,work_QT,flag) => {
+      let kskk = "";  
+      switch (work_QT) {
+        case 1:
+        kskk = "1기예정";
+          break;
+        case 2:
+        kskk = "1기확정";
+          break;
+        case 3:
+        kskk = "2기예정";
+          break;
+        case 4:
+        kskk = "2기확정";
+          break;
+        default:
+        kskk = "기수미정";
+          break;
+      }
+    
+      srcpath = biz_name
+      if (ADID=="화물") {
+        srcpath = `화물연대/${ceo_name}`
+      }
+      let pdfFile = `static/cert_DS/${srcpath}/${work_YY}/부가세/${kskk}/300.pdf`;  
+      if (flag=="VatResult" || flag=="VatPrepay") {
+        pdfFile = `static/cert_DS/${srcpath}/${work_YY}/부가세/${kskk}/200.pdf`;  
+      }
+      const iframe = document.getElementById(`${flag}PDFIframe`);
+      if (!iframe) { console.warn('iframe not found', flag); return; }
+      try {
+          // HEAD 요청은 파일의 내용을 다운로드하지 않고, 파일의 존재 여부만 확인함.
+          let response = await fetch(pdfFile, { method: 'HEAD' });    
+          if (response.ok) {
+              // 파일이 존재하는 경우 iframe 업데이트
+              
+              if (iframe) {
+                  iframe.src = pdfFile;  // ✅ 파일이 존재하면 iframe에 표시
+              } else {
+                iframe.innerHTML = "부가가치세 신고도움 안내문(300.pdf)을 저장하지 않았습니다.";
+                if (flag=="VatResult" || flag=="VatPrepay") {
+                  iframe.innerHTML = "부가가치세 납부서(200.pdf)을 저장하지 않았습니다.";
+                }
+              }
+          } else {
+            iframe.innerHTML = "부가가치세 신고도움 안내문(300.pdf)을 저장하지 않았습니다.";
+            if (flag=="VatResult" || flag=="VatPrepay") {
+              iframe.innerHTML = "부가가치세 납부서(200.pdf)을 저장하지 않았습니다.";
+            }        
+          }
+      } catch (error) {
+        iframe.innerHTML = "PDF 파일 확인 중 오류 발생:"+ error;
+      }
+    };
+
+    // 하단 카톡&메일 보내기
+    const sendMailAndKakao = async (ADID, seq_no, ceo_name, biz_name, work_YY, work_QT, mail_class) => {
+      let kskk = "";
+      switch (work_QT) {
+        case 1:
+        kskk = "1기예정";
+          break;
+        case 2:
+        kskk = "1기확정";
+          break;
+        case 3:
+        kskk = "2기예정";
+          break;
+        case 4:
+        kskk = "2기확정";
+          break;
+        default:
+        kskk = "기수미정";
+          break;
+      }  
+      const objectUrl = "{% url 'sendMail' %}";
+      const objectUrl_kakao = "{% url 'send_kakao_notification' %}";
+      srcpath = biz_name
+      if (ADID=="화물") {
+        srcpath = `화물연대/${ceo_name}`
+      }  
+      const user_path = `static/cert_DS/${srcpath}/${work_YY}/부가세/${kskk}`;
+      var user_file_names = []
+      var targetUrl = '';
+      // 기본은 발송; 파일 존재시 여부 체크해서 없으면 false
+      let allIsGood = true;
+
+      if(mail_class=="VatIntro"){
+        targetUrl = 'admin/mail/vat_intro.html';
+        checkfileName = "300.pdf";
+        let filePath = `${user_path}/${checkfileName}`;
+        let exists = await fileExists(filePath);
+        if (!exists) {
+          allIsGood = false;
+          alert(`파일이 존재하지 않습니다: ${filePath}`);
+        } else {
+          user_file_names.push(checkfileName)
+        }   
+      } else if(mail_class=="VatPrepay"){
+        targetUrl = 'admin/mail/vat_prepay.html';
+        checkfileName = "200.pdf";
+        let filePath = `${user_path}/${checkfileName}`;
+        let exists = await fileExists(filePath);
+        if (!exists) {
+          allIsGood = false;
+          alert(`파일이 존재하지 않습니다: ${filePath}`);
+        } else {
+          user_file_names.push(checkfileName)
+        }       
+      } else if(mail_class=="VatResult"){
+        targetUrl = 'admin/mail/vat_result.html';   
+        const response = await fetch("{% url 'isVatNapbu' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ seq_no: seq_no, work_YY: work_YY, work_QT: work_QT })
+        });
+        const result = await response.json();
+        if (result.result) {
+          
+          checkfileName = "200.pdf";
+          let filePath = `${user_path}/${checkfileName}`;
+          let exists = await fileExists(filePath);
+          if (!exists) {
+            allIsGood = false;
+            alert(`파일이 존재하지 않습니다: ${filePath}`);
+          } else {
+            user_file_names.push(checkfileName)
+          } 
+        } else {
+          //첨부파일 넣을 필요가 없다
+          allIsGood = true;
+        }
+        
+      } else if(mail_class=="VatFee"){
+        targetUrl = 'admin/mail/vat_fee.html';
+        checkYN12(seq_no, work_YY, work_QT).then(function (exists) {
+            if (!exists) {
+                allIsGood = false;
+                alert("수수료가 존재하지 않습니다.");
+            }
+        });
+      }
+      // 기본은 발송; 파일 존재시 여부 체크해서 없으면 false
+      // 부가세 수수료는 일단 카톡만 보내기로 한다
+      if (allIsGood) {
+        if(mail_class!="VatFee"){
+          sendMail(seq_no, work_YY, work_QT*3, mail_class, objectUrl, targetUrl,user_file_names, user_path);
+        }
+        sendKakao(seq_no, work_YY, work_QT*3, mail_class, objectUrl_kakao);
+      } else {
+        alert("메일과 카카오톡 전송이 중단되었습니다. 발송요건을 충족하지 못했습니다.");
+      }
+    };
+    function checkYN12(seq_no, work_YY,work_QT) {
+        return $.ajax({
+            url: "{% url 'check_yn12' %}",
+            type: "POST",
+            data: { seq_no: seq_no, work_YY: work_YY,work_QT:work_QT },
+            dataType: "json"
+        }).then(function (data) {
+            return data.exists; // YN_12 값이 존재하면 true, 없으면 false
+        }).catch(function (error) {
+            console.error("🚨 API 호출 오류:", error);
+            return false;
+        });
+    }
+    // 파일 존재 여부 확인 함수
+    const fileExists = async (filePath) => {
+      try {
+        let response = await fetch(filePath, { method: 'HEAD' });
+        return response.ok; // 파일이 존재하면 true, 없으면 false
+      } catch (error) {
+        console.error("파일 확인 중 오류 발생:", error);
+        return false;
+      }
+    };
+
+    //접수증 마우스 클릭시 툴팁발생
+    function attachGridToolTip_JupsuSummit(grid,work_YY,work_QT){
+      Ext.create('Ext.tip.ToolTip', {
+          target: grid.getEl(),
+          delegate: '.x-grid-cell', // 셀 위에 마우스를 올릴 때만 활성화
+          trackMouse: false, // 마우스를 따라다니지 않음
+          dismissDelay: 0, // 자동 닫힘 비활성화
+          autoHide: true, // 마우스가 떠나면 숨김
+          maxWidth: 600, // 최대 너비를 확장
+          minWidth: 300, // 최소 너비를 설정   
+          anchorToTarget: true, // 툴팁이 셀에 맞게 위치 조정
+          mouseOffset: [-350, -20], // 위치 미세 조정      
+          renderTo: Ext.getBody(),
+          listeners: {
+            beforeshow: function (tip) {
+              const cell = Ext.get(tip.triggerElement);
+              const record = grid.getView().getRecord(cell.parent());
+              const columnIndex = cell.dom.cellIndex;
+              const column = grid.headerCt.getHeaderAtIndex(columnIndex);
+            
+              if (column.dataIndex === 'isIssue') {
+                const seqNo = record.get('seq_no');
+                Ext.Ajax.request({
+                    url: '{% url "mng_vat_jupsuSummit" %}',//이 부분 수정해야한다
+                    method: 'POST',
+                    params: {
+                      seq_no:seqNo,
+                      work_YY:work_YY,
+                      work_QT:work_QT,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                    }, 
+                    success: function (response) {
+                        const data = Ext.decode(response.responseText);
+                        tip.update(`
+                    <div class="notifications-menu ps3 overflow-hidden">
+                        <div class="drop-heading border-bottom position-relative">
+                            <div class="d-flex">
+                                <div class="counter-icon bg-primary dash d-flex box-shadow-primary">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="fill-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M12,8c-2.2091675,0-4,1.7908325-4,4s1.7908325,4,4,4c2.208252-0.0021973,3.9978027-1.791748,4-4C16,9.7908325,14.2091675,8,12,8z M12,15c-1.6568604,0-3-1.3431396-3-3s1.3431396-3,3-3c1.6561279,0.0018311,2.9981689,1.3438721,3,3C15,13.6568604,13.6568604,15,12,15z M21.960022,11.8046875C19.9189453,6.9902344,16.1025391,4,12,4s-7.9189453,2.9902344-9.960022,7.8046875c-0.0537109,0.1246948-0.0537109,0.2659302,0,0.390625C4.0810547,17.0097656,7.8974609,20,12,20s7.9190063-2.9902344,9.960022-7.8046875C22.0137329,12.0706177,22.0137329,11.9293823,21.960022,11.8046875z M12,19c-3.6396484,0-7.0556641-2.6767578-8.9550781-7C4.9443359,7.6767578,8.3603516,5,12,5s7.0556641,2.6767578,8.9550781,7C19.0556641,16.3232422,15.6396484,19,12,19z"/></svg>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mt-1 mb-0 fs-15 text-dark">법인세 전자신고 접수증</h6>
+                                    <span class="text-muted">${Ext.String.htmlEncode(data.biz_name)} - ${Ext.String.htmlEncode(data.ceo_name)}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close position-absolute end-0 top-50 translate-middle-y me-2" aria-label="Close" id="tooltipCloseBtn"><i class="fe fe-x"></i></button>
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">${data.신고서종류}</span>
+                                </div>
+                            </div>                                                                                    
+                        </div>                                                                                    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">회계기간 종료월 ${data.과세년월}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>      
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고유형 : ${data.신고유형}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                              
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고번호</span>
+                                  <span class="notification-label ">${data.신고번호}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고시각 ${data.신고시각}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                          
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">접수ID ${data.사용자ID}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                              
+                    </div>
+                        `);
+                          // 닫기 버튼에 클릭 이벤트 추가
+                          Ext.defer(() => {
+                              const closeButton = document.getElementById("tooltipCloseBtn");
+                              if (closeButton) {
+                                  closeButton.addEventListener("click", function () {
+                                      tip.hide();
+                                  });
+                              }
+                          }, 100); // 약간의 지연을 줘서 DOM이 렌더링된 후 이벤트를 등록
+                    },
+                    failure: function () {
+                        tip.update('<p>데이터를 불러오는 데 실패했습니다.</p>');
+                    }
+                });
+              } else {
+                  return false; // 다른 열에서는 팝오버를 숨김
+              }
+            }
+          }
+      });  
+    }
+
+
+})();
+</script>

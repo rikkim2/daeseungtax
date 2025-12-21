@@ -1,0 +1,1487 @@
+{% load static %}
+
+<style>
+    .icon-refresh { color: white; }
+    .modal-xxl { min-width: 1200px; max-width: 1400px; }    
+
+    /* [핵심] Bootstrap과 ExtJS 충돌 방지 */
+    .ext-grid-wrapper .x-table {
+        width: auto !important; 
+        margin: 0 !important;
+    }
+    
+    /* 그리드 래퍼 */
+    .ext-grid-wrapper {
+        width: 100%;
+        /* 높이는 JS에서 설정 */
+    }
+</style>  
+
+<div class="ext-grid-wrapper"></div>
+
+<div class="modal fade unique-summit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xxl modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-demo">
+      <div class="modal-header ">
+        <div class="summitModalTitle"></div>
+        <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body p-0 border-top-0" >
+        <div class="tabs-menu4 modal-tabs-menu"></div>
+        <div class="tab-content modal-tab-content"></div>
+      </div>
+    </div>
+  </div>
+</div>	
+
+<script>
+(function() {
+    // 1. 그리드 변수 미리 선언
+    var mainGrid;
+
+    // ───────────── [1] DOM 요소 확보 ─────────────
+    // 내용물이 없는(아직 그리드가 안 그려진) 마지막 래퍼를 찾습니다.
+    var renderTarget = $('.ext-grid-wrapper').filter(function() {
+        return $(this).children().length === 0;
+    }).last()[0];
+
+    // 만약 못 찾으면 활성 탭 내부에서 재시도
+    if (!renderTarget) {
+        renderTarget = $('div.tab-pane.active .ext-grid-wrapper')
+            .filter(function () { return $(this).children().length === 0; })
+            .last()[0];
+    }
+
+    if (!renderTarget) {
+        console.warn('렌더 타겟이 없어서 그리드를 만들지 않습니다.');
+        return;
+    }
+
+    // 모달 ID 생성 및 할당
+    var $wrapper = $(renderTarget).parent(); 
+    var modalUniqueId = 'summitModal_' + Math.floor(Math.random() * 100000);
+    var $modal = $wrapper.find('.unique-summit-modal');
+    $modal.attr('id', modalUniqueId);
+
+    function findInModal(selector) { return $modal.find(selector); }
+
+    // ───────────── [2] 높이 계산 함수 ─────────────
+    function getGridHeight() {
+        var height = window.innerHeight - 180;
+        return height > 300 ? height : 300;
+    }
+
+    // ───────────── [3] 변수 설정 ─────────────
+    var adminBizLevel = '{{ admin_biz_level }}'.trim();
+    const isSuperuser = '{{ admin_grade }}' === 'SA';
+    var ADID = '{{ ADID }}'.trim();        
+    var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+    var flag = '{{ flag }}';
+    var work_YY = '{{ request.session.workyearCorp }}';
+    var work_MM = new Date().getMonth() + 1;
+    
+    if(!work_YY && typeof getWorkYearAndMonth === 'function'){
+      work_YY = getWorkYearAndMonth('mng_corp').work_YY;
+    }
+    const currentYear = getWorkYearAndMonth('mng_corp').work_YY;
+    var corpYear, selectedPeriod, selectedSheetID, selectedSheetName="";
+    
+// 🌟 기존 방문 기록을 저장하는 객체
+    var previousValues = {};
+
+    // ───────────── [4] 전역 함수 정의 (onclick 대응) ─────────────
+
+    // 1. renderTopic
+    window.renderTopic = function(value, p, record) {
+        let recordKey = `record_${record.data.seq_no}`;
+        window[recordKey] = record.data;
+        return Ext.String.format(
+            `<div style="cursor:pointer; color:blue;" 
+                onclick="window.summitModal(window['${recordKey}'], ${record.data.seq_no}, '${Ext.String.htmlEncode(record.data.biz_name)}', ${work_YY}, 'Corp');">
+                ${Ext.String.htmlEncode(value)}
+            </div>`
+        );
+    };
+    // 2. summitModal
+    window.summitModal = async function(record, seq_no, biz_name, wYY, flag) {
+        // showLoading("loading...");
+
+        let recordKey = `record_${seq_no}`;
+        delete window[recordKey];  
+        window[recordKey] = record;
+
+        previousValues = {};  
+        registerInputEventListeners(seq_no, wYY, work_MM);
+
+        let tmpHead = `
+            <nav aria-label='breadcrumb'>
+            <ol class='breadcrumb breadcrumb-style'>
+                <li class='breadcrumb-item'>${biz_name}</li>
+                <li class='breadcrumb-item'>${wYY}년</li>
+                <li class='breadcrumb-item active'>법인세 정기신고</li>
+            </ol>
+            </nav>`;  
+        findInModal('.summitModalTitle').html(tmpHead);
+
+        let tmpTab = `
+            <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-0">법인세신고서</a>      
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 " data-bs-toggle="tab" href="#task-1">신고도움 안내</a>
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 " data-bs-toggle="tab" href="#task-2">신고결과/분석</a>      
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 " data-bs-toggle="tab" href="#task-3">고용증대</a>      
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 " data-bs-toggle="tab" href="#task-4">수수료 안내</a>                  
+            <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-5">보낸 메일</a>
+            </nav>`;
+        
+        let tmpTab_Content = `
+            <div class="tab-pane active task-files-tab" id="task-0">
+            <div class="d-flex">
+                <div class="flex-grow-1 pe-3 mt-2 ps-5" style="flex-basis: 35%;">
+                <div class="btn-group">
+                    <button id="btn_selectedYear" type="button" class="btn btn-info dropdown-toggle mb-2" data-bs-toggle="dropdown">
+                    ${wYY} 년<span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                    <li class="dropdown-plus-title">작업연도<b class="fa fa-angle-up"></b></li>
+                    <div class="list-group">
+                        {% for node in corpYears %}
+                        <li class="list-group-item list-group-item-action">
+                            <a href="javascript:window.handleButtonClose(${seq_no}, '${biz_name}', {{ node }})">{{ node }}년</a>
+                        </li>
+                        {% endfor %}
+                    </div>
+                    </ul>
+                </div>          
+                <div class="panel-group1" id="accordionLeft" role="tablist" aria-expanded="false" style="max-height: 860px; overflow-y: auto;"></div>
+                </div>
+                <div class="flex-grow-0" style="flex-basis: 65%;">
+                <div class="card-body">
+                    <iframe id="singoseoPDFIframe" width="100%" height="850px" frameborder="0"></iframe>
+                </div>
+                </div>
+            </div>              
+            </div>
+            <div class="tab-pane task-files-tab" id="task-1">
+            <div class="d-flex">
+                <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="CorpIntro"></div>
+                </div>
+                <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                    <iframe id="introPDFIframe" width="100%" height="800px" frameborder="0"></iframe>
+                </div>
+                </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend1"></div>
+            </div>
+            <div class="tab-pane task-files-tab" id="task-2">
+            <div class="d-flex">
+                <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="CorpResult"></div>
+                </div>
+                <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                    <div class="container" id="resultDiagnosys"></div>
+                </div>
+                </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend2"></div>
+            </div>
+            <div class="tab-pane task-files-tab" id="task-4">
+            <div class="d-flex">
+                <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="CorpFee"></div>
+                </div>
+                <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-header border-bottom">
+                    <h4 class="card-title fw-bold" id="DiscountHeader">세무조정료 할인정책 / 제본부수</h4>
+                </div>
+                <div class="card-body">
+                    <div class="container" id="feeDiagnosys"></div>
+                </div>
+                </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend4"></div>
+            </div>
+            <div class="tab-pane task-files-tab" id="task-5">
+            <div class="d-flex">
+                <div class="flex-grow-1 pe-3" style="flex-basis: 50%;">
+                <div class="container" id="sentMailTable"></div>
+                </div>
+                <div class="flex-grow-0" style="flex-basis: 50%;">
+                <div class="card-body">
+                    <iframe id="mailIframe" width="100%" height="850px" frameborder="0"></iframe>
+                </div>
+                </div>
+            </div>    
+            </div>  
+        `;
+
+        findInModal('.modal-tabs-menu').html(tmpTab);  
+        findInModal('.modal-tab-content').html(tmpTab_Content);  
+
+        await treeLoad(seq_no, biz_name, wYY);
+        await setMailContent(seq_no, wYY, work_MM, 'CorpIntro');
+        await setIntroPDF(seq_no, wYY, biz_name);
+        setDiscount(record, seq_no, wYY);
+
+        // 이벤트 리스너 재등록 (jQuery 중복 방지)
+        $(document).off("change", "#AdditionDC_YJ, #AdditionDC_Ddct");
+        $(document).off("change", 'input[name="discountRate"]');
+        $(document).off("change", "#AdditionDC_JBCnt");
+
+        $(document).on("change", "#AdditionDC_YJ, #AdditionDC_Ddct", debounce(function () {
+            let field = $(this).attr("id");
+            let value = $(this).prop("checked") ? 1 : 0;
+            if (previousValues[field] !== value) {
+                previousValues[field] = value;
+                window.updateDiscountData(field, value, seq_no, wYY, work_MM);
+            }
+        }, 300));
+
+        $(document).on("change", 'input[name="discountRate"]', debounce(function () {
+            let value = $(this).val();
+            if (previousValues["discountRate"] !== value) {
+                previousValues["discountRate"] = value;
+                window.updateDiscountData("AdditionDC_Stnd", value, seq_no, wYY, work_MM);
+            }
+        }, 300));
+
+        $(document).on("change", "#AdditionDC_JBCnt", function () {
+            let value = $(this).val();
+            if (previousValues["AdditionDC_JBCnt"] !== value) {
+                previousValues["AdditionDC_JBCnt"] = value;
+                window.updateDiscountData("AdditionDC_JBCnt", value, seq_no, wYY, work_MM);
+            }
+        });
+
+        // 하단 버튼 생성
+        let tmpBtn1 = `<button class="btn btn-info" onclick="window.sendMailAndKakao(${seq_no},'${biz_name}', ${wYY}, ${work_MM}, 'CorpIntro')">
+            <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+            </button> 
+            <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+        $modal.find('#btnKakaoSend1').html(tmpBtn1);    
+
+        await setMailContent(seq_no, wYY, work_MM, 'CorpResult');
+        let tmpBtn2 = `<button class="btn btn-info" onclick="window.sendMailAndKakao(${seq_no},'${biz_name}', ${wYY}, ${work_MM}, 'CorpResult')">
+            <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+            </button> 
+            <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+        $modal.find('#btnKakaoSend2').html(tmpBtn2); 
+
+        await setMailContent(seq_no, wYY, work_MM, 'CorpFee');
+        let tmpBtn4 = `<button class="btn btn-info" onclick="window.sendMailAndKakao(${seq_no},'${biz_name}', ${wYY}, ${work_MM}, 'CorpFee')">
+            <i class="fa fa-envelope" style="color: black;"></i> <i class="fa fa-comment" style="color: black;"></i> 메일과 카톡 함께발송
+            </button> 
+            <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+        $modal.find('#btnKakaoSend4').html(tmpBtn4); 
+
+        await sentMailList(seq_no, flag, "{% url 'getSentMails' %}");
+        $modal.modal('show');
+        // hideLoading();
+    };
+    // 3. check
+    window.check = function(seq_no, target, wYY, val){
+        $.ajax({
+            url: "{% url 'mng_corp_update' %}",
+            type: "POST",
+            data: {
+                seq_no: seq_no, target: target, work_YY: wYY, val: val,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            dataType: "json",
+            success: function (data, textStatus, jqXHR) {},
+            error: function (jqXHR) { Swal.fire("오류", "전송 실패", "error"); }
+        });
+    };
+    window.handleButtonClose = function(seq_no, biz_name, ev) {
+        const btnElement = document.getElementById('btn_selectedYear');
+        if(btnElement) btnElement.innerHTML = ev + " 년";
+        treeLoad(seq_no, biz_name, ev);
+    };
+
+    window.changeSheet = function(selSheetID,selPeriod,selSheetName,file_path){
+      selPeriod = decodeURIComponent(selPeriod);
+      selSheetName = decodeURIComponent(selSheetName);
+      file_path = decodeURIComponent(file_path);
+
+      //좌측 컨트롤
+      if(document.getElementById(selectedSheetID)){
+        document.getElementById(selectedSheetID).setAttribute('class',"nav-link thumb")
+      }
+      if(document.getElementById(selSheetID)){
+        document.getElementById(selSheetID).setAttribute('class',"nav-link thumb active")
+      }
+      file_path = decodeURIComponent(file_path);
+      let iframe = document.getElementById("singoseoPDFIframe");
+      if (iframe) {
+          iframe.src = file_path;  // ✅ 파일이 존재하면 iframe에 표시
+      } else {
+        iframe.innerHTML = "법인세 신고서가 바르게 저장되지 않았습니다.";
+      }    
+      selectedSheetID = selSheetID;
+      selectedPeriod = selPeriod;
+      selectedSheetName = selSheetName;
+    }
+    window.updateDiscountData = function(field, value, seq_no, work_YY, work_MM){
+        $.ajax({
+            url: "{% url 'update_discount_data' %}",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ seq_no: seq_no, [field]: value }),
+            dataType: "json",
+            success: function (response) {
+                setMailContent(seq_no, work_YY, work_MM, 'CorpFee');
+            },
+            error: function (xhr) { console.error("AJAX 오류:", error); }
+        });
+    }
+    window.sendMailAndKakao = async function(seq_no, biz_name, work_YY, work_MM, mail_class)  {
+      const objectUrl = "{% url 'sendMail' %}";
+      const objectUrl_kakao = "{% url 'send_kakao_notification' %}";
+      const user_path = `static/cert_DS/${biz_name}/${work_YY}/세무조정계산서`;
+      var user_file_names = []
+      var targetUrl = '';
+      // 기본은 발송; 파일 존재시 여부 체크해서 없으면 false
+      let allIsGood = true;
+
+      if(mail_class=="CorpIntro"){
+        targetUrl = 'admin/mail/corp_intro.html';
+        checkfileName = "98.pdf";
+        let filePath = `${user_path}/${checkfileName}`;
+        let exists = await fileExists(filePath);
+        if (!exists) {
+          allIsGood = false;
+          alert(`파일이 존재하지 않습니다: ${filePath}`);
+        } else {
+          user_file_names.push(checkfileName)
+          // console.log(user_file_names)
+        }   
+      } 
+      else if(mail_class=="CorpResult"){
+        targetUrl = 'admin/mail/corp_result.html';   
+        checkfileNames = ["198.pdf","199.pdf","200.pdf","201.pdf","202.pdf","203.pdf"];
+        for (let fileName of checkfileNames) {
+          let filePath = `${user_path}/${fileName}`;
+          let exists = await fileExists(filePath);
+          if (!exists) {
+            if (fileName=="198.pdf"){
+              allIsGood = false;
+              alert(`접수증 파일이 존재하지 않습니다: ${filePath}`);
+              break;
+            }
+          }else{
+            user_file_names.push(fileName)        
+          }
+        }
+      } 
+      else if(mail_class=="CorpFee"){
+        targetUrl = 'admin/mail/corp_fee.html';
+        checkYN8(seq_no, work_YY).then(function (exists) {
+            if (!exists) {
+                allIsGood = false;
+                alert("결과가 존재하지 않습니다.");
+            }
+        });
+      }
+      // 기본은 발송; 파일 존재시 여부 체크해서 없으면 false
+      if (allIsGood) {
+        sendMail(seq_no, work_YY, work_MM, mail_class, objectUrl, targetUrl,user_file_names, user_path);
+        sendKakao(seq_no, work_YY, work_MM, mail_class, objectUrl_kakao);
+      } else {
+        alert("메일과 카카오톡 전송이 중단되었습니다. 발송요건을 충족하지 못했습니다.");
+      }
+    };
+    // 숫자를 세자리 콤마 형식으로 변환
+    window.formatNumberInput = function(input) {
+      // 음수와 숫자만 허용
+      let value = input.value.replace(/[^0-9-]/g, '');
+
+      // 음수 처리
+      let isNegative = value.startsWith('-');
+      if (isNegative) {
+        value = value.slice(1).replace(/[^0-9]/g, '');
+      } else {
+        value = value.replace(/[^0-9]/g, '');
+      }
+
+      // 빈 입력 처리
+      if (!value) {
+        input.value = '';
+        return;
+      }
+
+      // 포맷팅
+      let number = Number(value);
+      input.value = (isNegative ? '-' : '') + number.toLocaleString('en-US', { minimumFractionDigits: 0 });
+    }
+    var store = Ext.create('Ext.data.Store', {
+    storeId: 'corpStore_' + Math.random(),
+    autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+    proxy: {
+        type: 'ajax', // Ajax를 통해 서버와 통신
+        url: '{% url "mng_corp_jungki" %}', // 데이터를 가져올 API URL
+        extraParams: {
+            ADID:ADID,
+            work_YY:work_YY
+        },        
+        reader: {
+            type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+            rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+            totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+        },
+    },   
+    fields: [ // 필드 정의 (데이터의 각 열)
+        {name: 'groupManager',type: 'string'},
+        {name: 'seq_no'},
+        {name: 'biz_name', type: 'string'}, 
+        {name: 'revenue',type: 'number'},
+        {name: 'expense',type: 'number'},
+        {name: 'income',type: 'number'},
+        {name: 'YN_4',type: 'number'},
+        {name: 'YN_5',type: 'number'},
+        {name: 'YN_6', type: 'bool'},         //마감
+        {name: 'MailGrade', type: 'string'},
+        {name: 'YN_8',type: 'number'},        //수수료
+        {name: 'YN_7', type: 'bool'},        //수금
+        {name: 'YN_10',type: 'date', dateFormat: 'Y-m-d'},     //결재일
+        {name: 'YN_11',type: 'bool'},         //발행
+        {name: 'YN_12', type: 'date', dateFormat: 'Y-m-d'},       //발행일
+        {name: 'YN_13',type: 'bool'},         //입금
+        {name: 'YN_14',type: 'bool'},         //카드
+        {name: 'YN_15',type: 'bool'},         //cms
+        {name: 'YN_9', type: 'string'}, //비고
+        {name: 'isIssue', type: 'string'},
+        {name: 'JupsuID',type: 'string'}
+    ],
+    ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+});
+
+    var comboDataStore = Ext.create('Ext.data.Store', { fields: ['id', 'name'], data: [] });
+    var checkboxRender = function(value) { return "<input type='checkbox'" + (value ? "checked='checked'" : "") + ">"; };
+    function formatDate(value){ return value ? Ext.Date.dateFormat(value, 'y-m-d') : ''; }
+    Ext.tip.QuickTipManager.init();
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}', method: 'GET',
+            success: function (response) { comboDataStore.loadData(Ext.decode(response.responseText)); }
+        });
+    }
+    
+    const onItemClickHandlerWithFilter = function(newADID) {
+        ADID = newADID;
+        store.getProxy().extraParams.ADID = ADID;
+        store.load();
+        updateScrollMenuText(newADID);        
+    };
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandlerWithFilter);
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+          edit: function (editor, e) {
+              var field = e.field; 
+              var value = e.value; 
+              if (field === "YN_9" && value === null) value = "";
+              Ext.Ajax.request({
+                  url: "{% url 'mng_corp_update' %}",
+                  method: "POST",
+                  params: {
+                      seq_no: e.record.get('seq_no'),
+                      target: field,
+                      work_YY: work_YY,
+                      val: value,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                  },
+                  success: function () {},
+                  failure: function (response) { Swal.fire("오류", "전송오류", "error"); }
+              });
+          }
+      }
+    });    
+
+    mainGrid = Ext.create('Ext.grid.Panel', {
+      renderTo: renderTarget,
+      title: '{{ gridTitle }}',
+      loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
+      tools: [  //최상단 오른쪽 툴바
+          {
+            xtype: 'button',
+            text: '접수번호저장',
+            iconCls: 'fa fa-floppy-o',
+            handler: function (btn) {
+              Ext.create('Ext.window.Window', {
+                title: '데이터 붙여넣기',
+                modal: true,
+                frame:false,
+                width: 800,
+                height: 200,
+                layout: 'fit',
+                items: [{
+                    xtype: 'textarea',
+                    name: 'clipboardData',
+                    emptyText: '홈택스 전자신고 결과를 드래그 복사해서 붙여넣으세요.'
+                }],
+                buttons: [
+                  {
+                    text: '저장',
+                    handler: function(btn) {
+                        var win = btn.up('window');
+                        var clipboardData = win.down('textarea').getValue();
+                        Ext.Ajax.request({
+                          url: "{% url 'save_clipboard_Corp' %}",
+                          method: 'POST',
+                          params: {
+                              clipboardData: clipboardData,
+                              csrfmiddlewaretoken: "{{ csrf_token }}"
+                          },
+                          success: function(response) {
+                            win.close();
+                            Swal.fire({
+                              title: '작업 성공',
+                              text: '전자신고파일이 성공적으로 저장되었습니다.',
+                              icon: 'success',
+                              //timer: 500,  // Set the timer to 3 seconds (3000 ms)
+                              showConfirmButton: true,  // Hide the confirm button
+                              willClose: () => {
+                                let store = Ext.getCmp('mainGrid').getStore();
+                                Ext.each(response.sqnos, function (item) {
+                                    let record = store.findRecord('seq_no', item.seq_no);
+                                    if (record) {
+                                        record.set('isIssue', "💙"); // userID의 마지막 두 자리
+                                    }
+                                });
+                                store.commitChanges(); // 변경 사항 적용
+                              }
+                            });                              
+                          },
+                          failure: function(response) {
+                            Swal.fire("오류", "저장오류 : " + response.message, "error");
+                          }
+                        });
+                        win.close();
+                    }
+                  },
+                  {
+                    text: '취소',
+                    handler: function(btn) {
+                        btn.up('window').close();
+                    }
+                  }]
+              }).show();
+            },
+            style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },      
+          {
+            xtype: 'button',
+            text: '전자신고파일 업로드',
+            iconCls: 'fa fa-cloud-upload',
+            handler: function () {
+              let uploadWindow = Ext.create('Ext.window.Window', {
+                    title: '파일 업로드',
+                    modal: true,
+                    layout: 'fit',
+                    items: [{
+                        xtype: 'form',
+                        bodyPadding: 10,
+                        fileUpload: true,
+                        items: [{
+                            xtype: 'filefield',
+                            name: 'uploadFile',
+                            fieldLabel: '파일 선택',
+                            labelWidth: 70,
+                            msgTarget: 'side',
+                            allowBlank: false,
+                            anchor: '100%',
+                            buttonText: '파일 찾기...'
+                        }],
+                        buttons: [{
+                            text: '업로드',
+                            handler: function (btn) {
+                                var form = btn.up('form').getForm();
+                                if (form.isValid()) {
+                                  form.submit({
+                                    url: "{% url 'save_elecfile_Corp' %}", // Django 업로드 URL
+                                    params: {
+                                        csrfmiddlewaretoken: "{{ csrf_token }}"
+                                    },
+                                    waitMsg: '파일 업로드 중...',
+                                    success: function (form, action) {
+                                        Ext.Msg.alert('성공', '파일이 성공적으로 업로드되었습니다.');
+                                        let response = action.result;
+                                        uploadWindow.close();
+                                        let store = Ext.getCmp('mainGrid').getStore();
+                                        let record = store.findRecord('seq_no', response.seq_no);
+                                        record.set('JupsuID', response.userID.slice(-2));  
+                                        store.commitChanges(); // 변경 사항 적용
+                                    },
+                                    failure: function (form, action) {
+                                        Ext.Msg.alert('실패', '파일 업로드에 실패했습니다.');
+                                    }
+                                  });
+                                }
+                            }
+                        }]
+                    }]
+                }).show();
+            },
+            style: 'margin-right: 10px;'
+          },              
+          {
+              xtype: 'textfield',
+              emptyText: '검색어 입력',
+              width: 200,
+              listeners: {
+                  change: function (field, newValue) {
+                      const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                      if (!newValue || newValue.trim() === '') {
+                          store.clearFilter(); // 필터 제거
+                      } else {
+                          store.clearFilter(true); // 기존 필터 제거
+                          const searchValue = newValue.trim().toLowerCase();
+                          store.filterBy(record => {
+                              const bizName = record.get('biz_name')?.toLowerCase() || '';
+                              const ceoName = record.get('ceo_name')?.toLowerCase() || '';
+                              return (
+                                  bizName.includes(searchValue) || ceoName.includes(searchValue)
+                              );
+                          });
+                      }
+                  }
+              }
+              
+          },
+          {
+              xtype: 'button',
+              iconCls: 'icon icon-refresh',
+              handler: function (btn) {
+                  location.reload();
+              },
+              style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },
+      ],            
+      width:'100%',
+      height: getGridHeight(), // 초기 높이 설정
+      scrollable: 'y', // 세로 스크롤 활성화
+      store: store,
+      columnLines: true,
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),        
+      plugins: [cellEditing],
+      columns: [
+        {   xtype: 'rownumberer',width: 30,	sortable: false}, 
+        {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0        }, 
+        {   header: 'SEQ', dataIndex: 'seq_no',width: 0        }, 
+        {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',flex:1,minWidth: 130,renderer: renderTopic }, 
+        {  
+          header: '<center>수입금액</center>', dataIndex: 'revenue',  width: 120, xtype: 'numbercolumn', align:'right',format:'0,000'//, editor: { allowBlank: false }
+          , summaryType: 'sum', summaryRenderer: function(value) {  return Ext.util.Format.number(value, '0,000');}
+        },{  
+          header: '<center>판관비 등</center>', dataIndex: 'expense',  width: 110,xtype: 'numbercolumn',align:'right', format:'0,000'            
+          , summaryType: 'sum', summaryRenderer: function(value) {  return Ext.util.Format.number(value, '0,000');}
+        },{
+          header: '<center>당기순손익</center>', dataIndex: 'income',  width: 110,xtype: 'numbercolumn',align:'right', format:'0,000'            
+          , summaryType: 'sum', summaryRenderer: function(value) {  return Ext.util.Format.number(value, '0,000');}
+        },{  header: '<center>중간예납<br>(확인하기)</center>', dataIndex: 'YN_4',  width: 80,xtype: 'numbercolumn',align:'right', format:'0,000' }, 
+        {  header: '<center>법인세등</center>', dataIndex: 'YN_5',  width: 90,xtype: 'numbercolumn',align:'right', format:'0,000'    },
+        {
+          header: '<center>결재</center>', dataIndex: 'YN_6', width: 40,align:'center',
+          xtype:  (isSuperuser) ? 'checkcolumn' : 'gridcolumn',
+          renderer: (isSuperuser) ? checkboxRender : function (value) {
+              return value ? "✍️" : '';  // ✅ 값이 true이면 ✍️, false이면 빈 문자열
+          },
+          listeners: (isSuperuser) ? {
+              checkchange: function (column, recordIndex, checked) {
+                  window.check(store.getAt(recordIndex).get('seq_no'), 'YN_6', work_YY, checked);
+              }
+          } : {}
+        }, 
+        {  header: '<center>메일<br>등급</center>', dataIndex: 'MailGrade',  width: 40, align:'center'  ,
+            renderer: function(value) {
+                let feelingGrade = 1; // 기본값 (불쾌)
+                if (value.includes("세무조정료 안내")) {
+                    feelingGrade = 4;
+                } else if (value.includes("접수결과 안내")) {
+                    feelingGrade = 3;
+                } else if (value.includes("신고 안내")) {
+                    feelingGrade = 2;
+                }
+                const emojis = {
+                    1: "😡",  // 불쾌
+                    2: "😞",  // 시무룩
+                    3: "🙂",  // 기쁨
+                    4: "😍"   // 매우 좋음
+                };
+                return value.trim() ?  emojis[feelingGrade] : "";  // 등급에 따른 이모지 반환
+            }
+        },{  
+          header: '<center>수수료</center>', dataIndex: 'YN_8',  width: 90,xtype: 'numbercolumn', align:'right',format:'0,000', editor: { allowBlank: true }        
+          , summaryType: 'sum', summaryRenderer: function(value) {  return Ext.util.Format.number(value, '0,000');}
+        }, 
+        {
+          header: '<center>수금</center>', dataIndex: 'YN_7',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender,align:'center',
+          listeners: {
+              checkchange: function(checkColumn, rowIndex, checked) {
+                  var grid = this.up('grid'),
+                      store = grid.getStore(),
+                      rec = store.getAt(rowIndex);
+                  
+                  // 기존 처리 함수 호출 (seq_no 값을 사용)
+                  window.check(rec.get('seq_no'), 'YN_7', work_YY, checked);
+                  
+                  if (checked) {
+                      // 체크 시 오늘 날짜를 YYYY-MM-DD 형식으로 설정
+                      var today = Ext.Date.format(new Date(), 'Y-m-d');
+                      rec.set('YN_10', today);
+                  } else {
+                      // 체크 해제 시 결재일 초기화
+                      rec.set('YN_10', '');
+                  }
+              }
+          }
+        },
+        {  header: '<center>수금일</center>', dataIndex: 'YN_10',  width: 90 ,renderer: formatDate, editor: {		xtype: 'datefield',	format: 'y-m-d'		},allowBlank: true	},
+        {
+          text: '세금계산서',
+          columns: [
+          {   header: '<center>발행</center>', dataIndex: 'YN_11',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, align:'center',
+              listeners: {
+                  checkchange: function(checkColumn, rowIndex, checked) {
+                      var grid = this.up('grid'),
+                          store = grid.getStore(),
+                          rec = store.getAt(rowIndex);
+                      
+                      window.check(rec.get('seq_no'), 'YN_11', work_YY, checked);
+                      
+                      if (checked) {
+                          // 체크 시 오늘 날짜를 YYYY-MM-DD 형식으로 설정
+                          var today = Ext.Date.format(new Date(), 'Y-m-d');
+                          rec.set('YN_12', today);
+                      } else {
+                          // 체크 해제 시 결재일 초기화
+                          rec.set('YN_12', '');
+                      }
+                  }
+              }          
+          },
+          {  header: '<center>발행일</center>', dataIndex: 'YN_12',  width: 90,renderer: formatDate, editor: {		xtype: 'datefield',	format: 'y-m-d'		},allowBlank: true	}
+        ]},
+        {
+          text: '제본/발송',
+          columns: [        
+          {   header: '<center>출력</center>', dataIndex: 'YN_13',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, align:'center',
+              listeners: {checkchange: function (column, recordIndex, checked) {	window.check(store.getAt(recordIndex).get('seq_no'),'YN_13',work_YY,checked);	}}
+          },
+          {   header: '<center>전달</center>', dataIndex: 'YN_14',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, align:'center',
+              listeners: {checkchange: function (column, recordIndex, checked) {	window.check(store.getAt(recordIndex).get('seq_no'),'YN_14',work_YY,checked);	}}
+          },
+          {   header: '<center>발송</center>', dataIndex: 'YN_15',  width: 40, xtype: 'checkcolumn',renderer : checkboxRender, align:'center',
+              listeners: {checkchange: function (column, recordIndex, checked) {	window.check(store.getAt(recordIndex).get('seq_no'),'YN_15',work_YY,checked);	}}
+          }
+        ]},
+        {  header: '<center>비고</center>', dataIndex: 'YN_9',  flex:1, editor: { allowBlank: true }          }, 
+        {  header: '<center>전자<br>신고</center>', dataIndex: 'isIssue',  width: 40,align:'center',renderer: value => value ? "💙" : ""     
+        }, 
+        {  header: '<center>접수<br>ID</center>', dataIndex: 'JupsuID',  width: 40,
+            renderer: function(value) {
+              // 값이 존재하면 끝에서 두 자리만 반환합니다.
+              if (value && value.length >= 2) {
+                  return value.slice(-2);
+              }
+              return value;
+            }
+        }
+      ],      
+      viewConfig: {
+        emptyText: '<div style="text-align:center;padding:50px;font-size:16px; font-weight:bold;">조회된 데이터가 없습니다.</div>'
+      },                  
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          items: [
+            ...dockedItemsConfig,
+            {
+                xtype: 'buttongroup', columns: 5, frame: false,
+                defaults: { enableToggle: true, toggleGroup: 'yearGroup', margin: '0 5 0 0', style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } },
+                items: Array.from({ length: 5 }, (_, i) => ({
+                    text: `${currentYear - i}년`,
+                    pressed: currentYear - i === parseInt(work_YY, 10),
+                    handler: function () {
+                        var grid = this.up('grid');
+                        work_YY = parseInt(this.text.replace('년', ''));
+                        grid.getStore().getProxy().extraParams.work_YY = work_YY;
+                        grid.getStore().reload();
+                    }
+                }))
+            },
+            '->',
+            { xtype: 'displayfield', fieldLabel: '매출', itemId: 'totalRevenueDisplay', margin: '0 10 0 0', value: '0' },
+            { xtype: 'displayfield', fieldLabel: '전체', itemId: 'totalCommissionDisplay', value: '0' },
+            { xtype: 'displayfield', fieldLabel: '수금', itemId: 'collectedCommissionDisplay', margin: '0 10 0 10', value: '0' }
+          ]
+        }
+      ],
+      listeners: {
+        afterrender: function(grid) {
+          Ext.EventManager.onWindowResize(function() {
+                if(grid && !grid.isDestroyed) {
+                    grid.setHeight(getGridHeight());
+                    grid.doLayout();
+                }
+          });
+          grid.getStore().on('datachanged', function() {
+            var totalCommission = 0,
+                collectedCommission = 0,
+                totalRevenue = 0;
+            store.each(function(record) {
+                var commission = record.get('YN_8') || 0;
+                totalCommission += commission;
+                if (record.get('YN_7')) {
+                    collectedCommission += commission;
+                }
+                var revenue = record.get('revenue') || 0;
+                totalRevenue += revenue;
+            });
+            grid.down('#totalCommissionDisplay').setValue(
+                Ext.util.Format.number(totalCommission, '0,000')
+            );
+            grid.down('#collectedCommissionDisplay').setValue(
+                Ext.util.Format.number(collectedCommission, '0,000')
+            );
+            grid.down('#totalRevenueDisplay').setValue(
+                Ext.util.Format.number(totalRevenue, '0,000')
+            );
+          });
+        }  
+      }
+    });
+    if (mainGrid) {
+        attachGridToolTip(mainGrid, tooltipUrl); 
+        if(typeof attachGridToolTip_Helper === 'function') attachGridToolTip_Helper(mainGrid, work_YY);
+        if(typeof attachGridToolTip_JupsuSummit === 'function') attachGridToolTip_JupsuSummit(mainGrid, work_YY);
+    }
+
+    // 디바운스 함수 정의
+    const debounce = (func, delay) => {
+      let timeoutId;
+      return function (...args) {
+        const context = this;
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(context, args), delay);
+      };
+    };
+
+    //############# 0.신고서 보기
+    const treeLoad = async (seq_no,biz_name,work_YY) => {
+      try {
+        const accordionLeft = document.getElementById('accordionLeft');
+        accordionLeft.innerHTML = ""; // 기존 요소 비우기
+        const response = await fetch("{% url 'path_to_corp_admin' %}", {
+            method: "POST",
+            dataType:"Json",
+            body: JSON.stringify({
+              seq_no:seq_no,
+              path: `static/cert_DS/${biz_name}/${work_YY}/세무조정계산서`
+            })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        
+        const data = await response.json();
+        //console.log(data)
+        const { titles, nodes: gridFile } = data;
+
+        const fragment = document.createDocumentFragment();
+
+        titles.forEach((title, s) => {
+            const divCard = document.createElement("div");
+            divCard.classList.add("card", "overflow-hidden", "mb-2", "border-0");
+            divCard.id = `collapseHead${s}`;
+
+            const anchor1 = document.createElement('a');
+            anchor1.classList.add("accordion-toggle", "panel-heading1", "collapsed");
+            anchor1.dataset.bsToggle = "collapse";
+            anchor1.ariaExpanded = "false";
+            anchor1.href = `#collapse${s}`;
+            anchor1.textContent = title.displayName;
+            divCard.appendChild(anchor1);
+
+            const divTabpanel = document.createElement("div");
+            divTabpanel.classList.add("panel-collapse", "collapse");
+            if (s === 0) {
+                divTabpanel.classList.add("show");
+                selectedSheetID = gridFile[0]?.id || null;
+                selectedPeriod = title.displayName;
+            }
+            divTabpanel.id = `collapse${s}`;
+            divTabpanel.role = "tabpanel";
+            divTabpanel.ariaExpanded = "false";
+            divTabpanel.dataset.bsParent = "#accordionAcnt";
+            divCard.appendChild(divTabpanel);
+
+            const ul = document.createElement('ul');
+            ul.classList.add("nav1", "nav-column", "flex-column", "br-7");
+            ul.id = `singoList${s}`;
+            divTabpanel.appendChild(ul);
+
+            singoListDetail(ul, title.displayName, gridFile, title.displayName, selectedSheetID);
+
+            fragment.appendChild(divCard);
+        });
+
+        accordionLeft.appendChild(fragment);
+      } catch (error) {
+        console.error("Error loading tree:", error);
+      }
+    };
+    const singoListDetail = async (ul, selGroup, gridFile, singoPeriod, selSheetID) => {
+      return new Promise((resolve, reject) => {
+        ul.innerHTML = "";  // ul 비우고 시작 (권장)
+
+        for (let i = 0; i < gridFile.length; i++) {
+          if (gridFile[i].group === selGroup) {
+            const li = document.createElement("li");
+            li.setAttribute('id', "li" + gridFile[i].id);
+            li.setAttribute('class', "nav-item1 mt-0");
+
+            const anchor2 = document.createElement('a');
+            anchor2.setAttribute('class', `nav-link thumb ${gridFile[i].id == selSheetID ? 'active' : ''}`);
+            anchor2.setAttribute('id', gridFile[i].id);
+
+            anchor2.href = `javascript:changeSheet('${gridFile[i].id}','${encodeURIComponent(singoPeriod)}','${encodeURIComponent(gridFile[i].파일명)}','${encodeURIComponent(gridFile[i].totalPath)}')`;
+
+            if (gridFile[i].파일명.includes("납부서")) {
+              anchor2.innerHTML = `<span class='badge badge-sm bg-danger badge-hide me-4'>납기:${gridFile[i].dueDate}</span>${gridFile[i].파일명}`;
+            } else if (gridFile[i].파일명.includes("신고서")) {
+              anchor2.innerHTML = `<i class='ion ion-grid text-info'></i> ${gridFile[i].파일명} <i class='ion ion-grid text-info ms-2'></i>`;
+            } else {
+              anchor2.innerHTML = `<i class='typcn typcn-minus-outline text-info'></i> ${gridFile[i].파일명}`;
+            }
+
+            li.appendChild(anchor2);
+            ul.appendChild(li);
+
+            if (gridFile[i].id == selSheetID) {
+              changeSheet(selSheetID, singoPeriod, gridFile[i].파일명, gridFile[i].totalPath);
+            }
+          }
+        }
+      });
+    };
+
+    //############# 3. 고용증대 / 표지
+    //############# 4. 수수료 / 할인율
+    function setDiscount(record, seq_no, work_YY){
+      $.ajax({
+          url: "{% url 'get_discount_data'%}",  // Django API 엔드포인트
+          type: "POST",
+          contentType: "application/json",  // JSON 형식으로 전송
+          data: JSON.stringify({ seq_no: seq_no }),  // JSON 데이터로 변환
+          dataType: "json",
+          success: function (data) {
+              if (data.error) {
+                  console.error(data.error);
+                  return;
+              }
+
+              // 📌 테이블을 동적으로 생성한 후 데이터 적용
+              let tmpTable = `
+                <div class="table-responsive">
+                  <table class="table text-nowrap text-md-nowrap table-bordered">
+                    <tbody>
+                      <tr>
+                        <td class="wp-30">기준금액 가산액 할인</td>
+                        <td class="wp-70">
+                          <label class="ckbox" for="AdditionDC_YJ"><input type="checkbox" id="AdditionDC_YJ"><span>업종별 가산금액 면제</span></label>
+                          <label class="ckbox" for="AdditionDC_Ddct"><input type="checkbox" id="AdditionDC_Ddct"><span>세액 감면공제 가산금액 면제</span></label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="wp-30">기준금액 할인</td>
+                        <td class="wp-70">
+                          ${[0, 10, 15, 20, 25, 30, 35, 40].map(value => `
+                            <label class="rdiobox" for="discount_${value}">
+                              <input name="discountRate" type="radio" id="discount_${value}" value="${value}" ${data.AdditionDC_Stnd == value ? "checked" : ""}>
+                              <span>Discount ${value}%</span>
+                            </label>
+                          `).join('')}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="wp-30">세무조정계산서 제본부수</td>
+                        <td class="wp-70">
+                          <select class="form-control select2 form-select" data-placeholder="권" id="AdditionDC_JBCnt" style="width:100px">
+                            ${[0,1,2,3,5,6,7,8,9,10].map(value => `
+                              <option value="${value}" ${data.AdditionDC_JBCnt == value ? "selected" : ""}>${value}</option>
+                            `).join('')}
+                          </select> 권
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="wp-30">특별보수 청구<br>ex)세무조사 대응 서면조사 대응<br>ex)특수고용직 고용보험 업무<br>ex)사무실 주소 사용료</td>
+                        <td class="wp-70">
+                          <div class="d-flex align-items-center">
+                            <label for="SAddition_Rsn" class="form-label me-2" style="width: 50px; white-space: nowrap;">🔺</label>
+                            <input class="form-control me-2" id="SAddition_Rsn"  type="text" style="max-width: 250px;" value="${data.SAddition_Rsn}">
+                            <input class="form-control" id="SAddition_Amt" placeholder="청구금액" type="text" oninput="formatNumberInput(this)" style="max-width: 150px;align:right;" value="${data.SAddition_Amt}">
+                          </div>
+                          <div class="d-flex align-items-center">
+                            <label for="OAddition_Rsn" class="form-label me-2" style="width: 50px; white-space: nowrap;">🔺</label>
+                            <input class="form-control me-2" id="OAddition_Rsn" type="text" style="max-width: 250px;" value="${data.OAddition_Rsn}">
+                            <input class="form-control" id="OAddition_Amt" placeholder="청구금액" type="text" oninput="formatNumberInput(this)" style="max-width: 150px;align:right;" value="${data.OAddition_Amt}">
+                          </div>
+                          <div class="d-flex align-items-center">
+                            <label for="FAddition_Rsn" class="form-label me-2" style="width: 50px; white-space: nowrap;">🔺</label>
+                            <input class="form-control me-2" id="FAddition_Rsn" type="text" style="max-width: 250px;" value="${data.FAddition_Rsn}">
+                            <input class="form-control" id="FAddition_Amt" placeholder="청구금액" type="text" oninput="formatNumberInput(this)" style="max-width: 150px;align:right;" value="${data.FAddition_Amt}">
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" class="text-center">
+                          <button class="btn btn-primary" id="updateCorpFeeGrid">세무조정료 저장</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              `;
+
+              // 📌 테이블을 삽입한 후 폼 요소에 값 적용
+              $('[id="feeDiagnosys"]').html(tmpTable);
+
+              // 📌 체크박스 값 적용 (업종별 가산금액 면제, 세액 감면공제)
+              $("#AdditionDC_YJ").prop("checked", data.AdditionDC_YJ == 1);
+              $("#AdditionDC_Ddct").prop("checked", data.AdditionDC_Ddct == 1);
+              $("#updateCorpFeeGrid").click(function () {
+                  let recordKey = `record_${seq_no}`;
+                  let currentRecord = window[recordKey]; // window에서 최신 record 가져오기
+
+                  if (!currentRecord) {
+                      console.error("🚨 오류: record가 정의되지 않았습니다.");
+                      Swal.fire("오류", "데이터를 불러오는 중 오류가 발생했습니다.", "error");
+                      return;
+                  }            
+                  let finalFee = document.getElementById("finalFee").innerText.replaceAll(",","");
+                  console.log(finalFee)
+
+                  $.ajax({
+                    url: "{% url 'mng_corp_update' %}",
+                    type: "POST",
+                    data: {
+                      seq_no: seq_no,
+                      target : "YN_8",
+                      work_YY: work_YY,
+                      val : finalFee,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                    },
+                    dataType: "json",
+                    success: function (data, textStatus, jqXHR) {
+                      if (jqXHR.status === 200 && data.status === "success") {
+                        currentRecord.set("YN_8", finalFee);
+                        Swal.fire("저장완료", "세무조정료가 저장되었습니다. ", "success");
+                      } else {
+                        Swal.fire("오류", "전송오류 : 세무조정료 저장 중 오류가 발생하였습니다." , "error");
+                      }
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                      console.error("AJAX 실패:", textStatus, errorThrown);
+                      Swal.fire("전송 실패", "서버에서 오류가 발생했습니다: " + jqXHR.responseJSON.message, "error");
+                    }
+                  });
+            });
+          },
+          error: function (xhr, status, error) {
+              console.error("AJAX 오류:", error);
+          }
+      });
+    }
+
+
+    // 📌 입력 필드 감지 (모달이 열릴 때 기존 리스너 제거 후 다시 등록)
+    const registerInputEventListeners = (seq_no, work_YY, work_MM) => {
+        const inputFields = ["#SAddition_Rsn", "#SAddition_Amt", "#OAddition_Rsn", "#OAddition_Amt", "#FAddition_Rsn", "#FAddition_Amt"];
+
+        // 기존 이벤트 리스너 제거 (중복 방지)
+        inputFields.forEach(field => {
+            $(document).off("input", field);
+        });
+
+        // 새롭게 이벤트 리스너 등록
+        inputFields.forEach(field => {
+            $(document).on("input", field, debounce(function () {
+                let value = $(this).val().replaceAll(",", "").trim();
+                value = value === "" ? "0" : value;
+
+                if (previousValues[field] !== value) {
+                    previousValues[field] = value;
+                    console.log(`🔄 [입력 변경] ${field}: ${value} (seq_no: ${seq_no})`);
+                    updateDiscountData(field.replace("#", ""), value, seq_no, work_YY, work_MM);
+                }
+            }, 300));
+        });
+    };
+
+    //############# 안내 카톡내용 생성
+    // 접수결과 기본은 false, 전자신고파일 업로드시 true
+    let resultAndFee = false;
+    const setMailContent = async (seq_no, work_YY, work_MM, flag) => {
+      $.ajax({
+        url: "{% url 'getMailContent' %}",
+        type: "POST",
+        data: {
+          seq_no: seq_no,
+          work_YY: work_YY,
+          work_MM: work_MM,
+          flag:flag,
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        dataType: "json",
+        success: function (data) {
+          var bodyContent = data.email_content
+          $('[id="' + flag + '"]').html(bodyContent);
+        },
+        error: function (request, status, error) {
+          console.log('fail: ' + error);
+        }
+      });
+    };
+    const setIntroPDF = async (seq_no, work_YY, biz_name) => {
+      let pdf98 = `static/cert_DS/${biz_name}/${work_YY}/세무조정계산서/98.pdf`;
+      let iframe = document.getElementById("introPDFIframe");
+      try {
+          // HEAD 요청은 파일의 내용을 다운로드하지 않고, 파일의 존재 여부만 확인함.
+          let response = await fetch(pdf98, { method: 'HEAD' });    
+          if (response.ok) {
+              // 파일이 존재하는 경우 iframe 업데이트
+              
+              if (iframe) {
+                  iframe.src = pdf98;  // ✅ 파일이 존재하면 iframe에 표시
+              } else {
+                iframe.innerHTML = "법인세 신고도움 안내문(98.pdf)을 저장하지 않았습니다.";
+              }
+          } else {
+            iframe.innerHTML = "법인세 신고도움 안내문(98.pdf)을 저장하지 않았습니다.";
+          }
+      } catch (error) {
+        iframe.innerHTML = "PDF 파일 확인 중 오류 발생:"+ error;
+      }
+    };
+
+    // 하단 카톡&메일 보내기
+    function checkYN8(seq_no, work_YY) {
+        return $.ajax({
+            url: "{% url 'check_yn8' %}",
+            type: "POST",
+            data: { seq_no: seq_no, work_YY: work_YY },
+            dataType: "json"
+        }).then(function (data) {
+            return data.exists; // YN_8 값이 존재하면 true, 없으면 false
+        }).catch(function (error) {
+            console.error("🚨 API 호출 오류:", error);
+            return false;
+        });
+    }
+    // 파일 존재 여부 확인 함수
+    const fileExists = async (filePath) => {
+      try {
+        let response = await fetch(filePath, { method: 'HEAD' });
+        return response.ok; // 파일이 존재하면 true, 없으면 false
+      } catch (error) {
+        console.error("파일 확인 중 오류 발생:", error);
+        return false;
+      }
+    };
+
+    //접수증 마우스 클릭시 툴팁발생
+    function attachGridToolTip_JupsuSummit(grid,work_YY){
+      Ext.create('Ext.tip.ToolTip', {
+          target: grid.getEl(),
+          delegate: '.x-grid-cell', // 셀 위에 마우스를 올릴 때만 활성화
+          trackMouse: false, // 마우스를 따라다니지 않음
+          dismissDelay: 0, // 자동 닫힘 비활성화
+          autoHide: true, // 마우스가 떠나면 숨김
+          maxWidth: 600, // 최대 너비를 확장
+          minWidth: 300, // 최소 너비를 설정   
+          anchorToTarget: true, // 툴팁이 셀에 맞게 위치 조정
+          mouseOffset: [-350, -20], // 위치 미세 조정      
+          renderTo: Ext.getBody(),
+          listeners: {
+            beforeshow: function (tip) {
+              const cell = Ext.get(tip.triggerElement);
+              const record = grid.getView().getRecord(cell.parent());
+              const columnIndex = cell.dom.cellIndex;
+              const column = grid.headerCt.getHeaderAtIndex(columnIndex);
+            
+              if (column.dataIndex === 'isIssue') {
+                const seqNo = record.get('seq_no');
+                Ext.Ajax.request({
+                    url: '{% url "mng_corp_jupsuSummit" %}',//이 부분 수정해야한다
+                    method: 'POST',
+                    params: {
+                      seq_no:seqNo,
+                      work_YY:work_YY,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                    }, 
+                    success: function (response) {
+                        const data = Ext.decode(response.responseText);
+                        tip.update(`
+                    <div class="notifications-menu ps3 overflow-hidden">
+                        <div class="drop-heading border-bottom position-relative">
+                            <div class="d-flex">
+                                <div class="counter-icon bg-primary dash d-flex box-shadow-primary">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="fill-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M12,8c-2.2091675,0-4,1.7908325-4,4s1.7908325,4,4,4c2.208252-0.0021973,3.9978027-1.791748,4-4C16,9.7908325,14.2091675,8,12,8z M12,15c-1.6568604,0-3-1.3431396-3-3s1.3431396-3,3-3c1.6561279,0.0018311,2.9981689,1.3438721,3,3C15,13.6568604,13.6568604,15,12,15z M21.960022,11.8046875C19.9189453,6.9902344,16.1025391,4,12,4s-7.9189453,2.9902344-9.960022,7.8046875c-0.0537109,0.1246948-0.0537109,0.2659302,0,0.390625C4.0810547,17.0097656,7.8974609,20,12,20s7.9190063-2.9902344,9.960022-7.8046875C22.0137329,12.0706177,22.0137329,11.9293823,21.960022,11.8046875z M12,19c-3.6396484,0-7.0556641-2.6767578-8.9550781-7C4.9443359,7.6767578,8.3603516,5,12,5s7.0556641,2.6767578,8.9550781,7C19.0556641,16.3232422,15.6396484,19,12,19z"/></svg>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mt-1 mb-0 fs-15 text-dark">법인세 전자신고 접수증</h6>
+                                    <span class="text-muted">${Ext.String.htmlEncode(data.biz_name)} - ${Ext.String.htmlEncode(data.ceo_name)}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close position-absolute end-0 top-50 translate-middle-y me-2" aria-label="Close" id="tooltipCloseBtn"><i class="fe fe-x"></i></button>
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">${data.신고서종류}</span>
+                                </div>
+                            </div>                                                                                    
+                        </div>                                                                                    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">회계기간 종료월 ${data.과세년월}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>      
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고유형 : ${data.신고유형}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                              
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고번호</span>
+                                  <span class="notification-label ">${data.신고번호}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">신고시각 ${data.신고시각}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                          
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">접수ID ${data.사용자ID}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                              
+                    </div>
+                        `);
+                          // 닫기 버튼에 클릭 이벤트 추가
+                          Ext.defer(() => {
+                              const closeButton = document.getElementById("tooltipCloseBtn");
+                              if (closeButton) {
+                                  closeButton.addEventListener("click", function () {
+                                      tip.hide();
+                                  });
+                              }
+                          }, 100); // 약간의 지연을 줘서 DOM이 렌더링된 후 이벤트를 등록
+                    },
+                    failure: function () {
+                        tip.update('<p>데이터를 불러오는 데 실패했습니다.</p>');
+                    }
+                });
+              } else {
+                  return false; // 다른 열에서는 팝오버를 숨김
+              }
+            }
+          }
+      });  
+    }
+
+    // 상호에 마우스 오버시 툴팁 발생
+    function attachGridToolTip_Helper(grid,work_YY) {
+      Ext.create('Ext.tip.ToolTip', {
+          target: grid.getEl(),
+          delegate: '.x-grid-cell', // 셀 위에 마우스를 올릴 때만 활성화
+          trackMouse: false, // 마우스를 따라다니지 않음
+          dismissDelay: 0, // 자동 닫힘 비활성화
+          autoHide: false, // 마우스가 떠나면 숨김
+          maxWidth: 600, // 최대 너비를 확장
+          minWidth: 300, // 최소 너비를 설정   
+          anchorToTarget: true, // 툴팁이 셀에 맞게 위치 조정
+          mouseOffset: [0, -20], // 위치 미세 조정      
+          renderTo: Ext.getBody(),
+          listeners: {
+            beforeshow: function (tip) {
+              const cell = Ext.get(tip.triggerElement);
+              const record = grid.getView().getRecord(cell.parent());
+              const columnIndex = cell.dom.cellIndex;
+              const column = grid.headerCt.getHeaderAtIndex(columnIndex);
+            
+              if (column.dataIndex === 'biz_name') {
+                const seqNo = record.get('seq_no');
+
+                // AJAX로 데이터를 가져와 툴팁 업데이트
+                Ext.Ajax.request({
+                    url: '{% url "mng_corp_deduct_tooltip" %}',//이 부분 수정해야한다
+                    method: 'POST',
+                    params: {
+                      seq_no:seqNo,
+                      work_YY:work_YY,
+                      csrfmiddlewaretoken: "{{ csrf_token }}"
+                    }, 
+                    success: function (response) {
+                        const data = Ext.decode(response.responseText);
+                        tip.update(`
+                    <div class="notifications-menu ps3 overflow-hidden">
+                        <div class="drop-heading border-bottom position-relative">
+                            <div class="d-flex">
+                                <div class="counter-icon bg-primary dash d-flex box-shadow-primary">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="fill-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M12,8c-2.2091675,0-4,1.7908325-4,4s1.7908325,4,4,4c2.208252-0.0021973,3.9978027-1.791748,4-4C16,9.7908325,14.2091675,8,12,8z M12,15c-1.6568604,0-3-1.3431396-3-3s1.3431396-3,3-3c1.6561279,0.0018311,2.9981689,1.3438721,3,3C15,13.6568604,13.6568604,15,12,15z M21.960022,11.8046875C19.9189453,6.9902344,16.1025391,4,12,4s-7.9189453,2.9902344-9.960022,7.8046875c-0.0537109,0.1246948-0.0537109,0.2659302,0,0.390625C4.0810547,17.0097656,7.8974609,20,12,20s7.9190063-2.9902344,9.960022-7.8046875C22.0137329,12.0706177,22.0137329,11.9293823,21.960022,11.8046875z M12,19c-3.6396484,0-7.0556641-2.6767578-8.9550781-7C4.9443359,7.6767578,8.3603516,5,12,5s7.0556641,2.6767578,8.9550781,7C19.0556641,16.3232422,15.6396484,19,12,19z"/></svg>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mt-1 mb-0 fs-15 text-dark">세액감면 공제 판단사항</h6>
+                                    <span class="text-muted">${Ext.String.htmlEncode(data.biz_name)} - ${Ext.String.htmlEncode(data.ceo_name)}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close position-absolute end-0 top-50 translate-middle-y me-2" aria-label="Close" id="tooltipCloseBtn"><i class="fe fe-x"></i></button>
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-yellow brround">
+                                    <i class="icon icon-magic-wand"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">중소기업 특별세액감면 ${data.SpecialDeduct === 'Y' ? '⭕' : '❌'}, 감면율 : ${data.SpecialDeductRate} %</span>
+                                  <span class="notification-subtext text-muted">수도권외 ${data.isRural === 'Y' ? '⭕' : '❌'}, 소기업요건 ${data.isSmall === 'Y' ? '⭕' : '❌'}, 업종:${Ext.String.htmlEncode(data.upjong)}${data.isSpecialUpjong === 'Y' ? '⭕' : '❌'} </span>
+                                </div>
+                                                          
+                            </div>                                                                                    
+                        </div>                                                                                    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-red brround">
+                                    <i class="icon icon-fire"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">창업중소기업감면 ${data.ChangUpDeduct === 'Y' ? '⭕' : '❌'}, 감면율 :${data.ChangUpDeductRate } %</span>
+                                  <span class="notification-subtext text-muted">과밀지역외 ${data.isKWAMIL === '' ? '⭕' : '❌'}, 대표자나이 : ${data.age}세, 개업요건 : ${data.kisu <=5 ? '⭕' : '❌'}(${data.kisu}기), 소규모창업 ${data.isLittle === 'Y' ? '⭕' : '❌'}, 업종:${Ext.String.htmlEncode(data.upjong)}${data.isSpecialUpjong === 'Y' ? '⭕' : '❌'}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>      
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">청년여부 ${data.isYoung === 'Y' ? '⭕' : '❌'}</span>
+                                  <span class="notification-label ">물류산업 ${data.isMyulyu === 'Y' ? '⭕' : '❌'}, 신성장산업 ${data.isNewGroth === 'Y' ? '⭕' : '❌'}, 지식기반산업 ${data.isKnowledge === 'Y' ? '⭕' : '❌'}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                              
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-green brround">
+                                    <i class="icon icon-graduation"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">기업부설연구소 보유여부 ${data.isRND === 'Y' ? '⭕' : '❌'}</span>
+                                  <span class="notification-label ">벤처기업 인증여부 ${data.isVenture === 'Y' ? '⭕' : '❌'}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>    
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-yellow brround">
+                                    <i class="icon icon-people"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">고용증대 세액공제여부 ${data.cntGoyoungIncrease > 0 ? '⭕' : '❌'}</span>
+                                  <span class="notification-label ">고용증가인원 : ${data.cntGoyoungIncrease} 명</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                          
+                        <div class="dropdown-divider m-0"></div>        
+                        <div class="dropdown-item">
+                            <div class="notification-each d-flex">
+                                <div class="me-3 notifyimg  bg-info brround">
+                                    <i class="icon icon-organization"></i>
+                                </div>
+                                <div>
+                                  <span class="notification-label mb-1">주소 :  ${data.addr}</span>
+                                </div>                  
+                            </div>                                                                                    
+                        </div>                                                                                                                                                
+                    </div>
+                        `);
+                          // 닫기 버튼에 클릭 이벤트 추가
+                          Ext.defer(() => {
+                              const closeButton = document.getElementById("tooltipCloseBtn");
+                              if (closeButton) {
+                                  closeButton.addEventListener("click", function () {
+                                      tip.hide();
+                                  });
+                              }
+                          }, 100); // 약간의 지연을 줘서 DOM이 렌더링된 후 이벤트를 등록
+                    },
+                    failure: function () {
+                        tip.update('<p>데이터를 불러오는 데 실패했습니다.</p>');
+                    }
+                });
+              } else {
+                  return false; // 다른 열에서는 팝오버를 숨김
+              }
+            }
+          }
+      });
+    }
+
+})();
+</script>

@@ -1,0 +1,147 @@
+{% extends 'components/admin-base.html' %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-grid.css" />
+<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-alpine.css" />
+{% endblock %}
+
+{% block content %}
+<!-- PAGE-HEADER -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">담당자관리</h1>
+    </div>
+    <div class="ms-auto pageheader-btn">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="javascript:void(0);">MANAGER</a></li>
+            <li class="breadcrumb-item active" aria-current="page">담당자관리</li>
+        </ol>
+    </div>
+</div>
+<!-- PAGE-HEADER END -->
+
+<!-- ROW OPEN -->
+<div class="row row-sm">
+    <div class="col-lg-12">
+        <div class="card custom-card">
+            <div class="card-body">
+                <div class="text-left py-4">
+                    <button class="btn btn-primary" id="addRowBtn">신규등록</button>
+                </div>
+                <div class="ag-theme-alpine" style="height: 500px; width: 100%;">
+                    <div id="myGrid" class="ag-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ROW CLOSED -->
+{% endblock %}
+
+{% block scripts %}
+<!-- AG-GRID JS -->
+<script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+<script id="adminList-data" type="application/json">
+  {{ adminList|json_script:"adminList" }}
+</script>
+
+<script>
+  const adminList = JSON.parse(document.getElementById('adminList-data').textContent);
+  
+  alert(adminList)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Column Definitions
+        const columnDefs = [
+            { headerName: "대화사진", field: "admin_name", cellRenderer: params => `<div class="avatar avatar-md rounded-circle"><img alt="avatar" class="rounded-circle" src="{% get_static_prefix %}assets/images/faces/${params.value}.png"></div><span>${params.value}</span>`, editable: false },
+            { headerName: "아이디", field: "admin_id", editable: true },
+            { headerName: "패스워드", field: "admin_pwd", editable: true },
+            { headerName: "전화번호", field: "admin_tel_no", editable: true },
+            { headerName: "이메일", field: "admin_email", editable: true },
+            { headerName: "묶음", field: "admin_biz_area", editable: true },
+            { headerName: "직책", field: "biz_level", editable: true, cellEditor: 'agSelectCellEditor', cellEditorParams: { values: ['직원', '세무사'] } },
+            { headerName: "관리권한", field: "grade", editable: true, cellEditor: 'agSelectCellEditor', cellEditorParams: { values: ['MEM', 'SA'] } },
+            { headerName: "입사일", field: "reg_date", valueFormatter: params => new Date(params.value).toLocaleDateString() },
+            { headerName: "YS", field: "manage_YN", editable: true },
+            { headerName: "Htx_ID", field: "htx_id", editable: true },
+            { headerName: "수정/삭제", cellRenderer: params => `<button class="btn btn-primary edit-btn" onclick="editRow(${params.data.seq_no})">Edit</button><button class="btn btn-secondary" onclick="deleteRow(${params.data.seq_no})">Delete</button>` }
+        ];
+
+        // Grid Options
+        const gridOptions = {
+            columnDefs: columnDefs,
+            rowData: adminList,
+            pagination: true,
+            paginationPageSize: 50,
+            onCellValueChanged: onCellValueChanged
+        };
+
+        // Create the grid
+        const gridDiv = document.getElementById('myGrid');
+        new agGrid.Grid(gridDiv, gridOptions);
+
+        // 신규등록 버튼 클릭 시 새 행 추가
+        document.getElementById('addRowBtn').addEventListener('click', function() {
+            const newItem = {
+                admin_name: '',
+                admin_id: '',
+                admin_pwd: '',
+                admin_tel_no: '',
+                admin_email: '',
+                admin_biz_area: '',
+                biz_level: '직원',
+                grade: 'MEM',
+                reg_date: new Date().toISOString(),
+                manage_YN: '',
+                htx_id: ''
+            };
+            gridOptions.api.applyTransaction({ add: [newItem] });
+        });
+    });
+
+    // 셀 값 변경 시 호출되는 함수
+    function onCellValueChanged(params) {
+        const updatedData = params.data;
+        fetch("{% url 'admin_update' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(updatedData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('업데이트 중 에러발생:' + data.error);
+            }
+        });
+    }
+
+    // 삭제 함수
+    function deleteRow(seq_no) {
+        if (confirm("정말 삭제하시겠습니까?")) {
+            fetch(`{% url 'delete_admin' 0 %}`.replace('0', seq_no), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const rowNode = gridOptions.api.getRowNode(seq_no);
+                    gridOptions.api.applyTransaction({ remove: [rowNode.data] });
+                } else {
+                    alert('삭제 중 에러발생:' + data.error);
+                }
+            });
+        }
+    }
+
+    // 수정 함수
+    function editRow(seq_no) {
+        // 필요 시 추가 로직 구현
+    }
+</script>
+{% endblock %}

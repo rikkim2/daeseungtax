@@ -1,0 +1,330 @@
+{% load static %}
+
+<style>
+    .icon-refresh { color: white; }
+    .modal-xxl { min-width: 1200px; max-width: 1400px; }    
+
+    /* [핵심] Bootstrap과 ExtJS 충돌 방지 */
+    .ext-grid-wrapper .x-table {
+        width: auto !important; 
+        margin: 0 !important;
+    }
+    
+    /* 그리드 래퍼 */
+    .ext-grid-wrapper {
+        width: 100%;
+        /* 높이는 JS에서 설정 */
+    }
+</style>  
+
+<div class="ext-grid-wrapper"></div>
+<script>
+(function () {
+  var mainGrid, mainStore;
+  var flag = '{{ flag }}';
+  var adminBizLevel = '{{ admin_biz_level }}'.trim();
+  const isSuperuser = '{{ admin_grade }}' === 'SA';
+  var ADID = '{{ ADID }}'.trim();        
+  var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+  var work_YY = '{{ request.session.workyearPay }}';
+  var work_MM = '{{ request.session.workmonthPay }}';  
+  // 값이 없으면 현재 날짜 기준 설정
+  if(!work_YY) work_YY = new Date().getFullYear();
+  if(!work_MM) work_MM = new Date().getMonth() + 1;  
+console.log(ADID)
+  const currentYear = new Date().getFullYear();
+  var payrollYear, selectedPeriod, selectedSheetID, selectedSheetName="";
+
+  // 1. renderTopic
+  window.renderTopic = function(value, p, record) {
+      return Ext.String.format(
+          `<div style="cursor:pointer; color:blue;" 
+              onclick="window.summitModal(${record.data.seq_no}, '${Ext.String.htmlEncode(record.data.biz_name)}', ${work_YY}, ${work_MM}, 'pay');">
+              ${Ext.String.htmlEncode(value)}
+          </div>`    
+      );
+  };
+  window.summitModal = async function(seq_no, biz_name, wYY, wMM, flag) {
+  };
+  function findRenderTarget() {
+    // 1) 전체에서 "Ext 컴포넌트가 없는 래퍼" 찾기
+    var el = $('.ext-grid-wrapper').filter(function () {
+      return $(this).find('.x-grid, .x-panel, .x-component').length === 0;
+    }).last()[0];
+
+    // 2) 없으면 활성 탭에서 다시 찾기
+    if (!el) {
+      el = $('div.tab-pane.active .ext-grid-wrapper').filter(function () {
+        return $(this).find('.x-grid, .x-panel, .x-component').length === 0;
+      }).last()[0];
+    }
+    return el || null;
+  }
+  if (isSuperuser){
+    Ext.Ajax.request({
+        url: '{% url "kijang_admin_combolist" %}', // 동적으로 데이터를 가져올 API URL
+        method: 'GET',
+        success: function (response) {
+            const data = Ext.decode(response.responseText); // 응답 데이터를 파싱
+            comboDataStore.loadData(data); // store에 데이터 로드
+        },
+        failure: function () {
+            Ext.Msg.alert('오류', '데이터를 불러오는 데 실패했습니다.');
+        }
+    });
+  }
+
+  function syncParamsAndReload() {
+    var store = mainGrid.getStore();
+    var proxy = store.getProxy();
+
+    proxy.extraParams = proxy.extraParams || {};
+    proxy.extraParams.input_workyear = work_YY;
+    proxy.extraParams.work_mm        = work_MM;
+    proxy.extraParams.ADID           = ADID;
+    proxy.extraParams.flag           = flag;   // 필요하면
+
+    store.reload({
+      callback: function () {
+        if (ADID === "전체") store.group('groupManager');
+      }
+    });
+  }
+
+  function buildGrid() {
+    if (mainGrid) return;
+
+    var renderTarget = findRenderTarget();
+    if (!renderTarget) return;
+
+    // 높이가 0이면 최소 높이 부여 (탭/모달 초기 렌더 타이밍 방어)
+    if (renderTarget.clientHeight < 50) {
+      renderTarget.style.minHeight = '600px';
+    }
+
+    Ext.define('Plant', {
+      extend: 'Ext.data.Model',
+      fields: [
+        {name: 'groupManager',type: 'string'},
+        {name: 'seq_no'},
+        {name: 'biz_name', type: 'string'},
+        {name: 'isBanki', type: 'string'},
+        {name: 'wh_Kunro',type: 'string'},
+        {name: 'wh_sayoup',type: 'string'},
+        {name: 'wh_kita',type: 'string'},
+        { name: 'isKun', type: 'string' },
+        { name: 'isKunAmt', type: 'string' },
+        { name: 'isIlyoung', type: 'string' },
+        { name: 'isSa', type: 'string' },
+        { name: 'isSaAmt', type: 'string' },
+        { name: 'isKi', type: 'string' },
+        { name: 'isKiAmt', type: 'string' },
+        { name: 'YN_9', type: 'string' },
+        { name: 'isSkele', type: 'string' }
+      ]
+    });
+
+    mainStore = Ext.create('Ext.data.Store', {
+      model: 'Plant',
+      groupField: (ADID === "전체" ? 'groupManager' : null),
+      sorters: {property: 'biz_name', direction: 'ASC'},
+      proxy: {
+        type: 'ajax',
+        url: "{% url 'api_kani_sa_il_list' %}",
+        reader: { type: 'json', root: 'rows' }
+      },
+      autoLoad: false
+    });
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+        edit: function (editor, e) {
+          Ext.Ajax.request({
+            url: "{% url 'api_kani_sa_il_update' %}",
+            method: "POST",
+            params: {
+              seq_no: e.record.get('seq_no'),
+              field: e.field,
+              work_YY: (window.STATE && STATE.work_YY) || '',
+              work_MM: (window.STATE && STATE.work_MM) || '',
+              val: e.record.get(e.field)
+            },
+            failure: function () {
+              e.record.set(e.field, e.originalValue);
+              Ext.Msg.alert("오류", "저장 실패");
+            }
+          });
+        }
+      }
+    });
+    // Docked Items Config 생성
+    function onItemClickHandler(item) {
+      ADID = item;
+      syncParamsAndReload();
+      updateScrollMenuText(item);
+    }
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);      
+    function renderFlagEmoji(v){
+      return v ? "✅" : "";
+    }
+    function renderSkeletonEmoji(v){
+      return v ? "💀" : "";
+    }       
+    mainGrid = Ext.create('Ext.grid.Panel', {
+      loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
+      store: mainStore,
+      renderTo: renderTarget,
+      title: '간이지급명세서 - 사업,일용,기타 / 일용직 근로내용확인서',
+      width: '100%',
+      height: getGridHeight(),
+      columnLines: true,
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),       
+      plugins: [cellEditing],
+      selModel: { selType: 'cellmodel' },
+      columns: [
+		    {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0}, 
+        {  header: 'SEQ', dataIndex: 'seq_no',width: 50        }, 
+        {  id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',width: 140	}, 
+        { header:'반기', dataIndex:'isBanki', width:33, align:'center', renderer: renderFlagEmoji },
+        {
+          text: '원천징수 신고금액',
+          columns: [
+            { header: '<center>일용<br>(지급시기)</center>', dataIndex: 'wh_Kunro',  width: 75, xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            {	header: '<center>사업소득</center>', dataIndex: 'wh_sayoup',  width: 75, xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            {	header: '<center>기타소득</center>', dataIndex: 'wh_kita',  width: 75, xtype: 'numbercolumn', align:'right',format:'0,000'            }
+          ]		}, 
+        {
+          text: '전자신고 접수여부',
+          columns: [
+            { header:'일용', dataIndex:'isKun', width:33, renderer: renderFlagEmoji },
+            {	header: '<center>일용<br>지급금액</center>', dataIndex: 'isKunAmt',  width: 75,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            {	header: '<center>근로내용확인신고<br>접수번호</center>', dataIndex: 'isIlyoung',  width: 150, editor: { allowBlank: false }			}, 
+            { header:'사업', dataIndex:'isSa',  width:33, renderer: renderFlagEmoji },
+            {	header: '<center>사업<br>지급금액</center>', dataIndex: 'isSaAmt',  width: 75,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            { header:'기타', dataIndex:'isKi',  width:33, renderer: renderFlagEmoji },
+            {	header: '<center>기타<br>지급금액</center>', dataIndex: 'isKiAmt',  width: 75,xtype: 'numbercolumn', align:'right',format:'0,000'            }
+          ]
+		    }, 
+        {	header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   width: 250, editor: { allowBlank: false }		}, 
+        { header:'오류', dataIndex:'isSkele', width:35, renderer: renderSkeletonEmoji },
+      ],
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+          items: [
+            ...dockedItemsConfig,
+            {
+                xtype: 'buttongroup', columns: 5, frame: false,
+                defaults: { enableToggle: true, toggleGroup: 'yearGroup', margin: '0 5 0 0', style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } },
+                items: Array.from({ length: 5 }, (_, i) => ({
+                  text: `${currentYear - i}년`,
+                  pressed: currentYear - i === parseInt(work_YY, 10),
+                  handler: function () {
+                    work_YY = parseInt(this.text.replace('년', ''), 10);
+                    syncParamsAndReload();
+                  }
+                }))
+            }
+          ]
+        },
+        {
+          xtype: 'buttongroup', columns: 12,
+          defaults: { 
+            enableToggle: true, toggleGroup: 'monthGroup', margin: '0 5 0 0', 
+            style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } 
+          },
+          items: Array.from({ length: 12 }, (_, i) => ({
+              text: `${i + 1}월`,
+              pressed: i + 1 === parseInt(work_MM, 10),
+              handler: function () {
+                work_MM = parseInt(this.text.replace('월', ''), 10);
+                syncParamsAndReload();
+              }
+          })),
+          style: { background: '#fff', border: '1px solid #ccc', padding: '6px' }
+        }
+      ],
+      listeners: {
+        afterrender: function(grid) {
+             Ext.EventManager.onWindowResize(function() {
+                 if(grid && !grid.isDestroyed) {
+                     grid.setHeight(getGridHeight());
+                     grid.doLayout();
+                 }
+             });
+             setTimeout(function(){ grid.updateLayout(); }, 200);
+        }
+      }      
+    });
+    if (mainGrid) {
+        attachGridToolTip(mainGrid, '{% url "kijang_member_popup" %}?seq_no={seq_no}');
+    }      
+    
+    // proxy.extraParams 초기값 세팅 후 조회
+    mainStore.getProxy().extraParams = {
+      input_workyear: work_YY,
+      work_mm: work_MM,
+      ADID: ADID,
+      flag: flag
+    };
+    mainStore.load({
+      callback: function () {
+        if (ADID === "전체") mainStore.group('groupManager');
+      }
+    });
+
+    // 생성 직후 레이아웃 1회 보정(탭/모달 타이밍)
+    setTimeout(resizeGrid, 0);
+  }
+
+  // ───────────── [2] 높이 계산 함수 ─────────────
+  function getGridHeight() {
+      var height = window.innerHeight - 180;
+      return height > 300 ? height : 300;
+  }
+  function mkParams() {
+    return {
+      input_workyear: work_YY,
+      work_mm: work_MM,
+      ADID: ADID
+    };
+  }
+
+  function resizeGrid() {
+    if (!mainGrid) return;
+    var wrap = mainGrid.el && mainGrid.el.dom ? mainGrid.el.dom.parentElement : null;
+    if (!wrap) return;
+    var h = wrap.clientHeight;
+    if (h > 50) mainGrid.setHeight(h);
+    mainGrid.doLayout();
+  }
+
+  Ext.onReady(function () {
+    // 최초 active 탭이면 바로 생성
+    buildGrid();
+
+    // 탭 전환 시 생성 + 리사이즈
+    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(function (el) {
+      el.addEventListener('shown.bs.tab', function () {
+        buildGrid();
+        resizeGrid();
+      });
+    });
+
+    window.addEventListener('resize', resizeGrid);
+  });
+})();
+
+</script>

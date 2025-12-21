@@ -1,0 +1,338 @@
+{% extends 'components/mobile-base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        {% load humanize %}
+
+<table class="body"
+        style="background: {{ coverBGColor }}; border-collapse: collapse; border-spacing: 0;
+               font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; height: 100%;
+               line-height: 40px; margin: 0; padding: 0; text-align: left; vertical-align: top; width: 100%"
+        bgcolor="{{ coverBGColor }}">
+   <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+     <!-- 최상단 여백 padding 10 -->
+     <td class="center"
+         style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                line-height: 0px; margin: 0; padding: 0px 0 0 0; text-align: center; vertical-align: top; word-break: break-word"
+         align="center" valign="top">
+       <center style="min-width: {{ totalWidth }}px; width: 100%">
+         <table class="container"
+                style="background: white; border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0;
+                       text-align: inherit; vertical-align: top; width: {{ totalWidth }}px"
+                bgcolor="white">
+           <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+             <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                        font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                        line-height: 0px; margin: 0; padding: 0; text-align: left; vertical-align: top; word-break: break-word"
+                 align="left" valign="top">
+ 
+               <!-- 상단 타이틀박스 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px;
+                             position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <!-- 좌측하단 및 가운데 보라 -->
+                 <tr class="header" style="padding: 0; text-align: left; vertical-align: top" align="left" bgcolor="{{ titleColor }}">
+                   <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                              font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                              line-height: 26px; margin: 0; padding: 0 0px; position: relative; text-align: left; vertical-align: top; word-break: break-word"
+                       align="left" valign="top">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0;
+                                   text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                         <td class="six sub-column"
+                             style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                    font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                                    line-height: 50px; margin: 0; min-width: 0px; padding: 0 10px 0 0px; text-align: left;
+                                    vertical-align: top; width: 70%; word-break: break-word"
+                             align="left" valign="top">
+                           <!-- 좌측 상단 보라 -->
+                           <table class="header" style="background: {{ titleColor }}; border-collapse: collapse; border-spacing: 0; padding: 0; text-align: left; vertical-align: top; width: 100%">
+                             <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                               <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                          font-family: {{ txtfontFamily }}; font-size: 18px; font-weight: bold; hyphens: none;
+                                          line-height: 30px; margin: 0; padding: 10px 5px; text-align: left; vertical-align: top; word-break: break-word"
+                                   align="left" valign="top">
+                                 부가가치세 신고서 접수증
+                               </td>
+                             </tr>
+                           </table>
+                         </td>
+ 
+                         <td class="six sub-column last"
+                             style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                    font-family: {{ txtfontFamily }}; font-size: 35px; font-weight: bold; hyphens: none;
+                                    line-height: 50px; margin: 0; min-width: 0px; padding: 0 0px; text-align: left; vertical-align: top; width: 30%; word-break: break-word"
+                             align="left" valign="top">
+                           <!-- 우측보라 -->
+                           <table class="header" style="background: {{ titleColor }}; border-collapse: collapse; border-spacing: 0; padding: 0; text-align: left; vertical-align: top; width: 100%">
+                             <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                               <td class="align-right"
+                                   style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                          font-family: {{ txtfontFamily }}; font-size: 25px; font-weight: normal; hyphens: none;
+                                          line-height: 30px; margin: 0; padding: 0px 0px; text-align: right; vertical-align: top; word-break: break-word"
+                                   align="right" valign="top">
+                                 <img src="{% static 'assets/images/summit/hometaxImg.png' %}" valign="top" width="120" height="40" alt="hometax">
+                               </td>
+                             </tr>
+                           </table>
+                         </td>
+ 
+                         <td class="expander"
+                             style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                    font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                                    line-height: 26px; margin: 0; padding: 0; text-align: left; vertical-align: top; visibility: hidden; width: 0px; word-break: break-word"
+                             align="left" valign="top"></td>
+                       </tr>
+                     </table>
+                   </td>
+                 </tr>
+               </table>
+ 
+               <!-- 전체 분리 라인 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                   <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                              font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                              line-height: 26px; margin: 0; padding: 0 0px; position: relative; text-align: left; vertical-align: top; word-break: break-word"
+                       align="left" valign="top">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                         <td class="divider"
+                             style="-moz-hyphens: none; -webkit-hyphens: none; border-bottom-color: #dadada; border-bottom-style: solid; border-bottom-width: 1px;
+                                    border-collapse: collapse !important; font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; height: 1px; hyphens: none;
+                                    line-height: 26px; margin: 0; padding: 0 10px; text-align: left; vertical-align: top; word-break: break-word"
+                             align="left" valign="top">
+                         </td>
+                       </tr>
+                     </table>
+                   </td>
+                   <td class="expander"
+                       style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                              font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                              line-height: 26px; margin: 0; padding: 0; text-align: left; vertical-align: top; visibility: hidden; width: 0px; word-break: break-word"
+                       align="left" valign="top"></td>
+                 </tr>
+               </table>
+ 
+               <!-- 신고자정보 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                   <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                              font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                              line-height: 26px; margin: 0; padding: 0 0px; position: relative; text-align: left; vertical-align: top; word-break: break-word"
+                       align="left" valign="top">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                         <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                    font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                                    line-height: 18px; margin: 0; padding: 5px 0 0; text-align: left; vertical-align: top; word-break: break-word"
+                             align="left" valign="top"></td>
+                       </tr>
+                       <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                         <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                                    font-family: {{ txtfontFamily }}; font-size: 10px; font-weight: normal; hyphens: none;
+                                    line-height: 18px; margin: 0; padding: 0 10px 16px; text-align: left; vertical-align: top; word-break: break-word"
+                             align="left" valign="top">
+                           <table style="border-collapse: collapse; border-spacing: 0;">
+                             <tr><td style="{{ navi3pxBottom }}" colspan="4"></td></tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family: {{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; margin:0; background-color:#e9e9e9;">접수결과</td>
+                               <td colspan="3" width="290" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family: {{ txtfontFamily }}; font-size:12px; font-weight:normal;">정상</td>
+                             </tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family: {{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; margin:0; background-color:#e9e9e9;">사용자 ID</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 10; text-align:center; font-family: {{ txtfontFamily }}; font-size:12px;">
+                                 d*********
+                               </td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family: {{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; margin:0; background-color:#e9e9e9;">사용자명</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family: {{ txtfontFamily }}; font-size:12px;">
+                                 세무법인 대승
+                               </td>
+                             </tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family: {{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; margin:0; background-color:#e9e9e9;">접수번호</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 10; text-align:center; font-family: {{ txtfontFamily }}; font-size:12px;">
+                                 {{ majorNum }}
+                               </td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family: {{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; margin:0; background-color:#e9e9e9;">접수일시</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family: {{ txtfontFamily }}; font-size:12px;">
+                                 {{ majorDate }}
+                               </td>
+                             </tr>
+                           </table>
+                         </td>
+                       </tr>
+                     </table>
+                   </td>
+                 </tr>
+               </table>
+ 
+               <!-- 제출내역 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <tr style="padding: 0; text-align: left; vertical-align: top" align="left">
+                   <td style="-moz-hyphens: none; -webkit-hyphens: none; border-collapse: collapse !important;
+                              font-family: {{ txtfontFamily }}; font-size: 12px; font-weight: normal; hyphens: none;
+                              line-height: 26px; margin: 0; padding: 0 0px; position: relative; text-align: left; vertical-align: top; word-break: break-word"
+                       align="left" valign="top">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr>
+                         <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important;
+                                    font-family:{{ txtfontFamily }}; font-size:12px; line-height:18px; margin:0; padding:5px 10px 0;
+                                    text-align:left; vertical-align:top; word-break:break-word">
+                           <p style="color:#004c6c; font-family:{{ txtfontFamily }}; font-size:15px; font-weight:bold; line-height:18px; margin:0; padding:0; text-align:left">
+                            ✅ 제출내역
+                           </p>
+                         </td>
+                       </tr>
+                       <tr>
+                         <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important;
+                                    font-family:{{ txtfontFamily }}; font-size:10px; line-height:18px; margin:0; padding:0 10px 16px; text-align:left">
+                           <table style="border-collapse: collapse; border-spacing: 0;">
+                             <tr><td style="{{ navi3pxBottom }}" colspan="4"></td></tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">상호</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{ majorBizName }}</td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">사업자번호</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">
+                                 {{ majorBizNo }}
+                               </td>
+                             </tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">신고서종류</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{ majorFlag }}</td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">접수방법</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{majorIssue}}</td>
+                             </tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">첨부한서류</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{majorChumbu}}</td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">신고구분</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{ majorDesc }}</td>
+                             </tr>
+                           </table>
+                         </td>
+                       </tr>
+                     </table>
+                   </td>
+                 </tr>
+               </table>
+ 
+               <!-- 멘트 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <tr>
+                   <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:12px; line-height:36px; margin:0; padding:0">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr>
+                         <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:10px; line-height:18px; margin:10px 0 0; padding:0 10px 10px; text-align:left">
+                           <table style="border-collapse: collapse; border-spacing: 20px;">
+                             <tr>
+                               <td width="{{ totalWidth }}px" height="55"
+                                   style="text-align:center; font-family:{{ txtfontFamily }}; font-size:16px; font-weight:bold; line-height:35px; background:#e9e9e9;">
+                                 국세청 홈택스에 위와 같이 <font color="red">접수되었습니다.</font>
+                               </td>
+                             </tr>
+                           </table>
+                         </td>
+                       </tr>
+                     </table>
+                   </td>
+                 </tr>
+               </table>
+ 
+               <!-- 상세내역 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <tr>
+                   <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:12px; line-height:26px; margin:0; padding:0">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr>
+                         <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:12px; line-height:18px; margin:0; padding:5px 10px 0; text-align:left">
+                           <p style="color:#004c6c; font-family:{{ txtfontFamily }}; font-size:15px; font-weight:bold; line-height:18px; margin:0; padding:0; text-align:left">
+                            ✅ 상세내역
+                           </p>
+                         </td>
+                       </tr>
+                       <tr>
+                         <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:10px; line-height:18px; margin:0; padding:0 10px 10px; text-align:left">
+                           <table style="border-collapse: collapse; border-spacing: 0;">
+                             <tr><td style="{{ navi3pxBottom }}" colspan="4"></td></tr>
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">신고년기</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{ major0 }}</td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">신고기간</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 10; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{ major1 }}</td>
+                             </tr>
+                    
+                             <tr>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">과세표준</td>
+                               <td width="110" style="{{ navi1pxBottom }}{{ navi1pxRight }}padding:0 20; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">{{major4|floatformat:0|intcomma}}</td>
+                               <td width="90" style="{{ navi1pxBottom }}{{ navi1pxRight }}text-align:center; font-family:{{ txtfontFamily }}; font-size:12px; font-weight:bold; line-height:26px; background:#e9e9e9;">차감납부세액</td>
+                               <td width="110" style="{{ navi1pxBottom }}padding:0 20; text-align:center; font-family:{{ txtfontFamily }}; font-size:12px;">
+                                 {{ major5|floatformat:0|intcomma }}
+                               </td>
+                             </tr>
+                           </table>
+                         </td>
+                       </tr>
+                     </table>
+                   </td>
+                 </tr>
+               </table>
+ 
+               <!-- 전체 분리 라인 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display: block; padding: 0px; position: relative; text-align: left; vertical-align: top; width: 100%">
+                 <tr>
+                   <td style="-moz-hyphens:none; -webkit-hyphens:none; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:12px; line-height:26px; margin:0; padding:0">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; text-align: left; vertical-align: top; width: {{ totalWidth }}px">
+                       <tr>
+                         <td class="divider" style="-moz-hyphens:none; -webkit-hyphens:none; border-bottom:1px solid #dadada; border-collapse:collapse!important; font-family:{{ txtfontFamily }}; font-size:12px; height:1px; line-height:26px; margin:0; padding:0 60px;"></td>
+                       </tr>
+                     </table>
+                   </td>
+                   <td class="expander" style="visibility:hidden; width:0;"></td>
+                 </tr>
+               </table>
+ 
+               <!-- 라인하단 공백 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display:block; padding:0; position:relative; width:100%">
+                 <tr>
+                   <td style="font-family:{{ txtfontFamily }}; font-size:10px; line-height:8px; margin:0; padding:0;">
+                     <table style="border-collapse: collapse; border-spacing: 0; margin: 0 auto; padding: 0; width: {{ totalWidth }}px">
+                       <tr>
+                         <td class="section-start-hero" style="font-family:{{ txtfontFamily }}; font-size:10px; line-height:8px; margin:0; padding:10px 0 0;"></td>
+                         <td class="expander" style="visibility:hidden; width:0;"></td>
+                       </tr>
+                     </table>
+                   </td>
+                 </tr>
+               </table>
+ 
+               <!-- 대승이미지/푸터 -->
+               <table style="border-collapse: collapse; border-spacing: 0; display:block; padding:0; position:relative; vertical-align:middle; width:100%">
+                 <tr>
+                   <td style="width:360px; text-align:left; color:#998e97; padding:0 0 0 10px; font-family:{{ txtfontFamily }};">{{ underTxt_BS }}</td>
+                   <td style="width:360px; text-align:right;" align="right" valign="middle">
+                     <img src="{% static 'assets/images/brand/DS_LOGO_full.png' %}"
+                          style="-ms-interpolation-mode:bicubic; clear:both; display:block; float:right; max-width:100%; outline:none; text-decoration:none; width:auto"
+                          alt="logo">
+                   </td>
+                 </tr>
+               </table>
+ 
+             </td>
+           </tr>
+         </table>
+       </center>
+     </td>
+   </tr>
+ </table>
+        
+							
+
+		{% endblock %}
+
+	{% block scripts %}
+	{% endblock %}

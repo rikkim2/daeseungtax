@@ -1,0 +1,340 @@
+﻿{% load static %}
+<!--APP-SIDEBAR-->
+<div class="sticky">
+  <div class="app-sidebar__overlay" data-bs-toggle="sidebar"></div>
+  <div class="app-sidebar">
+    <div class="side-header">
+      <a class="header-brand1" href="{% url 'dsboard' %}">
+        <img src="{% static 'assets/images/brand/DS_LOGO_full_white.png' %}" class="header-brand-img desktop-logo wpx-200 hpx-30" alt="logo">
+        <img src="{% static 'assets/images/brand/DS_LOGO.png' %}" class="header-brand-img toggle-logo wpx-30 hpx-25" alt="logo">
+        <img src="{% static 'assets/images/brand/DS_LOGO.png' %}" class="header-brand-img light-logo wpx-30 hpx-25" alt="logo">
+        <img src="{% static 'assets/images/brand/DS_LOGO_full.svg' %}" class="header-brand-img light-logo1 wpx-200  hpx-30" alt="logo">
+      </a>
+    </div>
+
+    <div class="main-sidemenu">
+      <div class="slide-left disabled" id="slide-left">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24"><path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z"/></svg>
+      </div>
+
+      {% if not request.user.first_name %}
+      <!-- ====================== 로그인 이름이 없는 경우 ====================== -->
+      <ul class="side-menu">
+        <li><h3>Manager</h3></li>
+
+        <li class="slide">
+          <a class="side-menu__item has-link" data-bs-toggle="slide" href="#">
+            <i class="fe fe-home side-menu__icon"></i>
+            <span class="side-menu__label">{{memadmin.admin_name}}</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'staffInfo'%}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">Profile</a></li>
+            <li><a href="staffOff" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">연월차내역</a></li>
+            <li><a href="{% url 'staffList' %}?flag=Pro" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">업무성과</a></li>
+            {% if request.session.Admin_Grade == 'SALE'  or request.session.Admin_Grade == 'SA' %}
+            <li><a href="{% url 'staffList' %}?flag=SalePro" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">마케팅수수료</a></li>
+            {% endif %}
+            {% if request.user.is_superuser %}
+            <li><a href="overchargeList" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">특근승인하기<span class="badge badge-sm bg-secondary badge-hide ms-auto">super</span></a></li>
+            <li><a href="{% url 'staffList' %}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">담당자관리<span class="badge badge-sm bg-secondary badge-hide ms-auto">super</span></a></li>
+            {% endif %}
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="fe fe-inbox side-menu__icon"></i>
+            <span class="side-menu__label">회원관리</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mnguser' %}?flag=All" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">기장회원관리</a></li>
+            <li><a href="{% url 'mnguser' %}?flag=Can" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">해임회원관리</a></li>
+            {% if request.user.is_superuser %}
+            <li><a href="{% url 'mnguser' %}?flag=Nor" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">일반가입회원</a></li>
+            {% endif %}
+            <li><a href="vatAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">등기부 주주명부 관리</a></li>
+            <li><a href="{% url 'mnguser' %}?flag=Goji" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">고지/체납세액 안내</a></li>
+
+            <li class="sub-slide">
+              <a class="sub-side-menu__item" data-bs-toggle="sub-slide" href="#"><span class="sub-side-menu__label">발송관리</span><i class="sub-angle fa fa-angle-right"></i></a>
+              <ul class="sub-slide-menu">
+                <li><a class="sub-slide-item" href="#" data-tab="true" onclick="return openEmbedPage(event, this);">증명서발송(HTX)</a></li>
+                <li><a class="sub-slide-item" href="#" data-tab="true" onclick="return openEmbedPage(event, this);">등기발송관리</a></li>
+                <li><a class="sub-slide-item" href="{% url 'mngMsg' %}?flag=sms" data-tab="true" onclick="return openEmbedPage(event, this);">문자발송(단체)</a></li>
+                <li><a class="sub-slide-item" href="{% url 'mngMsg' %}?flag=mail" data-tab="true" onclick="return openEmbedPage(event, this);">메일발송(단체)</a></li>
+              </ul>
+            </li>
+
+            <li><a href="vatAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">연구비 사전심사 안내</a></li>
+            <li><a href="vatAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">매출세금계산서 발송대행</a></li>
+
+            {% if request.user.is_superuser %}
+            <li class="sub-slide">
+              <a class="sub-side-menu__item" data-bs-toggle="sub-slide" href="#"><span class="sub-side-menu__label">스크래핑관리</span><i class="sub-angle fa fa-angle-right"></i></a>
+              <ul class="sub-slide-menu">
+                <li><a href="{% url 'mngScrap' %}?flag=Mon" class="sub-slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">월별 전자세계 신용카드 카톡</a></li>
+                <li><a href="{% url 'mngScrap' %}?flag=Qtr" class="sub-slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">분기별 예상세액 카톡</a></li>
+                <li><a href="{% url 'mngScrap' %}?flag=Card" class="sub-slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">사업용신용카드 공제설정</a></li>
+              </ul>
+            </li>
+            <li><a href="vatAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">성과관리<span class="badge badge-sm bg-secondary badge-hide ms-auto">super</span></a></li>
+            <li><a href="vatAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">기장료인상<span class="badge badge-sm bg-secondary badge-hide ms-auto">super</span></a></li>
+            {% endif %}
+          </ul>
+        </li>
+
+        <li class="slide">
+          <!-- leaf: data-bs-toggle 제거, 탭으로 열기 -->
+          <a class="side-menu__item" href="{% url 'mngStat' %}" data-tab="true" onclick="return openEmbedPage(event, this);">
+            <i class="icon icon-calculator side-menu__icon"></i>
+            <span class="side-menu__label">기장보고서·가결산</span>
+          </a>
+        </li>
+
+        <li><h3>신고현황</h3></li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-briefcase side-menu__icon"></i>
+            <span class="side-menu__label">부가가치세·사업장현황신고</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mngVat' %}?flag=Vat" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">과세 부가세신고</a></li>
+            <li><a href="{% url 'mngVat' %}?flag=noneVat" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">면세 사업장현황신고</a></li>
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="fe fe-users side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"></i>
+            <span class="side-menu__label">인건비</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mngPay' %}?flag=payroll" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">원천세신고</a></li>
+
+            <li class="sub-slide">
+              <a class="sub-side-menu__item" data-bs-toggle="sub-slide" href="#"><span class="sub-side-menu__label">간이지급명세서</span><i class="sub-angle fa fa-angle-right"></i></a>
+              <ul class="sub-slide-menu">
+                <li><a class="sub-slide-item" href="{% url 'mngPay' %}?flag=kaniKunro" data-tab="true" onclick="return openEmbedPage(event, this);">근로</a></li>
+                <li><a class="sub-slide-item" href="{% url 'mngPay' %}?flag=kaniSail" data-tab="true" onclick="return openEmbedPage(event, this);">사업·일용·기타</a></li>
+              </ul>
+            </li>
+
+            <li class="sub-slide">
+              <a class="sub-side-menu__item" data-bs-toggle="sub-slide" href="#"><span class="sub-side-menu__label">연간업무</span><i class="sub-angle fa fa-angle-right"></i></a>
+              <ul class="sub-slide-menu">
+                <li><a href="{% url 'mngPay' %}?flag=yearend" class="sub-slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">연말정산·보수총액신고</a></li>
+                <li><a href="{% url 'mngPay' %}?flag=zzjsKita" class="sub-slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">지급명세서</a></li>
+              </ul>
+            </li>
+
+            <li><a href="{% url 'mngPay' %}?flag=payReport" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">인사급여 분석</a></li>
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-disc side-menu__icon"></i>
+            <span class="side-menu__label">법인세</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mngCorp' %}?flag=bank" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">통장관리</a></li>
+            <li><a href="{% url 'mngCorp' %}?flag=helper" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">신고서작성 도우미</a></li>
+            <li><a href="{% url 'mngCorp' %}?flag=jungki" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">법인세(정기)</a></li>
+            <li><a href="{% url 'mngCorp' %}?flag=jungkan" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">법인세(중간)</a></li>
+          </ul>
+        </li>
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-support side-menu__icon"></i>
+            <span class="side-menu__label">종합소득세</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="corpSingo" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">감면공제체크</a></li>
+            <li><a href="{% url 'mngIncome' %}?flag=jungki" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">종합소득세(정기)</a></li>
+            <li><a href="corpAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">종합소득세(중간)</a></li>
+          </ul>
+        </li>
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-cup side-menu__icon"></i>
+            <span class="side-menu__label">FAQ</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="faqAI" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">인건비 발생</a></li>
+            <li><a href="faqMan" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">인건비 발생</a></li>
+            <li><a href="faqLabor" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">성실신고사업자</a></li>
+            <li><a href="faqElec" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">전자세금계산서</a></li>
+          </ul>
+        </li>
+
+        {% if request.user.is_superuser %}
+        <li><h3>자동업무</h3></li>
+
+        <li class="slide">
+          <a class="side-menu__item has-link" href="auto" data-tab="true" onclick="return openEmbedPage(event, this);">
+            <i class="icon icon-share side-menu__icon"></i>
+            <span class="side-menu__label">전체업무</span>
+          </a>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-diamond side-menu__icon"></i>
+            <span class="side-menu__label">월간업무</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="statementBS" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">세계신카현영조회</a></li>
+            <li><a href="statementIS" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">손익계산서</a></li>
+            <li><a href="statementMC" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">제조원가명세서</a></li>
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-star side-menu__icon"></i>
+            <span class="side-menu__label">분기업무</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="slipLedgr" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">계정별원장</a></li>
+            <li><a href="traderLedgr" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">거래처원장</a></li>
+          </ul>
+        </li>
+
+        <li><h3>업무현황</h3></li>
+        <li class="slide">
+          <a class="side-menu__item has-link" href="bizMail" data-tab="true" onclick="return openEmbedPage(event, this);">
+            <i class="icon icon-envelope-letter side-menu__icon"></i>
+            <span class="side-menu__label">업무메일</span>
+          </a>
+        </li>
+
+        <li><h3>고객지원</h3></li>
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-docs side-menu__icon"></i>
+            <span class="side-menu__label">블로그</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'blog_new' %}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">새글 업로드</a></li>
+            <li><a href="{% url 'blog_list' %}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">블로그리스트</a></li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+
+      {% else %}
+      <!-- ====================== 로그인 이름이 있는 경우 (else) ====================== -->
+      <ul class="side-menu">
+        <li><h3>Manager</h3></li>
+
+        <li class="slide">
+          <a class="side-menu__item has-link" data-bs-toggle="slide" href="#">
+            <i class="fe fe-home side-menu__icon"></i>
+            <span class="side-menu__label">{{memadmin.admin_name}}</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'staffInfo'%}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">Profile</a></li>
+            <li><a href="{% url 'staffList' %}?flag=SalePro" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">마케팅수수료</a></li>
+            {% if request.user.is_superuser %}
+            <li><a href="{% url 'staffList' %}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">담당자관리<span class="badge badge-sm bg-secondary badge-hide ms-auto">super</span></a></li>
+            {% endif %}
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="fe fe-inbox side-menu__icon"></i>
+            <span class="side-menu__label">회원관리</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mnguser' %}?flag=All" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">기장회원관리</a></li>
+            <li><a href="{% url 'mnguser' %}?flag=Can" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">해임회원관리</a></li>
+          </ul>
+        </li>
+
+        {% if request.user.is_superuser %}
+        <li><h3>신고현황</h3></li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-briefcase side-menu__icon"></i>
+            <span class="side-menu__label">부가가치세</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="vatSingo" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">신고관리</a></li>
+            <li><a href="vatAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">사업용카드 결과통보<span class="badge badge-sm bg-warning badge-hide ms-auto">IMP</span></a></li>
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="fe fe-users side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"></i>
+            <span class="side-menu__label">인건비</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mngPay' %}?flag=payroll" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">원천세신고</a></li>
+
+            <li class="sub-slide">
+              <a class="sub-side-menu__item" data-bs-toggle="sub-slide" href="#"><span class="sub-side-menu__label">간이지급명세서</span><i class="sub-angle fa fa-angle-right"></i></a>
+              <ul class="sub-slide-menu">
+                <li><a class="sub-slide-item" href="{% url 'mngPay' %}?flag=kaniKunro" data-tab="true" onclick="return openEmbedPage(event, this);">근로</a></li>
+                <li><a class="sub-slide-item" href="{% url 'mngPay' %}?flag=kaniKita" data-tab="true" onclick="return openEmbedPage(event, this);">사업·일용·기타</a></li>
+              </ul>
+            </li>
+
+            <li class="sub-slide">
+              <a class="sub-side-menu__item" data-bs-toggle="sub-slide" href="#"><span class="sub-side-menu__label">연간업무</span><i class="sub-angle fa fa-angle-right"></i></a>
+              <ul class="sub-slide-menu">
+                <li><a class="sub-slide-item" href="{% url 'mngPay' %}?flag=yearend" data-tab="true" onclick="return openEmbedPage(event, this);">연말정산·보수총액신고</a></li>
+                <li><a class="sub-slide-item" href="{% url 'mngPay' %}?flag=zzjsKita" data-tab="true" onclick="return openEmbedPage(event, this);">지급명세서</a></li>
+              </ul>
+            </li>
+
+            <li><a href="{% url 'mngPay' %}?flag=payReport" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">인사급여 분석</a></li>
+          </ul>
+        </li>
+
+        <!-- 면세 · 비영리 (leaf) -->
+        <li class="slide">
+          <a class="side-menu__item" href="statementReport" data-tab="true" onclick="return openEmbedPage(event, this);">
+            <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M2.25,8.4521484l9.5,5.4804688C11.8259277,13.9767456,11.9121704,14,12,14s0.1740723-0.0232544,0.25-0.0673828l9.5-5.4804688c0.0759888-0.0438843,0.1390381-0.1069946,0.1829224-0.1829224C22.071106,8.0300293,21.9891968,7.7241211,21.75,7.5859375l-9.5-5.4755859c-0.1550903-0.0878906-0.3449097-0.0878906-0.5,0l-9.5,5.4755859C2.1740112,7.6298218,2.1109619,7.6929321,2.0670776,7.7688599C1.928894,8.0080566,2.0108032,8.3139648,2.25,8.4521484z M12,3.1210938l8.4990234,4.8984375L12,12.9228516L3.5009766,8.0195312L12,3.1210938z M21.2479858,15.5263672L12,20.9208984l-9.2481079-5.3945312c-0.2384033-0.1391602-0.5444336-0.0587158-0.6835938,0.1796875s-0.0587158,0.5444336,0.1796875,0.6835938l9.5,5.5419922C11.8244019,21.9765015,11.911377,22.0001221,12,22c0.088562,0.0001221,0.1755371-0.0234985,0.2518921-0.0683594l9.5-5.5419922c0.2384033-0.1391602,0.3188477-0.4451904,0.1796875-0.6835938S21.4863892,15.387207,21.2479858,15.5263672z M21.2479858,11.5263672L12,16.9208984l-9.2481079-5.3945312c-0.2384033-0.1391602-0.5444336-0.0587158-0.6835938,0.1796875s-0.0587158,0.5444336,0.1796875,0.6835938l9.5,5.5419922C11.8244019,17.9765015,11.911377,18.0001221,12,18c0.088562,0.0001221,0.1755371-0.0234985,0.2518921-0.0683594l9.5-5.5419922c0.2384033-0.1391602,0.3188477-0.4451904,0.1796875-0.6835938S21.4863892,11.387207,21.2479858,11.5263672z"/></svg>
+            <span class="side-menu__label">면세 · 비영리</span>
+          </a>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-disc side-menu__icon"></i>
+            <span class="side-menu__label">법인세</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="{% url 'mngCorp' %}?flag=bank" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">통장관리</a></li>
+            <li><a href="{% url 'mngCorp' %}?flag=helper" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">신고서작성 도우미</a></li>
+            <li><a href="{% url 'mngCorp' %}?flag=jungki" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">법인세(정기)</a></li>
+            <li><a href="{% url 'mngCorp' %}?flag=jungkan" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">법인세(중간)</a></li>
+          </ul>
+        </li>
+
+        <li class="slide">
+          <a class="side-menu__item" data-bs-toggle="slide" href="#">
+            <i class="icon icon-support side-menu__icon"></i>
+            <span class="side-menu__label">종합소득세</span><i class="angle fa fa-angle-right"></i>
+          </a>
+          <ul class="slide-menu">
+            <li><a href="corpSingo" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">감면공제체크</a></li>
+            <li><a href="{% url 'mngIncome' %}?flag=jungki" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">종합소득세(정기)</a></li>
+            <li><a href="corpAnaly" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">종합소득세(중간)</a></li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+      {% endif %}
+
+      <div class="slide-right" id="slide-right">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24"><path d="M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+<!--/APP-SIDEBAR-->

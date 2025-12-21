@@ -1,0 +1,915 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+{% load humanize %}
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+						<!-- PAGE-HEADER -->
+            <div class="page-header">
+              <div>
+                <h1 class="page-title">{{memuser.biz_name}}</h1>
+              </div>
+              <div class="ms-auto pageheader-btn">
+                <ol class="breadcrumb">
+                  <li class="breadcrumb-item">회사정보</li>
+                  <li class="breadcrumb-item"><a href="javascript:void(0);">{{memuser.biz_name}}</a></li>
+                  <!-- <li class="breadcrumb-item active" aria-current="page">증빙서류 보관현황</li> -->
+                </ol>
+              </div>
+            </div>
+						<!-- PAGE-HEADER END -->
+
+						<!-- ROW-1 -->
+						
+						<!-- ROW-1 END-->
+
+						<!-- ROW-2 -->
+						<div class="row">
+              <div class="col-xl-12 col-md-12 ">
+                <!--card-->
+                <div class="card">
+                  <div class="card-body ">
+                    <div class="row">
+                      <div class="col-xl-6 col-md-12 ">
+                        <div class="card mb-0">
+                          <div class="card-body">
+                            <div class="client-title mt-0">
+                              
+                              <div class="card-body text-wrap d-flex flex-row justify-content-center">
+                                <div class="avatar-container avatar-xl ">
+                                  
+                                  <form method="POST" id="thumbForm" action="{% url 'fileuploadCompanyInfo' %}" enctype="multipart/form-data">
+                                  {% csrf_token %}
+                                  {% if userProfile %}
+                                    <!-- <img id="uploadImg" class="avatar avatar-xxl brround cover-image" src="{{ userProfile.image.url }}"> -->
+                                    <span class="avatar avatar-xxl brround cover-image cover-image" data-bs-image-src="{{ userProfile.image.url }}"></span>
+                                  {% else %}
+                                    <!-- <img src="{% static 'assets/images/faces/blank.jpg' %}" alt="profile-user"
+                                  class="avatar avatar-xxl brround cover-image"> -->
+                                  <span class="avatar avatar-xxl brround cover-image cover-image" data-bs-image-src="{% static 'assets/images/faces/blank.jpg' %}"></span>
+                                  {% endif %}
+                                  <input type="hidden" name="title" value="{{memuser.seq_no}}"/>
+                                  <input type="hidden" name="description" value="{{dateNow}}"/>
+                                  <input class="real-upload" type="file" name="image" accept=" image/jpeg, image/png, text/html, application/zip, text/css, text/js" multiple style="display: none;"/>
+                                  <span class="badge bg-success rounded-pill ms-6 avatar-icon-badge upload" ><i class="fe fe-camera "></i></span>
+                                  </form>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="text-center">
+                              <h4 class="h4 mb-0 mt-3"><small class="op-0-7 pr-1">대 표 자</small>
+                                {{memuser.ceo_name}}</h4>
+                              <div class="text-center my-4">
+                                <span class="badge bg-primary-gradient my-1">{{memuser.uptae}}</span>
+                                <span class="badge bg-success-gradient my-1">{{memuser.jongmok}}</span>
+                              </div>
+                              <p className="opacity-6 mb-6">
+                                {{memuser.biz_addr1}} {{memuser.biz_addr2}}
+                              </p>
+                            </div>                            
+                            <div class="d-flex align-items-center justify-content-center mt-4">
+                              <div class="pe-2 border-end d-flex align-items-center justify-content-center">
+                                <div class="main-profile-contact-list">
+                                  <div class="media mx-1">
+                                    <div class="media-icon bg-primary-transparent text-primary"><a href="tel:{{memuser.hp_no}}"><i class="fe fe-phone fs-21"></i></a></div>
+                                    <div class="media-body ms-1">
+                                      <span class="text-muted">대표전화</span>
+                                      <p class="mb-0"> {{memuser.hp_no}}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="ms-2 d-flex align-items-center justify-content-center">
+                                <div class="main-profile-contact-list">
+                                  <div class="media mx-1">
+                                    <div class="media-icon bg-success-transparent text-success"> <i class="fe fe-mail fs-21"></i> </div>
+                                    <div class="media-body ms-1">
+                                      <span class="text-muted">이메일</span>
+                                      <p class="mb-0"> {{memuser.email}} </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="table-responsive p-0">
+                              <table class="table row table-borderless">
+                                <tbody class="col-lg-12 col-xl-6 p-0">
+                                  <tr>
+                                    <td>사업개시일 : {{regDate}}</td>
+                                  </tr>
+                                  <tr>
+                                    <td>기업부설연구소 : <span class="badge rounded-pill bg-{{colorRND}} my-1">{{isRND}}</span></td>
+                                  </tr>
+                                </tbody>
+                                <tbody class="col-lg-12 col-xl-6 p-0 border-top-0">
+                                  <tr>
+                                    <td>기장업무 시작일 : {{createdDate}}</td>
+                                  </tr>
+                                  <tr>
+                                    <td>벤처기업승인 : <span class="badge rounded-pill bg-{{colorVENTURE}} my-1">{{isVENTURE}}</span></td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>                            
+                          </div>
+                          <div class="card-body">
+                            <div class="client-title mt-0">
+                              <figure class="rounded-circle align-self-start mb-0">
+                                <img src="{% get_static_prefix %}assets/images/faces/{{memadmin.admin_name}}.png" alt="Generic placeholder image" class="avatar brround avatar-lg me-3">
+                              </figure>
+                              <div class="media-body">
+                                <h4 class="time-title p-0 mb-0 font-weight-semibold leading-normal"><span class="text-dark">업무 담당자</span></h4>
+                                <span class="text-muted">{{memadmin.admin_name}}</span>
+                              </div>
+                              <button class="btn btn-primary d-none d-sm-block me-2"><a href="sms:{{memadmin.admin_tel_no}}" class="text-white"><i class="fa fa-comments"></i></a> </button>
+                              <button class="btn btn-info d-none d-sm-block"><a href="tel:{{memadmin.admin_tel_no}}" class="text-white"><i class="fa fa-phone"></i></a></button>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center mt-4">
+                              <div class="pe-4 border-end d-flex align-items-center justify-content-center">
+                                <p><i class="fa fa-phone me-3 mb-0"></i>{{memadmin.admin_tel_no}}</p>
+                              </div>
+                              <div class="ms-4 d-flex align-items-center justify-content-center">
+                                <p><a href="mailto:daeseung23@gmail.com" class="text-dark"><i class="fa fa-envelope me-3 mb-0"></i></a> daeseung23@gmail.com</p>
+                              </div>
+                            </div>   
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-xl-6 col-md-12 ">
+                        <div class="card card-blog-overlay2 op-0-8 h-100 ">
+                          <div class="card-body  text-white pt-xl-10">
+                            <div class="d-flex flex-row justify-content-center" style="margin-top: 21rem !important;">
+                              <!-- <Button
+                                onClick={toggle2}
+                                class="btn-success-gradient btn-pill btn-lg ">
+                                <span className="btn-wrapper--icon">
+                                  <FontAwesomeIcon icon={['far', 'envelope']} />
+                                </span>
+                                <span>주요업무 요청</span>
+                              </Button> -->
+                              <button class="btn-success-gradient btn-pill btn-lg ms-6" onclick="basicSheet('{{memuser.Biz_Name}}','{{memuser.Biz_Type}}')"> 회사기초서류</Button>
+                            </div>
+                          </div>
+                          
+                          <div class="card-footer text-white z-index2 border-transparent">
+                            <h3 class="card-title text-white">업무 요청사항 </h3>
+                            <p>세무법인 대승의 담당자는 귀사에서 발생하는 세무, 회계, 인사, 사대보험 문제를 관리하고 해결하는데 최선을 다하고 있습니다. 
+                                업무요청시 따뜻한 말한마디는 저희가 업무를 수행함에 있어 많은 힘이 됩니다.   </p>                          
+                                산업안전보건법 제67조
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!--card closed-->
+              </div><!--col closed-->
+						</div>
+						<!-- ROW-2 END -->
+
+            <!-- ROW OPEN -->
+            {% if isCORP  %}
+            <div class="row row-sm" id="stockHolders" style="display:none">
+              <div class="col-xl-12 col-md-12">
+                <div class="card custom-card">
+                  <div class="card-header border-bottom">
+                    <h3 class="card-title">주주현황</h3>
+                  </div>
+                  <div class="row">
+                    <div class="col-xl-8 col-md-12 ">
+                      <div class="card-body">
+                        <div class="table-responsive">
+                          <!-- <table id="user-datatable" class="table table-bordered"> -->
+                          <table id="user-datatable" class="table">
+                            <thead>
+                              <tr>
+                                <th class="wd-2">
+                                </th>
+                                <th>이름</th>
+                                <th>관계</th>
+                                <th>주식수</th>
+                                <th>주식금액</th>
+                                <th>지분율</th>
+                                <th>취득일</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for stockholder in stockHolders %}
+                              <tr>
+                                <td class="text-center">
+                                  <div class="avatar avatar-md bg-{{stockholder.colorSpec}}-gradient text-white rounded-circle">
+                                    {{stockholder.sthRelation|slice:"0:1"}}
+                                  </div>
+                                </td>
+                                <td>
+                                  <p class="tx-14 font-weight-semibold text-dark mb-1">{{stockholder.sthName}}</p>
+                                  <!-- <p class="tx-13 text-muted mb-0">{{stockholder.sthRelation}}</p> -->
+                                </td>
+                                <td>
+                                  <span class="text-muted tx-13">{{stockholder.sthRelation}}</span>
+                                </td>
+                                <td>
+                                  <span class="badge bg-light text-muted tx-13">{{stockholder.sthCnt|intcomma}} 주</span>
+                                </td>
+                                <td>
+                                  <span class="text-muted tx-13">{{stockholder.sthTotalValue|intcomma}}</span>
+                                </td>
+                                <td>
+                                  <span class="badge font-weight-semibold bg-success-transparent text-success tx-11">{{stockholder.sthRate}}%</span>
+                                </td>
+                                <td>
+                                  <span class="text-muted tx-13">{{stockholder.sthGetDate|slice:"0:4"}}년 {{stockholder.sthGetDate|slice:"5:7"}}월 {{stockholder.sthGetDate|slice:"8:10"}}일</span>
+                                </td>
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-xl-4 col-md-12 pt-4 pe-6">
+                      <div class="card ">
+                        <div class="card-body">
+                          <div class="sales-stats d-flex">
+                            <div>
+                              <div class="text-muted fs-13"  style="display:inline;">총자본금
+                                <span class="p-2 br-5 text-success">
+                                  <i class="fe fe-codepen"></i>
+                                  <h3 class="fw-semibold">{{stockTotal|intcomma}}</h3>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div id="chartC"></div>
+                        </div>
+                      </div>
+                      <div class="card m-b-20">
+                        <div class="card-header border-bottom">
+                          <h3 class="card-title"><i class="fa fa-leanpub text-success"></i> 주주의 세법상 규제</h3>
+                          <div class="card-options">
+                            <a href="#collapseExample" class="card-options-collapse" data-bs-toggle="collapse"  aria-expanded="false" aria-controls="collapseExample"><i class="fe fe-chevron-up"></i></a>
+                            <!-- <a href="#" class="card-options-remove" data-bs-toggle="card-remove"><i class="fe fe-x"></i></a> -->
+                          </div>
+                        </div>
+                        <div class="card-body collapse"  id="collapseExample">
+                          <div class="visitor-list" >
+                            <!-- <div class="media m-0 mt-2 border-bottom">
+                              <div class="transaction-icon">
+                                <i class="fe fe-chevrons-right  me-3"></i>
+                              </div>
+                              <div class="media-body">
+                                <a href="javascript:void(0)" class="fw-semibold">John Paige</a>
+                                <p class="text-muted ">Uploaded new invoices for RedBus</p>
+                              </div>
+                            </div> -->
+                            <div class="media mt-0 border-bottom">
+                              <div class="transaction-icon me-3 mt-2">
+                                <i class="fe fe-chevrons-right  "></i>
+                              </div>
+                              <div class="media-body">
+                                <a href="javascript:void(0)" class="fw-semibold">지배주주</a>
+                                <p class="text-muted">법인세법상 지배주주란 법인의 출자총액의 100분의 1 이상의 주식 등을 소유한 주주 등으로서 그와 특수관계자와의 소유 주식 등의 합계가 해당 법인의 주주 등 중 가장 많은 경우의 해당 주주 등을 말합니다. 법인세법 시행령 제43조의 상여금 지급의 제한을 받습니다.</p>
+                              </div>
+                            </div>
+                            <div class="media mt-3 border-bottom">
+                              <div class="transaction-icon me-3 mt-2">
+                                <i class="fe fe-chevrons-right  "></i>
+                              </div>
+                              <div class="media-body">
+                                <a href="javascript:void(0)" class="fw-semibold">과점주주</a>
+                                <p class="text-muted">주주 또는 유한책임사원 1명과 그의 특수관계인 중 대통령령으로 정하는 자로서 그들의 소유주식의 합계 또는 출자액의 합계가 해당 법인의 발행주식 총수 또는 출자총액의 100분의 50을 초과하면서 그에 관한 권리를 실질적으로 행사하는 자들을 말합니다.<br>국세기본법상 법인에 대한 제2차납세의무가 발생하며 지방세법상 간주취득세 납세의무가 발생합니다.</p>
+                              </div>
+                            </div>
+                            <div class="media mt-3 border-bottom">
+                              <div class="transaction-icon me-3 mt-2">
+                                <i class="fe fe-chevrons-right  "></i>
+                              </div>
+                              <div class="media-body">
+                                <a href="javascript:void(0)" class="fw-semibold">출자자의 제2차납세의무</a>
+                                <p class="text-muted">법인의 재산으로 그 법인에 부과되거나 그 법인이 납부할 국세 및 강제징수비에 충당하여도 부족한 경우에는 그 국세의 납세의무 성립일 현재 출자자 등은 그 부족한 금액에 대하여 제2차 납세의무를 진다.</p>
+                              </div>
+                            </div>                            
+                            <div class="media mt-3">
+                              <div class="transaction-icon me-3 mt-2">
+                                <i class="fe fe-chevrons-right  "></i>
+                              </div>
+                              <div class="media-body">
+                                <a href="javascript:void(0)" class="fw-semibold">간주취득세</a>
+                                <p class="text-muted mb-0">법인의 주식 또는 지분을 취득함으로써 과점주주(법인설립시에 발행하는 주식 또는 지분을 취득함으로써 과점주주가 된 경우 제외)가 된 때에는 부동산ㆍ기계장비ㆍ골프회원권ㆍ콘도회원권ㆍ종합체육시설이용회원권 등 지방세 과세대상 자산을 취득한 것으로 간주하여 과세대상자산에 증가한 지분율의 2%를 취득세로 납부해야 합니다.</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>                      
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- ROW CLOSED -->
+                        
+            <!-- ROW 임원현황 OPEN -->
+            <div class="row row-sm" id="exec" style="display:none">
+              <div class="col-xl-12 col-md-12">
+                <div class="card custom-card">
+                  <div class="card-header border-bottom">
+                    <h3 class="card-title">임원 등기현황</h3>
+                  </div>
+                  <div class="row">
+                    <div class="col-xl-8 col-md-12 ">
+                      <div class="card-body">
+                        <div class="table-responsive">
+                          <!-- <table id="user-datatable" class="table table-bordered"> -->
+                          <table id="user-datatable" class="table">
+                            <thead>
+                              <tr>
+                                <th class="wd-2">
+                                </th>
+                                <th class="text-center">직책</th>
+                                <th class="text-center">이름</th>
+                                <th class="text-center">경과여부</th>
+                                <th class="text-center">취임일</th>
+                                <th class="text-center">잔여임기일</th>
+                                <th class="text-center">등기만료일</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for exec in execs %}
+                              <tr>
+                                <td class="text-center">
+                                  <div class="avatar avatar-md bg-{{exec.colorProgress}}-gradient text-white rounded-circle">
+                                    {{exec.execflag|slice:"0:1"}}
+                                  </div>
+                                </td>
+                                <td class="text-center">
+                                  <p class="tx-14 font-weight-semibold text-dark mb-1">{{exec.execflag}}</p>
+                                </td>
+                                <td  class="text-center">
+                                  <span class="text-muted tx-13">{{exec.execName}}</span>
+                                </td>
+                                <td  class="text-center">
+                                  <span class="badge bg-{{exec.badgeColorPass}} text-muted tx-13">{{exec.txtPass}} </span>
+                                </td>
+                                <td class="text-center">
+                                  <span class="text-muted tx-13">{{exec.exec_regDate|slice:"0:4"}}년 {{exec.exec_regDate|slice:"5:7"}}월 {{exec.exec_regDate|slice:"8:10"}}일</span>
+                                </td>                               
+                                <td>
+                                  <div style="text-align: right;">
+                                    {{exec.remainDD}}일
+                                    <div class="progress progress-md">
+                                      <div class="progress-bar bg-info wp-{{exec.passedRate}}"> {{exec.passedRate}}%</div>
+                                    </div>
+                                </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="text-muted tx-13">{{exec.duedate|slice:"0:4"}}년 {{exec.duedate|slice:"5:7"}}월 {{exec.duedate|slice:"8:10"}}일</span>
+                                </td>
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-12 col-xl-4  pt-2 pe-6">
+                      <div class="card">
+                        <div class="card-header border-bottom">
+                          <h3 class="card-title">등기 연임서류</h3>
+                          <!-- <div class="card-options">
+                            <a href="#" class="card-options-collapse" data-bs-toggle="card-collapse"><i class="fe fe-chevron-up"></i></a>
+                            <a href="#" class="card-options-remove" data-bs-toggle="card-remove"><i class="fe fe-x"></i></a>
+                          </div> -->
+                        </div>
+                        <div class="card-body">
+                          1. 주주명부<br>
+                          2. 인감증명서 / 인감도장<br>
+                          3. 주민등록초본(이전사항포함)<br>
+                          4. 정관사본
+                        </div>
+                        <div class="card-footer bg-danger br-br-3 br-bl-3">
+                          <div class="text-white">상법 제635조 등기 해태 과태료 500만원이하 대표이사에게 부과함</div>
+                        </div>
+                      </div>
+                    </div><!-- COL END -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            <!-- ROW CLOSED -->
+
+            {% if workers %}
+            <div class="row">
+              <div class="col-xl-12 col-md-12 ">
+                <!--card-->
+                <div class="card">
+                  <div class="card-header border-bottom">
+                    <h3 class="card-title">종업원 현황</h3>
+                    <div class="card-options">
+                      <!-- <a href="payrollAnaly" class="btn btn-primary btn-sm">상세보기 <i class="icon icon-arrow-right"></i></a> -->
+                    </div>
+                  </div>                  
+                  <div class="card-body ">
+                    <div class="row">
+                      <div class="col-xl-6 col-md-12 ">
+                        <div class="sales-stats">
+                          <div>
+                            <div class="text-muted fs-13"   style="display:inline;"><h6 class="me-2">월평균인원</h6>
+                              
+                              <span class="p-2 ">
+                                {%for worker in workers%}
+                                <i class="ion ion-man text-{{worker.COLOR}}">{{worker.TITLE}}</i> {{worker.TOT}} 명&nbsp;&nbsp;&nbsp;&nbsp;
+                                {%endfor%}
+                              </span>
+                              
+                            </div>
+                          </div>
+                        </div>
+                        <div id="workerChartLeft"></div>
+                      </div>
+                      <div class="col-xl-6 col-md-12 ">
+                        <div class="sales-stats d-flex">
+                          <div>
+                            <div class="text-muted fs-13"  style="display:inline;"><h6 class="me-2">연간 누적인건비</h6>
+                              <span class="p-2 ">
+                                {%for salary in salarys%}
+                                <i class="ion ion-cash text-{{salary.COLOR}}">{{salary.TITLE}}</i> {{salary.TOT|floatformat|intcomma}}만원&nbsp;&nbsp;&nbsp;&nbsp;
+                                {%endfor%}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div id="workerChartRight"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {%endif%}
+						{% endblock %}
+
+		{% block modal %}
+    <!-- modal 기초서류 start -->
+    <div class="modal fade"  id="modalBasicSheet">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content modal-content-demo">
+          <div class="modal-header">
+            <div class="btn-toolbar" role="toolbar">
+              {% for file in fileArr %}
+              <div class="btn-group" role="group"  id="group1" data-group="1">
+                <button type="button" class="btn" onclick="switch_to_green(this,'{{file.disp_name}}','{{file.file_path}}')">{{file.disp_name}}</button>
+              </div>
+              {% endfor %}
+            </div>
+            <a href="#" class="option-dots" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+            <div class="dropdown-menu dropdown-menu-start">
+              <a class="dropdown-item" href="javascript:mailFile();"><i class="fe fe-mail me-2"></i> 메일보내기</a>
+              <a class="dropdown-item" href="javascript:saveFile();"><i class="fe fe-download me-2"></i> 저장하기</a>
+              <a class="dropdown-item"  data-bs-dismiss="modal" href="#"><i class="fe fe-log-out me-2"></i> 닫기</a>
+            </div>
+            <!-- <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button> -->
+          </div>
+          <div class="modal-body" >
+            <div style="width:100%;max-height:850px;overflow-y: scroll; ">
+              <div id="divImage"></div>
+              <div id="divLoading" style="z-index: 10000; display:none">
+                <h1 style="display: inline;">Loading...</h1>
+                <img src="/static/image/loading.gif" alt="Loading..." />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>	
+
+    <!-- modal Mail start -->
+    <div class="modal fade"  id="modalMail">
+      <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content modal-content-demo border-0" style="background: url(static/assets/images/media/bg-1.jpg);">
+          <div  class="modal-body " style="background: var(--primary06);border:0px;margin:0px">
+            <div class="row">
+              <!-- CONTAINER OPEN -->
+
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-xl-6 col-md-12">
+                    <div class="col mx-auto text-center  pt-7">
+                      <img src="{% static 'assets/images/media/lockscreen.png' %}" style="width: 300px;" alt="">
+                    </div>
+                    
+          
+                  </div>
+                  <div class="col-xl-6 col-md-12">
+                    <div class="col-12 container-login100">
+                      <div class="row">
+                        <div class="col col-login mx-auto">
+                          <form class="card shadow-none" method="post">
+                            <div class="card-body">
+                              <div class="text-center">
+                                <span class="login100-form-title">
+                                  메일보내기
+                                </span>
+                                <p class="text-muted"><span><div id="dispStr"  style="display:inline;"></div>을 받을 곳의 이메일 주소를 입력하세요</p></span>
+                              </div>
+                              <div class="pt-3" id="forgot">
+                                <div class="form-group">
+                                  <label class="form-label" for="eMail">E-Mail:</label>
+                                  <input class="form-control" id="eMail" placeholder="받는사람 이메일 주소" type="email">
+                                </div>
+                                <div class="submit">
+                                  <a class="btn btn-primary d-grid" href="javascript:sendMail();">전송</a>
+                                </div>
+                              </div>
+          
+                            </div>
+                            <div class="card-footer">
+                              <div class="d-flex flex-row justify-content-between">
+                                <div class="p-sm-0 p-0">
+                                  <div id="spinnerDiv" class="spinner-border text-primary" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                  </div>
+                                  <div id="sendOK" >
+                                    <p class="text-muted">전송완료</p>
+                                  </div>  
+                                  <div id="sendFail" >
+                                    <p class="text-muted">전송오류입니다...</p>
+                                  </div>                                            
+                                </div>
+
+                                <div class="p-sm-2 p-2 bg-gray-200 radius-30">
+                                  <img src="{% static 'assets/images/brand/DS_LOGO.svg' %}" style="width:30px;"  alt="">
+                                </div>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <!-- CONTAINER CLOSED -->
+          </div>
+        </div>
+      </div>
+    </div>    
+		{% endblock %}
+
+    {% block scripts %}
+ 	<!-- APEXCHART JS -->
+   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+	<!-- THEMECOLORS JS -->
+	<script src="{% static 'assets/js/themeColors.js'%}"></script>
+
+  <script>
+  function getImageFiles(e) {
+    const files = e.currentTarget.files;
+    //console.log(typeof files, files);
+   
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      //const preview = createElement(e, files[0]);
+      $('#uploadImg').attr('src', e.target.result)
+                    .width(100)
+                    .height(80);
+      $('#uploadImg').attr('data-file', files[0].name)
+      //$('#uploadImg').appendChild(preview);
+    };
+    reader.readAsDataURL(files[0]);    
+    document.forms["thumbForm"].submit();
+    
+  }
+
+  const realUpload = document.querySelector('.real-upload');
+  const upload = document.querySelector('.upload');
+  upload.addEventListener('click', () => realUpload.click());
+  realUpload.addEventListener('change', getImageFiles);
+
+  /*  회사기초서류 준비 */ 
+  $("#spinnerDiv").hide();
+  $("#sendOK").hide();
+  $("#sendFail").hide();
+  var fileArr = "{{fileArr|escapejs}}"
+  fileArr = fileArr.replaceAll("'","\"")
+  fileArr = JSON.parse(fileArr);
+
+  const basicSheet =(bizName,bizType)=>{
+    let g_buttons = document.querySelectorAll('#group1 .btn');
+    for(let i =0; i<g_buttons.length;i++){
+      g_buttons[i].classList.remove('btn-success');
+    }    
+    g_buttons[0].classList.add('btn-success');
+    changeSheet(fileArr[0].disp_name,fileArr[0].file_path);
+  }
+  function switch_to_green(el,disp_name,file_path){
+    let g_buttons = document.querySelectorAll('#group1 .btn');
+    for(let i =0; i<g_buttons.length;i++){
+      g_buttons[i].classList.remove('btn-success');
+    }          
+    el.classList.add('btn-success');
+    changeSheet(disp_name,file_path);
+  }
+  var openedFile=[];
+  var selectedPeriod;
+  function changeSheet(disp_name,file_path){
+    $.ajax({
+      url:"{% url 'changeSheet' %}",
+      data:{url:file_path},
+      dataType:"text",
+      success:function(data){
+        var pyJson = JSON.parse(data);
+        openedFile = pyJson;
+        selectedPeriod = disp_name;
+        $('[id="dispStr"]').html(disp_name)
+        $('[id="divImage"]').html("<img id='openedImg' src=\'" + pyJson.fileName + "\' > ")
+        $("#modalBasicSheet").modal('show');
+      },
+      error:function(request,status,error){
+        console.log('fail:'+error);
+      }
+    })
+  }
+  function mailFile() {
+    $("#modalBasicSheet").modal('hide');
+    $("#modalMail").modal('show');
+  }
+  const sendMail=()=>{
+    var emailAddr = $('#eMail')[0].value;
+    const filename = openedFile.onlyFileName      //다운로드되는 파일이름
+    const totalfile = openedFile.onlyFilePath+filename //전체파일링크
+    
+    if(emailAddr==""){
+      alert("이메일 주소를 입력하세요");
+      $('#eMail').focus();
+    }
+    $("#sendFail").hide();
+    $("#spinnerDiv").show();
+    if(ValidateEmail(emailAddr)){
+      $.ajax({
+        url:"{% url 'sendMailCompInfo' %}",
+        data:{
+          emailAddr:emailAddr,
+          fileName:filename,
+          totalFile:totalfile,
+          selectedPeriod:selectedPeriod
+        },
+        dataType:"text",
+        success:function(data){
+          $("#spinnerDiv").hide();
+          $("#sendOK").show();
+          setTimeout(()=>{
+            $("#sendOK").hide();
+            $("#modalMail").modal('hide')
+          }, 2000);
+        },
+        error:function(request,status,error){
+          $("#sendFail").show();
+        }
+      })
+
+    }
+  
+  }
+  function saveFile() {
+    const filename = openedFile.onlyFileName      //다운로드되는 파일이름
+    const strExt = openedFile.onlyFileExt
+    //const data = "http://daeseungtax.co.kr/"+openedFile.onlyFilePath+filename
+    const data = openedFile.onlyFilePath+filename //전체파일링크
+    const link = document.createElement('a')
+    link.href = data            
+    link.download = filename    
+    link.click()
+    link.remove() // IE 미지원
+    $("#modalBasicSheet").modal('hide');
+  }  
+  function ValidateEmail(input) {
+    var validRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+    if (input.match(validRegex)) {
+      return true;
+    } else {
+      alert("이메일 주소 형식에 맞지 않습니다");
+      $('#eMail').focus();
+      return false;
+    }
+  }  
+  var biz_type = '{{memuser.Biz_Type}}'
+  if(biz_type<4) {
+    $("#stockHolders").show();
+    $("#exec").show();
+
+    
+    var stockArr = "{{stockHolders|escapejs}}"
+    stockArr = stockArr.replaceAll("'","\"")
+    if(stockArr!='') {
+      stockArr = JSON.parse(stockArr);
+      var series= new Array();
+      var sthName=new Array();
+      for(var i=0;i<stockArr.length;i++){
+        series.push(stockArr[i].sthRate)
+        sthName.push(stockArr[i].sthName)
+      }
+      var options = {
+          series: series,
+          labels:sthName,
+          chart: {
+          width: 380,
+          type: 'donut',
+        },
+        plotOptions: {
+          pie: {
+            startAngle: -90,
+            endAngle: 270
+          }
+        },
+        dataLabels: {
+          enabled: false
+        },
+        fill: {
+          type: 'gradient',
+        },
+        legend: {
+          formatter: function(val, opts) {
+            return val + " - " + opts.w.globals.series[opts.seriesIndex]
+          }
+        },
+        // title: {
+        //   text: 'Gradient Donut with custom Start-angle'
+        // },
+        responsive: [{
+          breakpoint: 480,
+          options: {
+            chart: {
+              width: 200
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }]
+        };
+        var chartC = new ApexCharts(document.querySelector("#chartC"), options);
+        chartC.render();
+    }
+  }
+    // Worker Chart Left
+    var workerArr = "{{workers|escapejs}}"
+    workerArr = workerArr.replaceAll("'","\"")
+    workerArr = JSON.parse(workerArr);
+    //정규직인원
+    var data0= [workerArr[0].JAN,workerArr[0].FEB,workerArr[0].MAR,workerArr[0].APR,workerArr[0].MAY,workerArr[0].JUN,workerArr[0].JUL,workerArr[0].AUG,workerArr[0].SET,workerArr[0].OCT,workerArr[0].NOV,workerArr[0].DEC];   
+    //사업소득인원
+    var data1= [workerArr[1].JAN,workerArr[1].FEB,workerArr[1].MAR,workerArr[1].APR,workerArr[1].MAY,workerArr[1].JUN,workerArr[1].JUL,workerArr[1].AUG,workerArr[1].SET,workerArr[1].OCT,workerArr[1].NOV,workerArr[1].DEC];   
+    //기타소득인원
+    var data2= [workerArr[2].JAN,workerArr[2].FEB,workerArr[2].MAR,workerArr[2].APR,workerArr[2].MAY,workerArr[2].JUN,workerArr[2].JUL,workerArr[2].AUG,workerArr[2].SET,workerArr[2].OCT,workerArr[2].NOV,workerArr[2].DEC];   
+    //일용직인원
+    var data3= [workerArr[3].JAN,workerArr[3].FEB,workerArr[3].MAR,workerArr[3].APR,workerArr[3].MAY,workerArr[3].JUN,workerArr[3].JUL,workerArr[3].AUG,workerArr[3].SET,workerArr[3].OCT,workerArr[3].NOV,workerArr[3].DEC];   
+    
+    var salaryArr = "{{salarys|escapejs}}"
+    salaryArr = salaryArr.replaceAll("'","\"")
+    salaryArr = JSON.parse(salaryArr);    
+    //정규직급여
+    var data4= [salaryArr[0].JAN,salaryArr[0].FEB,salaryArr[0].MAR,salaryArr[0].APR,salaryArr[0].MAY,salaryArr[0].JUN,salaryArr[0].JUL,salaryArr[0].AUG,salaryArr[0].SET,salaryArr[0].OCT,salaryArr[0].NOV,salaryArr[0].DEC];   
+    //사업소득급여
+    var data5= [salaryArr[1].JAN,salaryArr[1].FEB,salaryArr[1].MAR,salaryArr[1].APR,salaryArr[1].MAY,salaryArr[1].JUN,salaryArr[1].JUL,salaryArr[1].AUG,salaryArr[1].SET,salaryArr[1].OCT,salaryArr[1].NOV,salaryArr[1].DEC];   
+    //기타소득급여
+    var data6= [salaryArr[2].JAN,salaryArr[2].FEB,salaryArr[2].MAR,salaryArr[2].APR,salaryArr[2].MAY,salaryArr[2].JUN,salaryArr[2].JUL,salaryArr[2].AUG,salaryArr[2].SET,salaryArr[2].OCT,salaryArr[2].NOV,salaryArr[2].DEC];   
+    //일용직급여
+    var data7= [salaryArr[3].JAN,salaryArr[3].FEB,salaryArr[3].MAR,salaryArr[3].APR,salaryArr[3].MAY,salaryArr[3].JUN,salaryArr[3].JUL,salaryArr[3].AUG,salaryArr[3].SET,salaryArr[3].OCT,salaryArr[3].NOV,salaryArr[3].DEC];   
+    
+    var options_worker_left = {
+      series: [{
+      name: '정규직',
+      data: data0
+    }, {
+      name: '사업소득자',
+      data: data1
+    }, {
+      name: '일용직',
+      data: data3
+    }, {
+      name: '기타소득',
+      data: data2      
+    }],
+      chart: {
+      type: 'bar',
+      height: 350
+    },
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        columnWidth: '55%',
+        endingShape: 'rounded'
+      },
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['transparent']
+    },
+    xaxis: {
+      categories: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월','10월','11월','12월'],
+    },
+    yaxis: {
+      title: {
+        // text: '월별인원현황'
+      }
+    },
+    fill: {
+      opacity: 1
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val + " 명"
+        }
+      }
+    }
+    };
+
+    var chart_worker_left = new ApexCharts(document.querySelector("#workerChartLeft"), options_worker_left);
+    chart_worker_left.render();
+
+    // Worker Chart Right
+    var options_worker_right = {
+      series: [{
+      name: '정규직',
+      data: data4
+    }, {
+      name: '사업소득자',
+      data: data5
+    }, {
+      name: '일용직',
+      data: data7        
+    }, {
+      name: '기타소득',
+      data: data6
+    }],
+      chart: {
+      type: 'bar',
+      height: 350,
+      stacked: true,
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        dataLabels: {
+          total: {
+            enabled: true,
+            offsetX: 0,
+            style: {
+              fontSize: '13px',
+              fontWeight: 900
+            }
+          }
+        }
+      },
+    },
+    stroke: {
+      width: 1,
+      colors: ['#fff']
+    },
+    title: {
+      //text: 'Fiction Books Sales'
+    },
+    xaxis: {
+      categories: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월','10월','11월','12월'],
+      labels: {
+        formatter: function (val) {
+          return val.toLocaleString() + "만원"
+        }
+      }
+    },
+    yaxis: {
+      title: {
+        text: undefined
+      },
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val.toLocaleString() + "만원"
+        }
+      }
+    },
+    fill: {
+      opacity: 1
+    // },
+    // legend: {
+    //   position: 'top',
+    //   horizontalAlign: 'left',
+    //   offsetX: 40
+    }
+    };
+
+    var chart_worker_right = new ApexCharts(document.querySelector("#workerChartRight"), options_worker_right);
+    chart_worker_right.render();    
+  </script>
+    {% endblock %}

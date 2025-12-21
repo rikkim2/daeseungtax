@@ -1,0 +1,530 @@
+{% extends 'components/base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">기장보고서</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">업무현황</li>
+										<li class="breadcrumb-item"><a href="javascript:void(0);">기장보고서</a></li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!--ROW OPENED-->
+							<div class="row">
+								<div class="col-xl-8 col-md-12">
+									<div class="row">
+										<div class="col-md-12">
+											<div class="card">
+												<div class="card-body project-type-container projects p-4">
+													<h4 class="m-0" id="typeTitle">All Reports</h4>
+													<div class="d-sm-flex align-items-center">
+														<div class="btn-list mx-4">
+														</div> 
+														<nav class="nav card-body p-1 project-type ">
+															<a class="btn btn-primary active" data-bs-toggle="tab" href="#pjAll" id="pwAll">
+																<svg xmlns="http://www.w3.org/2000/svg" class="w-inner-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,13h-8.0005493C13.2234497,13.0001831,12.9998169,13.223999,13,13.5v8.0005493C13.0001831,21.7765503,13.223999,22.0001831,13.5,22h8.0006104C21.7765503,21.9998169,22.0001831,21.776001,22,21.5v-8.0006104C21.9998169,13.2234497,21.776001,12.9998169,21.5,13z M21,21h-7v-7h7V21z M10.5,2H2.4993896C2.2234497,2.0001831,1.9998169,2.223999,2,2.5v8.0005493C2.0001831,10.7765503,2.223999,11.0001831,2.5,11h8.0006104C10.7765503,10.9998169,11.0001831,10.776001,11,10.5V2.4993896C10.9998169,2.2234497,10.776001,1.9998169,10.5,2z M10,10H3V3h7V10z M10.5,13H2.4993896C2.2234497,13.0001831,1.9998169,13.223999,2,13.5v8.0005493C2.0001831,21.7765503,2.223999,22.0001831,2.5,22h8.0006104C10.7765503,21.9998169,11.0001831,21.776001,11,21.5v-8.0006104C10.9998169,13.2234497,10.776001,12.9998169,10.5,13z M10,21H3v-7h7V21z M21.5,2h-8.0005493C13.2234497,2.0001831,12.9998169,2.223999,13,2.5v8.0005493C13.0001831,10.7765503,13.223999,11.0001831,13.5,11h8.0006104C21.7765503,10.9998169,22.0001831,10.776001,22,10.5V2.4993896C21.9998169,2.2234497,21.776001,1.9998169,21.5,2z M21,10h-7V3h7V10z"/></svg>
+															</a>                              
+                              {% for year in reportYears %}
+															<a class="btn btn-primary-light btn-sm " data-bs-toggle="tab" href="#pj{{year}}" id="pw{{year}}">
+																{{year}}
+															</a>
+                              {% endfor %}
+														</nav>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row ">
+										<div class="tab-content">
+                      {% for selectedYear in reportYears %}
+											<div class="tab-pane  h-100" id="pj{{selectedYear}}">
+												<div class="row">
+                          {% for report in reportAll %}
+                          {%  if report.work_year in selectedYear%}
+													<div class="col-sm-12 col-md-12 col-lg-12 col-xl-6">
+														<div class="card">
+															<div class="card-body">
+																<div class="row">
+																	<div class="col-md-12">
+																		<div class="row">
+																			<div class="col">
+																				<div class="d-sm-flex align-items-center">
+																					<div class="avatar mb-2 p-2 lh-1 mb-sm-0 avatar-md rounded-circle bg-{{report.file_color}} me-2">
+																						<svg xmlns="http://www.w3.org/2000/svg" class="w-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M9.5,11h-4C5.223877,11,5,11.223877,5,11.5S5.223877,12,5.5,12h4c0.276123,0,0.5-0.223877,0.5-0.5S9.776123,11,9.5,11z M18.5,16.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S18.8451538,16.875,18.5,16.875z M18.5,4.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S18.8451538,4.875,18.5,4.875z M15.5,16.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S15.8451538,16.875,15.5,16.875z M9.5,17h-4C5.223877,17,5,17.223877,5,17.5S5.223877,18,5.5,18h4c0.276123,0,0.5-0.223877,0.5-0.5S9.776123,17,9.5,17z M15.5,10.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S15.8451538,10.875,15.5,10.875z M15.5,4.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S15.8451538,4.875,15.5,4.875z M9.5,5h-4C5.223877,5,5,5.223877,5,5.5S5.223877,6,5.5,6h4C9.776123,6,10,5.776123,10,5.5S9.776123,5,9.5,5z M18.5,10.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S18.8451538,10.875,18.5,10.875z M22,6.5v-2c-0.0012817-1.380188-1.119812-2.4987183-2.5-2.5h-15C3.119812,2.0012817,2.0012817,3.119812,2,4.5v2c0.0007935,0.8217163,0.4028931,1.5443726,1.0151367,2C2.4028931,8.9556274,2.0007935,9.6782837,2,10.5v2c0.0007935,0.8217163,0.4028931,1.5443726,1.0151367,2C2.4028931,14.9556274,2.0007935,15.6782837,2,16.5v2c0.0012817,1.380188,1.119812,2.4987183,2.5,2.5h15c1.380188-0.0012817,2.4987183-1.119812,2.5-2.5v-2c-0.0007935-0.8217163-0.4028931-1.5443726-1.0151367-2c0.6122437-0.4556274,1.0143433-1.1782837,1.0151367-2v-2c-0.0007935-0.8217163-0.4028931-1.5443726-1.0151367-2C21.5971069,8.0443726,21.9992065,7.3217163,22,6.5z M21,16.5v2c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15c-0.828064-0.0009155-1.4990845-0.671936-1.5-1.5v-2c0.0009155-0.828064,0.671936-1.4990845,1.5-1.5h15C20.328064,15.0009155,20.9990845,15.671936,21,16.5z M21,10.5v2c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15c-0.828064-0.0009155-1.4990845-0.671936-1.5-1.5v-2C3.0009155,9.671936,3.671936,9.0009155,4.5,9h15C20.328064,9.0009155,20.9990845,9.671936,21,10.5z M21,6.5c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15C3.671936,7.9990845,3.0009155,7.328064,3,6.5v-2C3.0009155,3.671936,3.671936,3.0009155,4.5,3h15c0.828064,0.0009155,1.4990845,0.671936,1.5,1.5V6.5z"></path></svg>
+																					</div>
+																					<div class="ms-1">
+																						<h6 class="mb-1 text-normal"> <a href="javascript:changeIframeUrl('{{report.file_path}}','{{report.work_year}}년 {{report.work_qt}}')" class="float-start">{{report.work_year}}년 {{report.work_qt}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+																						<span class="text-muted border-end pe-2 fs-11 float-start mt-1">{{report.file_size}} sections</span>
+																						<span class="text-teritary ps-1 fs-11">{{report.file_date}}</span>
+																					</div>
+																				</div>
+																			</div>
+																			<div class="col-auto">
+																				<div class="d-flex align-items-center">
+																					<a href="javascript:changeIframeUrl('{{report.file_path}}','{{report.work_year}}년 {{report.work_qt}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fa fa-window-restore me-2" alt="열기"></i>
+                                          </a>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="col-md-12 mt-4">
+																		<div class="row align-items-center">
+																			<div class="col">
+																				<p class="mb-0">
+																					<span class="text-muted d-block">작성기간</span>
+																					<span class="text-danger">{{report.during}}</span>
+																				</p>
+																			</div>
+																		</div>
+																	</div>
+                                  <div class="card-footer p-0 mt-2 mb-0">
+                                    <div class="float-end mb-0 mt-1">
+                                      <p class="mb-0 mt-1 text-black-50">
+                                        <i class="icon icon-emotsmile"></i> {{report.admin_name}}
+                                      </p>
+                                    </div>
+                                  </div>
+																</div>
+															</div>
+														</div>
+													</div>
+                          {% endif %}
+                          {% endfor %}
+
+												</div>
+											</div>
+                      {% endfor %}
+                      <div class="tab-pane active h-100" id="pjAll">
+												<div class="row">
+                          {% for report in reportAll reversed %}
+													<div class="col-sm-12 col-md-12 col-lg-12 col-xl-6">
+														<div class="card">
+															<div class="card-body">
+																<div class="row">
+																	<div class="col-md-12">
+																		<div class="row">
+																			<div class="col">
+																				<div class="d-sm-flex align-items-center">
+																					<div class="avatar mb-2 p-2 lh-1 mb-sm-0 avatar-md rounded-circle bg-{{report.file_color}} me-2">
+																						<svg xmlns="http://www.w3.org/2000/svg" class="w-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M9.5,11h-4C5.223877,11,5,11.223877,5,11.5S5.223877,12,5.5,12h4c0.276123,0,0.5-0.223877,0.5-0.5S9.776123,11,9.5,11z M18.5,16.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S18.8451538,16.875,18.5,16.875z M18.5,4.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S18.8451538,4.875,18.5,4.875z M15.5,16.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S15.8451538,16.875,15.5,16.875z M9.5,17h-4C5.223877,17,5,17.223877,5,17.5S5.223877,18,5.5,18h4c0.276123,0,0.5-0.223877,0.5-0.5S9.776123,17,9.5,17z M15.5,10.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S15.8451538,10.875,15.5,10.875z M15.5,4.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S15.8451538,4.875,15.5,4.875z M9.5,5h-4C5.223877,5,5,5.223877,5,5.5S5.223877,6,5.5,6h4C9.776123,6,10,5.776123,10,5.5S9.776123,5,9.5,5z M18.5,10.875c-0.3451538,0-0.625,0.2798462-0.625,0.625s0.2798462,0.625,0.625,0.625s0.625-0.2798462,0.625-0.625S18.8451538,10.875,18.5,10.875z M22,6.5v-2c-0.0012817-1.380188-1.119812-2.4987183-2.5-2.5h-15C3.119812,2.0012817,2.0012817,3.119812,2,4.5v2c0.0007935,0.8217163,0.4028931,1.5443726,1.0151367,2C2.4028931,8.9556274,2.0007935,9.6782837,2,10.5v2c0.0007935,0.8217163,0.4028931,1.5443726,1.0151367,2C2.4028931,14.9556274,2.0007935,15.6782837,2,16.5v2c0.0012817,1.380188,1.119812,2.4987183,2.5,2.5h15c1.380188-0.0012817,2.4987183-1.119812,2.5-2.5v-2c-0.0007935-0.8217163-0.4028931-1.5443726-1.0151367-2c0.6122437-0.4556274,1.0143433-1.1782837,1.0151367-2v-2c-0.0007935-0.8217163-0.4028931-1.5443726-1.0151367-2C21.5971069,8.0443726,21.9992065,7.3217163,22,6.5z M21,16.5v2c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15c-0.828064-0.0009155-1.4990845-0.671936-1.5-1.5v-2c0.0009155-0.828064,0.671936-1.4990845,1.5-1.5h15C20.328064,15.0009155,20.9990845,15.671936,21,16.5z M21,10.5v2c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15c-0.828064-0.0009155-1.4990845-0.671936-1.5-1.5v-2C3.0009155,9.671936,3.671936,9.0009155,4.5,9h15C20.328064,9.0009155,20.9990845,9.671936,21,10.5z M21,6.5c-0.0009155,0.828064-0.671936,1.4990845-1.5,1.5h-15C3.671936,7.9990845,3.0009155,7.328064,3,6.5v-2C3.0009155,3.671936,3.671936,3.0009155,4.5,3h15c0.828064,0.0009155,1.4990845,0.671936,1.5,1.5V6.5z"></path></svg>
+																					</div>
+																					<div class="ms-1">
+																						<h6 class="mb-1 text-normal"> <a href="javascript:changeIframeUrl('{{report.file_path}}','{{report.work_year}}년 {{report.work_qt}}')" class="float-start">{{report.work_year}}년 {{report.work_qt}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+																						<span class="text-muted border-end pe-2 fs-11 float-start mt-1">{{report.file_size}} sections</span>
+																						<span class="text-teritary ps-1 fs-11">{{report.file_date}}</span>
+																					</div>
+																				</div>
+																			</div>
+																			<div class="col-auto">
+																				<div class="d-flex align-items-center">
+																					<a href="javascript:changeIframeUrl('{{report.file_path}}','{{report.work_year}}년 {{report.work_qt}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fa fa-window-restore me-2" alt="열기"></i>
+                                          </a>
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																	<div class="col-md-12 mt-4">
+																		<div class="row align-items-center">
+																			<div class="col">
+																				<p class="mb-0">
+																					<span class="text-muted d-block">작성기간</span>
+																					<span class="text-danger">{{report.during}}</span>
+																				</p>
+																			</div>
+																		</div>
+																	</div>
+
+																</div>
+                                <div class="card-footer p-0 mt-2 mb-0">
+                                  <div class="float-end mb-0 mt-1">
+                                    <p class="mb-0 mt-1 text-black-50">
+                                      <i class="icon icon-emotsmile"></i> {{report.admin_name}}
+                                    </p>
+                                  </div>
+                                </div>                                
+															</div>
+														</div>
+													</div>
+                          {% endfor %}
+												</div>
+											</div>                      
+										</div>
+									</div>
+								</div>
+                <div class="col-xl-4 col-md-12">
+                  <div class="card overflow-hidden">
+										<div class="card-header border-bottom">
+											<h3 class="card-title">INDEX :: 내용구성</h3>
+										</div>
+										<div class="card-body">
+											<p class="text-muted">기장보고서는 아래와 같이 구성되었습니다.</p>
+											<div class="panel-group1" id="accordion11" role="tablist">
+												<div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse1" aria-expanded="false">Section 1. 회사개요</a>
+													<div id="collapse1" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body">
+															<p>회사의 가본사항에 대한 정보입니다. 사용인이 있는 경우 월별 고용인원을 알 수 있습니다.</p>
+															<p>법인의 경우 등기임원 현황 및 현 시점의 주주현황을 파악할 수 있습니다.</p>
+														</div>
+													</div>
+												</div>
+												<div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse2" aria-expanded="false">Section 2. 매출현황</a>
+													<div id="collapse2" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>연도별 매출액 증감내역을 월별, 발생형태별로 구분하여 확인할 수 있습니다.</p>
+															<p>주요 매출처별 금액 및 미수금 현황을 알 수 있습니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse3" aria-expanded="false">Section 3. 비용현황</a>
+													<div id="collapse3" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>연도별 비용총액의 증감내역을 연도별로 매출액과 함께 확인할 수 있습니다.</p>
+															<p>주요 매입처 및 경비의 증빙별 분류내역과 소득에 대한 예상세금을 안내드립니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse4" aria-expanded="false">Section 4. 재무능력분석</a>
+													<div id="collapse4" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>연도별 재무상황을 파악할 수 있도록 구분분석하였습니다.</p>
+															<p>차입금이 있는 경우 영업이익으로 상환가능한 영업연수를 계산합니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse5" aria-expanded="false">Section 5. 재무비율</a>
+													<div id="collapse5" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>주요 재무비율을 연도별로 분석하였습니다.</p>
+															<p>건설업 등의 업종에서 시공능력 분석지표로 빠르게 판단하여 대비할 수 있습니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse6" aria-expanded="false">Section 6. 재무제표</a>
+													<div id="collapse6" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>자산과 부채 및 자본의 누적현황입니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden mb-2 border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse7" aria-expanded="false">Section 7. 주식가치평가</a>
+													<div id="collapse7" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>순자산가치와 순손익가치를 가정평균하여 비상장법인의 주당 평가액을 산출하며 주식 상속증여 및 양도세 산정의 기초가 됩니다.</p>
+														</div>
+													</div>
+												</div>
+                        <div class="card overflow-hidden border-0">
+													<a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse8" aria-expanded="false">Section 8. 기업진단</a>
+													<div id="collapse8" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+														<div class="panel-body ">
+															<p>건설업종의 실질자본금 심사시 제외되는 계정을 차감하여 기준자본금 충족여부를 판단할 수 있습니다.</p>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+                </div>
+							</div>
+							<!--ROW CLOSED-->
+
+							<div class="modal fade"  id="modalFile2">
+								<div class="modal-dialog modal-lg" role="document">
+									<div class="modal-content modal-content-demo">
+										<div class="modal-header">
+											<h6 class="modal-title" id="modalTitle2">기장보고서</h6>
+                      <a href="#" class="option-dots" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fe fe-more-vertical"></i></a>
+                      <div class="dropdown-menu dropdown-menu-start">
+                        <a class="dropdown-item" href="javascript:mailFile();"><i class="fe fe-mail me-2"></i> 메일보내기</a>
+                        <a class="dropdown-item" href="javascript:saveFile();"><i class="fe fe-download me-2"></i> 저장하기</a>
+                        <a class="dropdown-item"  data-bs-dismiss="modal" href="#"><i class="fe fe-log-out me-2"></i> 닫기</a>
+                      </div>
+                      <!-- <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" ><span aria-hidden="true">&times;</span></button> -->
+										</div>
+										<div class="modal-body" >
+                      <div style="width:100%;max-height:850px;overflow-y: scroll; "><div id="divImage"></div></div>
+                    </div>
+									</div>
+								</div>
+							</div>		
+
+
+
+							<div class="modal fade"  id="modalMail">
+								<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+									<div class="modal-content modal-content-demo border-0" style="background: url(static/assets/images/media/bg-1.jpg);">
+                    <div  class="modal-body " style="background: var(--primary06);border:0px;margin:0px">
+                      <div class="row">
+                        <!-- CONTAINER OPEN -->
+
+                        <div class="card-body">
+                          <div class="row">
+                            <div class="col-xl-6 col-md-12">
+                              <div class="col mx-auto text-center  pt-7">
+                                <img src="{% static 'assets/images/media/lockscreen.png' %}" style="width: 300px;" alt="">
+                              </div>
+                              
+                    
+                            </div>
+                            <div class="col-xl-6 col-md-12">
+                              <div class="col-12 container-login100">
+                                <div class="row">
+                                  <div class="col col-login mx-auto">
+                                    <form class="card shadow-none" method="post">
+                                      <div class="card-body">
+                                        <div class="text-center">
+                                          <span class="login100-form-title">
+                                            메일보내기
+                                          </span>
+                                          <p class="text-muted">기장보고서를 받을 곳의 이메일 주소를 입력하세요</p>
+                                        </div>
+                                        <div class="pt-3" id="forgot">
+                                          <div class="form-group">
+                                            <label class="form-label" for="eMail">E-Mail:</label>
+                                            <input class="form-control" id="eMail" placeholder="받는사람 이메일 주소" type="email">
+                                          </div>
+                                          <div class="submit">
+                                            <a class="btn btn-primary d-grid" href="javascript:sendMail();">전송</a>
+                                          </div>
+                                        </div>
+                    
+                                      </div>
+                                      <div class="card-footer">
+                                        <div class="d-flex flex-row justify-content-between">
+                                          <div class="p-sm-0 p-0">
+                                            <div id="spinnerDiv" class="spinner-border text-primary" role="status">
+                                              <span class="sr-only">Loading...</span>
+                                            </div>
+                                            <div id="sendOK" >
+                                              <p class="text-muted">전송완료</p>
+                                            </div>  
+                                            <div id="sendFail" >
+                                              <p class="text-muted">전송오류입니다...</p>
+                                            </div>                                            
+                                          </div>
+
+                                          <div class="p-sm-2 p-2 bg-gray-200 radius-30">
+                                            <img src="{% static 'assets/images/brand/DS_LOGO.svg' %}" style="width:30px;"  alt="">
+                                          </div>
+                                        </div>
+                                        <!-- <div class="d-flex flex-row justify-content-between">
+                                          <div class="p-sm-2 p-2 dimmer active" >
+                                            <div class="lds-heart"><div>
+                                          </div>
+                                  
+                                          <div class="p-sm-2 p-2 bg-gray-200 radius-30">
+                                            <img src="{% static 'assets/images/brand/DS_LOGO.svg' %}" style="width:30px;"  alt="">
+                                          </div>
+                                        </div> -->
+                                      </div>
+                                    </form>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      <!-- CONTAINER CLOSED -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>		            
+        {% endblock %}
+
+    {% block scripts %}
+
+    <!-- THEMECOLORS JS -->
+    <script src="{% static 'assets/js/themeColors.js'%}"></script>
+    <script>
+      $("#spinnerDiv").hide();
+      $("#sendOK").hide();
+      $("#sendFail").hide();
+      var pyJson = "{{reportAll|escapejs}}"
+      pyJson = pyJson.replaceAll("'","\"")
+      pyJson = JSON.parse(pyJson);
+      // console.log(pyJson)
+      $(document).ready(function(){
+        for(var i=0;i<pyJson.length;i++){
+          var tmpBtnId = '#pw'+pyJson[i].work_year;
+          $(tmpBtnId).click(function(e){
+            document.querySelector('#typeTitle').innerHTML = e.target.innerHTML+" 년";
+          })
+        }
+        $('#pwAll').click(function(e){
+            document.querySelector('#typeTitle').innerHTML = "All Reports";
+          })
+      })
+      var openedFile=[];
+      var selectedPeriod;
+      function changeIframeUrl(url,strTitle)	{
+        selectedPeriod = strTitle;
+        waitingDialog.show('기장보고서를 로딩중입니다...',{
+          progressType: 'success',
+          onShow: function () {
+            $.ajax({
+              url:"{% url 'changePdf' %}",
+              data:{url:url},
+              dataType:"text",
+              success:function(data){
+                var pyJson = JSON.parse(data);
+                openedFile = pyJson;
+                $('[id="modalTitle2"]').html("기장보고서 :: "+strTitle)
+                $('[id="divImage"]').html("<img id='openedImg' src=\'" + pyJson.fileName + "\' > ")
+                $("#modalFile2").modal('show');
+                waitingDialog.hide();
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            })
+          }
+        });
+			}
+      function mailFile() {
+        $("#modalFile2").modal('hide');
+        $("#modalMail").modal('show');
+      }
+      function ValidateEmail(input) {
+        var validRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+        if (input.match(validRegex)) {
+          return true;
+        } else {
+          alert("이메일 주소 형식에 맞지 않습니다");
+          $('#eMail').focus();
+          return false;
+        }
+      }
+      const sendMail=()=>{
+        var emailAddr = $('#eMail')[0].value;
+        const filename = openedFile.onlyFileName      //다운로드되는 파일이름
+        const totalfile = openedFile.onlyFilePath+filename //전체파일링크
+        if(emailAddr==""){
+          alert("이메일 주소를 입력하세요");
+          $('#eMail').focus();
+        }
+        $("#sendFail").hide();
+        $("#spinnerDiv").show();
+        if(ValidateEmail(emailAddr)){
+          $.ajax({
+            url:"{% url 'sendMail' %}",
+            data:{
+              emailAddr:emailAddr,
+              fileName:filename,
+              totalFile:totalfile,
+              selectedPeriod:selectedPeriod
+            },
+            dataType:"text",
+            success:function(data){
+              $("#spinnerDiv").hide();
+              $("#sendOK").show();
+              setTimeout(()=>{
+                $("#sendOK").hide();
+                $("#modalMail").modal('hide')
+              }, 2000);
+            },
+            error:function(request,status,error){
+              $("#sendFail").show();
+            }
+          })
+
+        }
+      
+      }
+      function saveFile() {
+
+        const filename = openedFile.onlyFileName      //다운로드되는 파일이름
+        const strExt = openedFile.onlyFileExt
+        //const data = "http://daeseungtax.co.kr/"+openedFile.onlyFilePath+filename
+        const data = openedFile.onlyFilePath+filename //전체파일링크
+        const link = document.createElement('a')
+        link.href = data            
+        link.download = filename    
+        link.click()
+        link.remove() // IE 미지원
+        $("#modalFile2").modal('hide');
+        /*
+        var strType;
+        switch(strExt){
+          case  	"aac":	strType = 	"audio/aac";
+          case  	"abw":	strType = 	"application/x-abiword";
+          case  	"arc":	strType = 	"application/octet-stream";
+          case  	"avi":	strType = 	"video/x-msvideo";
+          case  	"azw":	strType = 	"application/vnd.amazon.ebook";
+          case  	"bin":	strType = 	"application/octet-stream";
+          case  	"bz":	strType = 	"application/x-bzip";
+          case  	"bz2":	strType = 	"application/x-bzip2";
+          case  	"csh":	strType = 	"application/x-csh";
+          case  	"css":	strType = 	"text/css";
+          case  	"csv":	strType = 	"text/csv";
+          case  	"doc":	strType = 	"application/msword";
+          case  	"epub":	strType = 	"application/epub+zip";
+          case  	"gif":	strType = 	"image/gif";
+          case  	"htm html":	strType = 	"text/html";
+          case  	"ico":	strType = 	"image/x-icon";
+          case  	"ics":	strType = 	"text/calendar";
+          case  	"jar":	strType = 	"application/java-archive";
+          case  	"jpg":	strType = 	"image/jpeg";
+          case  	"jpeg":	strType = 	"image/jpeg";
+          case  	"json":	strType = 	"application/json";
+          case  	"mpeg":	strType = 	"video/mpeg";
+          case  	"mpkg":	strType = 	"application/vnd.apple.installer+xml";
+          case  	"odp":	strType = 	"application/vnd.oasis.opendocument.presentation";
+          case  	"ods":	strType = 	"application/vnd.oasis.opendocument.spreadsheet";
+          case  	"odt":	strType = 	"application/vnd.oasis.opendocument.text";
+          case  	"oga":	strType = 	"audio/ogg";
+          case  	"ogv":	strType = 	"video/ogg";
+          case  	"ogx":	strType = 	"application/ogg";
+          case  	"pdf":	strType = 	"application/pdf";
+          case  	"ppt":	strType = 	"application/vnd.ms-powerpoint";
+          case  	"rar":	strType = 	"application/x-rar-compressed";
+          case  	"rtf":	strType = 	"application/rtf";
+          case  	"sh":	strType = 	"application/x-sh";
+          case  	"svg":	strType = 	"image/svg+xml";
+          case  	"swf":	strType = 	"application/x-shockwave-flash";
+          case  	"tar":	strType = 	"application/x-tar";
+          case  	"tif":	strType = 	"image/tiff";
+          case  	"tiff":	strType = 	"image/tiff";
+          case  	"ttf":	strType = 	"application/x-font-ttf";
+          case  	"vsd":	strType = 	"application/vnd.visio";
+          case  	"wav":	strType = 	"audio/x-wav";
+          case  	"weba":	strType = 	"audio/webm";
+          case  	"webm":	strType = 	"video/webm";
+          case  	"webp":	strType = 	"image/webp";
+          case  	"woff":	strType = 	"application/x-font-woff";
+          case  	"xhtml":	strType = 	"application/xhtml+xml";
+          case  	"xls":	strType = 	"application/vnd.ms-excel";
+          case  	"xml":	strType = 	"application/xml";
+          case  	"xul":	strType = 	"application/vnd.mozilla.xul+xml";
+          case  	"zip":	strType = 	"application/zip";
+          case  	"7z":	strType = 	"application/x-7z-compressed";
+        }
+        const blob = new Blob([data], { type: strType })
+        const path = window.URL.createObjectURL(blob)
+        */
+
+      }
+    </script>
+    {% endblock %}

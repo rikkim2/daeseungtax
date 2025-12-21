@@ -1,0 +1,875 @@
+{% load static %}
+
+<style>
+    .icon-refresh { color: white; }
+    .modal-xl { min-width: 1200px; max-width: 1400px; }
+    
+    /* [핵심] Bootstrap과 ExtJS 충돌 방지 */
+    .ext-grid-wrapper .x-table {
+        width: auto !important; 
+        margin: 0 !important;
+    }
+    
+    /* 그리드 래퍼 */
+    .ext-grid-wrapper {
+        width: 100%;
+        /* 높이는 JS에서 설정 */
+    }
+</style>  
+
+<div class="ext-grid-wrapper"></div>
+
+<div class="modal fade unique-summit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content modal-content-demo">
+      <div class="modal-header ">
+        <div class="summitModalTitle"></div>
+        <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body p-0 border-top-0" >
+        <div class="card text-left ps-5 pt-3 pb-3">
+          <div class="row">
+            <div class="modal_top_desc"></div>
+          </div>
+        </div>
+        <div class="tabs-menu4 modal-tabs-menu"></div>
+        <div class="tab-content modal-tab-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+    // 1. 그리드 변수
+    var mainGrid;
+
+    // ───────────── [1] DOM 요소 확보 ─────────────
+    var renderTarget = $('.ext-grid-wrapper').filter(function() {
+        return $(this).children().length === 0;
+    }).last()[0];
+
+    // 만약 못 찾으면 활성 탭 내부에서 재시도
+    if (!renderTarget) {
+        renderTarget = $('div.tab-pane.active .ext-grid-wrapper')
+            .filter(function () { return $(this).children().length === 0; })
+            .last()[0];
+    }
+
+    if (!renderTarget) {
+        console.warn('렌더 타겟이 없어서 그리드를 만들지 않습니다.');
+        return;
+    }
+
+    // 모달 ID 생성 및 할당
+    var $wrapper = $(renderTarget).parent(); 
+    var modalUniqueId = 'summitModal_' + Math.floor(Math.random() * 100000);
+    var $modal = $wrapper.find('.unique-summit-modal');
+    $modal.attr('id', modalUniqueId);
+
+    function findInModal(selector) { return $modal.find(selector); }
+
+    // ───────────── [2] 높이 계산 함수 ─────────────
+    function getGridHeight() {
+        var height = window.innerHeight - 180;
+        return height > 300 ? height : 300;
+    }
+
+    // ───────────── [3] 변수 설정 ─────────────
+    var adminBizLevel = '{{ admin_biz_level }}'.trim();
+    const isSuperuser = '{{ admin_grade }}' === 'SA';
+    var ADID = '{{ ADID }}'.trim();        
+    var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+    var flag = '{{ flag }}';
+    var work_YY = '{{ request.session.workyearScrap }}';
+    var work_MM = '{{ request.session.work_MM  }}';
+    
+    if(!work_YY && typeof getWorkYearAndMonth === 'function'){
+        work_YY = getWorkYearAndMonth('scrap_monthly_list').work_YY;
+    }
+    if(!work_MM && typeof getWorkYearAndMonth === 'function'){
+        work_MM = getWorkYearAndMonth('scrap_monthly_list').work_MM;
+    }
+    const currentYear = new Date().getFullYear();
+
+    // ───────────── [4] 전역 함수 정의 ─────────────
+    
+    // 1. renderTopic_scrap
+    window.renderTopic_scrap = function(value, p, record, rowIndex, colIndex) {
+        // 컬럼 위치 변화에 안전하도록 dataIndex 기준으로 분기
+        const dataIndex = p && p.column ? p.column.dataIndex : null;
+        const map = {
+          'state_TI': '전자세금계산서',
+          'state_CardSale': '신용카드 매출',
+          'state_CashSale': '현금영수증 매출',
+          'state_DaehangSale': '판매대행등 매출',
+          'state_CardCost': '사업용 신용카드 매입',
+          'state_CashCost': '현금영수증 매입',
+          'state_SaleExport': '수출실적명세서 매출',
+          'state_SaleTT': '구매확인서등 매출'
+        };
+        var popLocation = map[dataIndex];
+        if (!popLocation) return value; // 매핑 안 되면 원 값 그대로
+
+        return Ext.String.format(
+            '<div style="cursor:pointer; color:blue;" onclick="window.summitModal({0},\'{1}\',{2},{3},\'{4}\')">{5}</div>',
+            record.data.seq_no,
+            Ext.String.htmlEncode(record.data.biz_name),
+            work_YY,
+            work_MM,
+            popLocation,
+            value
+        );
+    };
+
+    // 2. summitModal
+    window.summitModal = async function(seq_no, biz_name, work_YY, work_MM, popLocation) {
+        let tmpHead = `
+            <nav aria-label='breadcrumb'>
+              <ol class='breadcrumb breadcrumb-style'>
+                <li class='breadcrumb-item'>${biz_name}</li>
+                <li class='breadcrumb-item'>${work_YY}년</li>
+                <li class='breadcrumb-item'>${work_MM}월</li>
+                <li class='breadcrumb-item active'>${popLocation}</li>
+              </ol>
+            </nav>`;
+        findInModal('.summitModalTitle').html(tmpHead);
+
+        let tmpTab = `
+            <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+              <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-1">
+                ${popLocation} 합계표
+              </a>
+              <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                ${popLocation} 상세내역
+              </a>
+            </nav>`;
+        
+        // 탭 컨텐츠 (기존 HTML 구조 복원)
+        let tmpTab_Content = `
+          <div class="tab-pane active task-files-tab" id="task-1">
+            <div class="d-flex">
+              <div class="flex-grow-1 pe-3" style="flex-basis: 60%;">
+                <div class="card text-center pt-3 pb-0">
+                  <div class="card-body d-flex flex-column justify-content-center pt-0 pb-0">
+                    <p class="text-muted fw-bold pb-0">
+                      <i class="icon icon-layers"></i> <span class="sum-title">합계표</span>
+                    </p>
+                    <div class="table-responsive" id="Summation_h"></div>
+                    
+                    <p class="text-muted fw-bold pt-3 pb-0">
+                      <i class="icon icon-list"></i> <span class="detail-title">건별 내역</span>
+                    </p>
+                    <div class="table-responsive" id="Summation_i"></div>
+                    
+                    <p class="text-muted fw-bold pt-3 pb-0">
+                      <i class="icon icon-ghost"></i> 차이 내역
+                    </p>
+                    <div class="table-responsive pb-0" id="Summation_diff"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-grow-0" style="flex-basis: 40%;">
+                <div class="card-body" >
+                  <iframe id="kakaoIframe" width="100%" height="600px" frameborder="0"></iframe>
+                </div>
+              </div>
+            </div>              
+            <div class="modal-footer justify-content-center" id="btnKakaoSend"></div>
+          </div>
+          <div class="tab-pane task-files-tab" id="task-2">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+               <div class="text-center p-5 text-muted">상세내역 준비중...</div>
+            </div>
+          </div>  
+        `;
+
+        findInModal('.modal-tabs-menu').html(tmpTab);
+        findInModal('.modal-tab-content').html(tmpTab_Content);
+
+        // 탭 초기화
+        setTimeout(() => {
+            const $link = $modal.find(`a[data-bs-toggle="tab"][href="#task-1"]`);
+            if ($link.length) new bootstrap.Tab($link[0]).show();
+        }, 100);
+
+        // 데이터 로드
+        if (popLocation == '전자세금계산서') {
+            findInModal('.sum-title').text('전자세금계산서 합계표');
+            findInModal('.detail-title').text('건별 스크래핑 내역');
+            await setSummation(seq_no, work_YY, work_MM, 'vatElec');
+            await setKKOResult(seq_no, work_YY, work_MM, 'vatElec');
+        } else if (popLocation == '사업용 신용카드 매입') {
+            findInModal('.sum-title').text('홈택스 스크래핑 결과');
+            findInModal('.detail-title').text('신고서 반영예정');
+            await setSummation(seq_no, work_YY, work_MM, 'Card');
+            await setKKOResult(seq_no, work_YY, work_MM, 'Card');
+        }
+        
+        $modal.modal('show');
+    };
+
+    // 3. 헬퍼 함수들 (내부)
+    const setKKOResult = async(seq_no, work_YY, work_MM, flag) => {
+        var url = `https://daeseungtax.co.kr/kakao?flag=${flag}&seq=${seq_no}&work_yy=${work_YY}&work_mm=${work_MM}`;
+        var iframe = findInModal("#kakaoIframe")[0];
+        if (iframe) iframe.src = url;
+    };
+
+    //세금계산서합계표
+    const setSummation = async (seq_no, work_YY, work_MM, flag) => {
+      var urlMap = {
+        "vatElec": "{% url 'getTISummation' %}",
+        "Card": "{% url 'getCardSummation' %}"
+      };
+      // flag 값에 해당하는 URL
+      var targetUrl = urlMap[flag];
+      $.ajax({
+        url: targetUrl,
+        type: "POST",
+        data: {
+          seq_no: seq_no,
+          work_YY: work_YY,
+          work_MM: work_MM,
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        dataType: "json",
+        success: function (data) {
+          findInModal('.modal_top_desc').html("조회기간 : " + data.scrapkikan + "<br>과세기간 : " + data.kwasekikan);
+          
+          let tmpHTML = `
+            <table class='table table-bordered table-sm mb-0'>
+              <thead>
+                <tr>
+                  <th style='text-align:center'>구 분</th>
+                  <th style='text-align:center'>공급대가</th>
+                  <th style='text-align:center'>공급가액</th>
+                  <th style='text-align:center'>세액</th>
+                  <th style='text-align:center'>건수</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          for (var j = 0; j < data.h_data.length; j++) {
+            tmpHTML += `
+              <tr>
+                <td style='text-align:left;width:85px'>${data.h_data[j].매입매출구분}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.h_data[j].합계금액)}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.h_data[j].공급가액)}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.h_data[j].세액)}</td>
+                <td style='text-align:center;width:65px;'>${data.h_data[j].건수}</td>
+              </tr>
+            `;
+          }
+          tmpHTML += "</tbody></table>";
+          // h_data 출력
+          $('[id="Summation_h"]').html(tmpHTML);
+
+          tmpHTML = `
+            <table class='table table-bordered table-sm mb-0'>
+              <thead>
+                <tr>
+                  <th style='text-align:center'>구 분</th>
+                  <th style='text-align:center'>공급대가</th>
+                  <th style='text-align:center'>공급가액</th>
+                  <th style='text-align:center'>세액</th>
+                  <th style='text-align:center'>건수</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          for (var j = 0; j < data.i_data.length; j++) {
+            tmpHTML += `
+              <tr>
+                <td style='text-align:left;width:85px'>${data.i_data[j].매입매출구분}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.i_data[j].합계금액)}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.i_data[j].공급가액)}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.i_data[j].세액)}</td>
+                <td style='text-align:center;width:65px;'>${data.i_data[j].건수}</td>
+              </tr>
+            `;
+          }
+          tmpHTML += "</tbody></table>";
+          // i_data 출력
+          $('[id="Summation_i"]').html(tmpHTML);
+
+          tmpHTML = `
+            <table class='table table-bordered table-sm mb-0'>
+              <thead>
+                <tr>
+                  <th style='text-align:center'>구 분</th>
+                  <th style='text-align:center'>공급대가 차이</th>
+                  <th style='text-align:center'>공급가액 차이</th>
+                  <th style='text-align:center'>세액 차이</th>
+                  <th style='text-align:center'>건수 차이</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+          Object.keys(data.differences).forEach(function (key) {
+            tmpHTML += `
+              <tr>
+                <td style='text-align:left;width:85px'>${key}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.differences[key].합계금액)}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.differences[key].공급가액)}</td>
+                <td style='text-align:right;width:15%'>${numberWithCommas(data.differences[key].세액)}</td>
+                <td style='text-align:center;width:65px;'>${data.differences[key].건수}</td>
+              </tr>
+            `;
+          });
+          tmpHTML += "</tbody></table>";
+          // differences 출력
+          $('[id="Summation_diff"]').html(tmpHTML);
+
+          //하단버튼
+          const objectUrl_kakao = "{% url 'send_kakao_notification' %}";
+          let tmpBtn = `<button class="btn btn-warning" onclick="window.sendKakao(${seq_no}, ${work_YY}, ${work_MM}, '${flag}','${objectUrl_kakao}')">
+                            <i class="fa fa-comments" style="color: black;"></i> 카톡전송하기
+                          </button> 
+                          <button class="btn btn-light" data-bs-dismiss="modal">닫기</button>`;
+                findInModal('#btnKakaoSend').html(tmpBtn);    
+        },
+        error: function (request, status, error) {
+          console.log('fail: ' + error);
+        }
+      });
+    };
+
+    var checkboxRender =function(value) { 
+      return "<input type='checkbox'" + (value ? "checked='checked'" : "") + ">"; 
+    };
+
+    var store = Ext.create('Ext.data.Store', {
+        storeId: 'scrapStore_' + Math.random(),
+        autoLoad: true, // Store가 생성되면 자동으로 데이터를 로드
+        proxy: {
+            type: 'ajax', // Ajax를 통해 서버와 통신
+            url: '{% url "scrap_monthly_list" %}', // 데이터를 가져올 API URL
+            extraParams: {
+                flag: flag, // 전달할 파라미터
+                ADID:ADID,
+                work_YY:work_YY,
+                work_MM:work_MM
+            },        
+            reader: {
+                type: 'json', // 서버에서 JSON 형식으로 데이터를 반환
+                rootProperty: 'data', // 응답 JSON에서 데이터 배열의 속성 이름
+                totalProperty: 'total', // 응답 JSON에서 전체 데이터 수를 나타내는 속성 이름
+            },
+        },   
+        fields: [ // 필드 정의 (데이터의 각 열)
+            {name: 'groupManager',type: 'string'},
+            {name: 'seq_no', type: 'int' },
+            {name: 'biz_name', type: 'string'},
+            {name: 'biz_type',type: 'string'},
+            {name: 'tot_ddct',type: 'bool'},
+            {name: 'tot_acntcd'},
+            {name: 'car_ddct',type: 'bool'},
+            {name: 'car_class',type: 'string'},
+            {name: 'YN_Tong',type: 'string'},
+            {name: 'scrapTI_Car',type: 'string'},
+            {name: 'scrapTI_Added',type: 'string'},
+            {name: 'state_TI',type: 'string'},     
+            {name: 'state_CardSale',type: 'string'},
+            {name: 'state_CashSale',type: 'string'},
+            {name: 'state_DaehangSale',type: 'string'},
+            {name: 'state_CardCost',type: 'string'},
+            {name: 'state_CashCost',type: 'string'},
+            {name: 'state_SaleExport',type: 'string'},
+            {name: 'state_SaleTT',type: 'string'},
+            {name: 'kakaoSentTI',type: 'string'},
+            {name: 'kakaoSentCard',type: 'string'},
+            {name: 'YN_14',type: 'string'},
+        ],
+        ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
+    });
+    var comboDataStore = Ext.create('Ext.data.Store', {
+        fields: ['id', 'name'],
+        data: [] // 초기 데이터는 비워둠
+    });
+    var comboDataStore_Acnt = Ext.create('Ext.data.Store', {
+        fields: ['id', 'name'],
+        data: [
+            {id: '146', name: '상품'},
+            {id: '134', name: '가지급금'},
+            {id: '811', name: '복리후생비'},
+            {id: '812', name: '여비교통비'},
+            {id: '813', name: '접대비'},
+            {id: '814', name: '통신비'},
+            {id: '815', name: '수도광열비'},
+            {id: '816', name: '전력비'},
+            {id: '821', name: '보험료'},
+            {id: '824', name: '운반비'},
+            {id: '822', name: '차량유지비'},
+            {id: '826', name: '도서인쇄비'},
+            {id: '825', name: '교육훈련비'},
+            {id: '829', name: '사무용품비'},
+            {id: '830', name: '소모품비'},
+            {id: '831', name: '지급수수료'},
+            {id: '833', name: '광고선전비'}
+        ]
+    });
+    // 콤보박스 렌더러
+    var acntRenderer = function(value) {
+        var record = comboDataStore_Acnt.findRecord('id', value);
+        return record ? record.get('name') : value;
+    };
+    function onItemClickHandler(item) {
+        ADID = item;
+        var targetComponent = mainGrid ? mainGrid.body : Ext.getBody();
+        const data = {
+            flag: flag ,
+            ADID: item,
+            work_YY : work_YY,
+            work_MM : work_MM
+        };
+
+        var loadMask = new Ext.LoadMask({
+            msg: '담당자를 변경중입니다...', 
+            target: targetComponent
+        });
+        loadMask.show(); // 로딩 표시 시작  
+        var proxy = store.getProxy();
+        proxy.extraParams.ADID = ADID;
+        proxy.extraParams.flag = flag;
+        proxy.extraParams.work_YY = work_YY;
+        proxy.extraParams.work_MM = work_MM;
+
+        store.load({
+            callback: function() { loadMask.hide(); }
+        });
+        updateScrollMenuText(item);      
+    }
+
+    if (isSuperuser){
+        Ext.Ajax.request({
+            url: '{% url "kijang_admin_combolist" %}', // 동적으로 데이터를 가져올 API URL
+            method: 'GET',
+            success: function (response) {
+                const data = Ext.decode(response.responseText); // 응답 데이터를 파싱
+                comboDataStore.loadData(data); // store에 데이터 로드
+            },
+            failure: function () {
+                Ext.Msg.alert('오류', '데이터를 불러오는 데 실패했습니다.');
+            }
+        });
+    }
+    
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+    
+    
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+    });
+    var sm = Ext.create('Ext.selection.CheckboxModel', {
+      checkOnly: true,
+      listeners: {
+        deselect: function(model, record, index) {
+          id = record.get('id');
+        },
+        select: function(model, record, index) {
+
+        }
+      }
+    });
+    mainGrid = Ext.create('Ext.grid.Panel', {
+      id:'mainGrid',
+      renderTo: renderTarget,
+      title: '{{ gridTitle }}',
+      width:'100%',
+      height:getGridHeight(),
+      scrollable: 'y', // 세로 스크롤 활성화
+      store: store,
+      selModel: sm,
+      columnLines: true,      
+      tools: [  //최상단 오른쪽 툴바
+          {
+            xtype: 'button',
+            text: 'TI카톡 발송대상선택',
+            iconCls: 'fa fa-check-square',
+            handler: function (btn) {
+              var grid = Ext.getCmp('mainGrid');   // ★ 실제 그리드 id로 변경
+              if (!grid) return;                  // 그리드가 아직 없으면 조용히 종료
+
+              var store = grid.getStore && grid.getStore();
+              if (!store) return;              
+              const regex = /\/([^\/]+)\.(gif|png)/;
+              let resultSeqNos = [];
+
+              store.each(function(record) {
+                const imgTag = record.get('state_TI');
+                const match = imgTag ? imgTag.match(regex) : null;
+
+                if (match) {
+                  if (match[1] !== 'skeleton' && match[1] !== 'cross') {
+                    //resultSeqNos.push(record.get('seq_no')); // 필드명에 맞게 조정
+                    sm.select(record, true); // true: 기존 선택 유지하며 추가 선택
+                  }
+                } else {
+                  console.warn('match 실패:', record.get('biz_name'), imgTag);
+                }
+              });
+
+              alert('체크 완료!');
+            },
+            style: 'margin-right: 5px;' // 오른쪽 간격 추가
+          },        
+          {
+            xtype: 'button',
+            text: 'TI카톡 일괄발송',
+            iconCls: 'fa fa-check-square',
+            handler: async function (btn) {
+              var records = sm.getSelection();
+              for (const record of records) {
+                const seq_no = record.get('seq_no');
+                const targetUrl_kakao = "{% url 'send_kakao_notification' %}";
+                await sendKakao(seq_no, work_YY, work_MM, 'vatElec', targetUrl_kakao);
+                await new Promise(resolve => setTimeout(resolve, 6000)); // 6초 지연
+              }
+          
+            },
+            style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },         
+          {
+            xtype: 'button',
+            text: 'Card카톡 발송대상선택',
+            iconCls: 'fa fa-check-square',
+            handler: function (btn) {
+              var grid = Ext.getCmp('mainGrid');   // ★ 실제 그리드 id로 변경
+              if (!grid) return;                  // 그리드가 아직 없으면 조용히 종료
+
+              var store = grid.getStore && grid.getStore();
+              if (!store) return;
+              const regex = /\/([^\/]+)\.(gif|png)/;
+              let resultSeqNos = [];
+
+              store.each(function(record) {
+                const imgTag = record.get('state_CardCost');
+                const match = imgTag ? imgTag.match(regex) : null;
+
+                if (match) {
+                  if (match[1] !== 'cross') {
+                    sm.select(record, true); // true: 기존 선택 유지하며 추가 선택
+                  }
+                } else {
+                  console.warn('match 실패:', record.get('biz_name'), imgTag);
+                }
+              });
+
+              alert('체크 완료!');
+            },
+            style: 'margin-right: 5px;' // 오른쪽 간격 추가
+          },        
+          {
+            xtype: 'button',
+            text: 'Card카톡 일괄발송',
+            iconCls: 'fa fa-check-square',
+            handler: async function (btn) {
+              var records = sm.getSelection();
+              for (const record of records) {
+                const seq_no = record.get('seq_no');
+                const targetUrl_kakao = "{% url 'send_kakao_notification' %}";
+                await sendKakao(seq_no, work_YY, work_MM, 'Card', targetUrl_kakao);
+                await new Promise(resolve => setTimeout(resolve, 6000)); // 6초 지연
+              }
+
+             
+            },
+            style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },                  
+          {
+              xtype: 'textfield',
+              emptyText: '검색어 입력',
+              width: 200,
+              listeners: {
+                  change: function (field, newValue) {
+                      const store = field.up('grid').getStore(); // 그리드의 스토어 가져오기
+                      if (!newValue || newValue.trim() === '') {
+                          store.clearFilter(); // 필터 제거
+                      } else {
+                          store.clearFilter(true); // 기존 필터 제거
+                          const searchValue = newValue.trim().toLowerCase();
+                          store.filterBy(record => {
+                              const bizName = record.get('biz_name')?.toLowerCase() || '';
+                              const ceoName = record.get('ceo_name')?.toLowerCase() || '';
+                              return (
+                                  bizName.includes(searchValue) || ceoName.includes(searchValue)
+                              );
+                          });
+                      }
+                  }
+              }
+              
+          },
+          {
+              xtype: 'button',
+              iconCls: 'icon icon-refresh',
+              handler: function (btn) {
+                  store.reload();
+              },
+              style: 'margin-right: 10px;' // 오른쪽 간격 추가
+          },
+      ],            
+      ... (ADID === "전체" ? { 
+            features: [{
+                id: 'groupManager',
+                ftype: 'groupingsummary',
+                startCollapsed: false,
+                groupHeaderTpl: '{name}',
+                hideGroupedHeader: false,
+                enableGroupingMenu: true
+            }]
+        } : {}),        
+      plugins: [cellEditing],
+      columns: [
+          // {   xtype: 'rownumberer',width: 30,	sortable: false}, 
+          {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0},  
+          {   header: 'SEQ', dataIndex: 'seq_no',width: 50            }, 
+          {   id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',  width: 160           }, 
+          {   header: '<center>유형</center>', dataIndex: 'biz_type',  width: 60,align:'center'  ,      
+              renderer: function (value) {
+                  if (value === '1') {
+                      return '<i class="mdi mdi-domain" style="color: green;"></i>';
+                  } else if  (value === '2') {
+                      return '<i class="mdi mdi-domain" style="color: red;">면세</i>';
+                  } else if  (value === '3') {
+                      return '<i class="mdi mdi-domain" style="color: red;">비영리</i>';
+                  } else if  (value === '4') {
+                      return '<i class="mdi mdi-account" style="color: green;"></i>';
+                  } else if  (value === '5') {
+                      return '<i class="mdi mdi-account-outline" style="color: blue;">간이</i>';
+                  } else if  (value === '6') {
+                      return '<i class="mdi mdi-account-outline" style="color: red;">면세</i>';
+                  } else if  (value === '7') {
+                      return '<i class="mdi mdi-account-off" style="color: red;">비사업</i>';
+                  }
+              }   
+          },
+          {   dataIndex: 'tot_ddct',header: '<center>전체<br>불공제</center>',   xtype: 'checkcolumn', align: 'center', renderer : checkboxRender, width: 50,
+              listeners: {
+                checkchange: function (column, recordIndex, checked) {	
+                  Ext.Ajax.request({
+                    url: '{% url "update_scrap_each" %}',
+                    contentType: "charset=euc-kr", 
+                    params: {
+                      seq_no			: store.getAt(recordIndex).get('seq_no'),
+                      target			: 'tot_ddct',
+                      val				: checked ? 1 : 0
+                    },
+                    success: function (response) {
+                        Swal.fire('성공', '변경이 완료되었습니다.', 'success');
+                    },
+                    failure: function (response) {
+                        Swal.fire('오류', '변경에 실패했습니다.', 'error');
+                        record.reject();
+                    }
+                  });
+                }
+              }          
+          },
+          {   dataIndex: 'tot_acntcd',header: '<center>기본<br>계정</center>',  width: 100,align:'center',
+              editor: new Ext.form.field.ComboBox({
+                typeAhead: true,
+                triggerAction: 'all',
+                selectOnTab: true,
+                store: comboDataStore_Acnt,
+                queryMode: 'local',  // 중요: 쿼리 모드를 local로 설정
+                displayField: 'name',
+                valueField: 'id',
+                listeners: {
+                  select: function (combo, record) {
+                    record = Array.isArray(record) ? record[0] : record;
+                    if (!record || !record.get) {
+                        console.error('유효하지 않은 record:', record);
+                        return;
+                    }
+                    var txt_val = record.get('id');  // 선택된 계정 코드 (id 값)
+                    // ✅ 현재 그리드에서 해당 행(row)의 `seq_no` 가져오기
+                    var grid = combo.up('grid');
+                    var rowIndex = grid.getSelectionModel().getSelection()[0];
+                    if (!rowIndex) {
+                        console.error('선택된 행이 없습니다.');
+                        return;
+                    }
+                    var seq_no = rowIndex.get('seq_no');  // 현재 행의 `seq_no`
+                    console.log(seq_no)
+                    var txt_taget = 'tot_acntcd';
+                    Ext.Ajax.request({
+                      url: '{% url "update_scrap_each" %}',
+                      contentType: "charset=euc-kr", 
+                      params: {
+                        seq_no			: seq_no,
+                        target			: txt_taget,
+                        val				:  encodeURIComponent(txt_val)
+                      },
+                      success: function (response) {
+
+                        Swal.fire('성공', '변경하였습니다.', 'success');
+                      },
+                      failure: function (response) {
+                          Swal.fire('오류', '변경에 실패했습니다.', 'error');
+                          record.reject();
+                      }
+                    });
+                  }
+                }
+              }),
+              renderer: acntRenderer                     
+          },
+          {   dataIndex: 'car_ddct',header: '<center>차량<br>공제</center>',  xtype: 'checkcolumn', align: 'center', renderer : checkboxRender, width: 50,
+              listeners: {
+                checkchange: function (column, recordIndex, checked) {	
+                  Ext.Ajax.request({
+                    url: '{% url "update_scrap_each" %}',
+                    contentType: "charset=euc-kr", 
+                    params: {
+                      seq_no			: store.getAt(recordIndex).get('seq_no'),
+                      target			: 'car_ddct',
+                      val				:  checked ? 1 : 0
+                    },
+                    success: function (response) {
+                        Swal.fire('성공', '변경이 완료되었습니다.', 'success');
+                    },
+                    failure: function (response) {
+                        Swal.fire('오류', '변경에 실패했습니다.', 'error');
+                        record.reject();
+                    }
+                  });
+                }
+              }            
+          },
+          {   dataIndex: 'car_class',header: '<center>차량종류</center>',  flex:1,align:'center'},
+          {   dataIndex: 'YN_Tong',header: '<center>통합<br>조회</center>',  width: 60,align:'center'},
+          {   dataIndex: 'scrapTI_Car',header: '<center>차량<br>관련</center>',  width: 40,
+              renderer: function (value, metaData, record) {
+                if (value>0){
+                  return `<i class="fa fa-car" style="color: blue;"></i>`;
+                } else {
+                  return ''
+                }                
+              }
+          },
+          {   dataIndex: 'scrapTI_Added',header: '<center>지연<br>가산</center>',  width: 40,
+            renderer: function (value, metaData, record) {
+              if (value>0){
+                return `<i class="fa fa-plus-circle" style="color: red;"></i>`;
+              } else {
+                return ''
+              }                
+            }
+          },
+          {   dataIndex: 'state_TI',header: '<center>전자 세계</center>',  width: 85,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_CardSale',header: '<center>카드<br>매출</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_CashSale',header: '<center>현영<br>매출</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_DaehangSale',header: '<center>대행<br>매출</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_CardCost',header: '<center>카드<br>매입</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_CashCost',header: '<center>현영<br>매입</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_SaleExport',header: '<center>수출<br>신고</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'state_SaleTT',header: '<center>내국<br>신용</center>',  width: 40,align:'center', renderer: renderTopic_scrap},
+          {   dataIndex: 'kakaoSentTI',header: '<center>TI카톡<br>전송상태</center>',  width: 60,align:'center'},
+          {   dataIndex: 'kakaoSentCard',header: '<center>CD카톡<br>전송상태</center>',  width: 60,align:'center'},
+          {   dataIndex: 'YN_14',header: '<center>YN_14</center>',  width: 0},
+          {   text   : '<center>TI카톡<br>개별전송</center>',dataIndex: 'KKO_TI_Send',align: 'center',width    : 60,sortable : false,
+              renderer: function (value, metaData, record) {
+                let seq_no = record.get('seq_no');
+                let targetUrl_kakao = "{% url 'send_kakao_notification' %}";
+                return `<button class="btn btn-blue  btn-sm" onclick="sendKakao(${seq_no}, ${work_YY}, ${work_MM},'vatElec','${targetUrl_kakao}');">카톡</button>`;
+              }
+          },
+          {   text   : '<center>Card카톡<br>개별전송</center>',dataIndex: 'KKO_Card_Send',align: 'center',width    : 60,sortable : false,
+              renderer: function (value, metaData, record) {
+                let seq_no = record.get('seq_no');
+                let targetUrl_kakao = "{% url 'send_kakao_notification' %}";
+                return `<button class="btn btn-blue  btn-sm" onclick="sendKakao(${seq_no}, ${work_YY}, ${work_MM},'Card','${targetUrl_kakao}');">카톡</button>`;
+              }
+          }
+      ],                       
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          items: [...dockedItemsConfig,
+          ,{
+            xtype: 'buttongroup',              
+            columns: 5,
+            frame:false,
+            defaults: {
+                enableToggle: true,
+                toggleGroup: 'yearGroup',
+                margin: '0 5 0 0', // 버튼 간격 (오른쪽으로 5px 간격)
+                style: {
+                    border: '1px solid #ccc',
+                    padding: '5px 6px',
+                    borderRadius: '5px',
+                    transition: 'all 0.2s ease' // 부드러운 전환 효과
+                }
+            },
+            items: Array.from({ length: 5 }, (_, i) => ({
+              text: `${currentYear - i}년`,
+              pressed: currentYear - i === parseInt(work_YY, 10),
+              handler: function () {
+                // 1. 그리드와 스토어 찾기
+                var grid = this.up('grid');
+                var store = grid.getStore();
+                
+                // 2. 선택된 연도 파싱 및 변수 업데이트
+                work_YY = parseInt(this.text.replace('년', ''), 10);
+
+                // 3. 스토어 파라미터 업데이트 (변경된 연도 반영)
+                var proxy = store.getProxy();
+                proxy.extraParams.work_YY = work_YY;
+                // (참고: work_MM, ADID 등 다른 파라미터는 기존 값 유지됨)
+                
+                // 4. 리로드 (Ajax 요청 및 로딩 마스크 자동 처리)
+                store.reload();
+              }
+            })),
+          }]
+        },
+        {
+          xtype: 'buttongroup',
+          title: null, // 제목 제거
+          columns: 12, // 한 줄에 버튼 12개
+          defaults: {
+              enableToggle: true,
+              toggleGroup: 'monthGroup',
+              margin: '0 5 0 0', // 버튼 간격 (오른쪽으로 5px 간격)
+              style: {
+                  //background: 'transparent', // 버튼 배경 투명
+                  border: '1px solid #ccc', // 버튼 테두리 색상
+                  padding: '5px 6px', // 버튼 내부 여백
+                  borderRadius: '5px' // 버튼 둥글게 처리
+              }
+          },
+          items: Array.from({ length: 12 }, (_, i) => ({
+              text: `${i + 1}월`,
+              pressed: i + 1 === parseInt(work_MM,10),
+              handler: function () {
+                  var grid = this.up('grid');
+                  work_MM = parseInt(this.text.replace('월', ''));
+                  grid.getStore().getProxy().extraParams.work_MM = work_MM;
+                  grid.getStore().reload();                
+              }
+          })),
+          style: {
+              background: '#fff', // 버튼 그룹 배경 제거
+              border: '1px solid #ccc', // 버튼 그룹 테두리 제거
+              padding: '6px' // 버튼 그룹 내부 여백
+          }
+        }
+      ]
+    });
+    if (mainGrid) {
+        attachGridToolTip(mainGrid, '{% url "kijang_member_popup" %}?seq_no={seq_no}');
+    }
+    // ★ [추가] 브라우저 크기를 조절할 때 그리드 높이도 같이 조절
+    $(window).on('resize', function() {
+      if (mainGrid && !mainGrid.isDestroyed) {
+        mainGrid.setHeight(getGridHeight());
+        mainGrid.doLayout(); // 레이아웃 강제 갱신
+      }
+    }); 
+})();
+
+
+</script>

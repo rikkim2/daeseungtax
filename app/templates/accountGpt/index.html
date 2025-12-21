@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query LlamaIndex</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Query System</h1>
+    <p>Ask a question about your database, and the system will respond based on the indexed data.</p>
+    
+    <form method="POST" action="{% url 'query_view' %}">
+        {% csrf_token %}
+        <label for="query">Enter your query:</label><br>
+        <textarea id="query" name="query" placeholder="Type your query here..." required></textarea><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if response %}
+    <div class="response">
+        <h2>Response:</h2>
+        <p>{{ response }}</p>
+    </div>
+    {% endif %}
+</body>
+</html>

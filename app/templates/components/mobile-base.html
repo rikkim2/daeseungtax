@@ -1,0 +1,55 @@
+{% load static %}
+<!doctype html>
+<html lang="en" dir="ltr">
+	<head>
+
+		<!-- META DATA -->
+		<meta charset="UTF-8">
+		<meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=0'>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="description" content="세무법인대승">
+		<meta name="author" content="세무법인대승">
+		<meta name="keywords" content="세무법인대승">
+
+        <!-- STYLES -->
+    	{% include 'components/layouts/mobile/styles.html' %}
+
+	</head>
+
+	<body class="ltr app horizontal landing-page">
+
+		<!-- GLOBAL-LOADER -->
+		<div id="global-loader">
+			<img src="{% static 'assets/images/loader.svg'%}" class="loader-img" alt="Loader">
+		</div>
+		<!-- GLOBAL-LOADER END -->
+
+		<!-- PAGE -->
+		<div class="page">
+			<div class="page-main">
+            <!-- app-header -->
+               
+
+
+                <!--app-content open-->
+				<div class="hor-content main-content mt-0">
+					<div class="side-app">
+						<!-- CONTAINER -->
+						<div class="main-container">
+
+							{% block content %}{% endblock %}
+
+						</div>
+					</div>
+					<!-- CONTAINER CLOSED -->
+				</div>
+			</div>
+            <!-- footer -->
+            {% include 'components/layouts/mobile/footer.html' %}
+
+		</div>
+
+        {% include 'components/layouts/mobile/scripts.html' %}
+				{% block scripts %}{% endblock %}
+	</body>
+</html>

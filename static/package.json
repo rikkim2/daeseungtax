@@ -1,0 +1,71 @@
+{
+  "name": "static",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@babel/core": "^7.17.7",
+    "@fortawesome/fontawesome-svg-core": "^1.3.0",
+    "@fortawesome/free-regular-svg-icons": "^6.0.0",
+    "@fortawesome/free-solid-svg-icons": "^6.0.0",
+    "@google-cloud/logging": "^4.5.2",
+    "@mikecousins/react-pdf": "^5.5.1",
+    "@mui/material": "^5.5.0",
+    "@react-pdf/renderer": "^2.1.1",
+    "@syncfusion/ej2-react-spreadsheet": "^19.4.55",
+    "ag-grid-community": "^27.1.0",
+    "ag-grid-react": "^27.2.1",
+    "body-parser": "^1.19.2",
+    "cors": "^2.8.5",
+    "custom-error": "^0.2.1",
+    "directory-tree": "^3.2.2",
+    "dotenv": "^11.0.0",
+    "expree": "^0.1.6",
+    "express": "^4.17.3",
+    "express-session": "^1.17.2",
+    "file-loader": "^6.2.0",
+    "file-saver": "^2.0.5",
+    "http-proxy-middleware": "^2.0.6",
+    "hwp.js": "^0.0.3",
+    "logging-library": "^0.5.0",
+    "mssql": "^7.3.0",
+    "multer": "^1.4.4",
+    "nodemailer": "^6.7.4",
+    "pdfjs-dist": "^2.12.313",
+    "print-js": "^1.6.0",
+    "pspdfkit": "^2022.1.2",
+    "react": "^17.0.2",
+    "react-async": "^10.0.1",
+    "react-csv": "^2.2.2",
+    "react-data-grid": "^5.0.5",
+    "react-doc-viewer": "^0.1.5",
+    "react-dom": "^17.0.2",
+    "react-excel-renderer": "^1.1.0",
+    "react-file-viewer": "^1.2.1",
+    "react-pdf": "^5.7.1",
+    "react-reconciler": "^0.23.0",
+    "react-scripts": "3.4.1",
+    "react-to-print": "^2.14.4",
+    "read-excel-file": "^5.2.28",
+    "scandir": "^0.1.2",
+    "tedious": "^14.0.0",
+    "web-vitals": "^2.1.2",
+    "xlsx": "^0.18.5"
+  },
+  "type": "module",
+  "devDependencies": {},
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

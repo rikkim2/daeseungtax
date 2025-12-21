@@ -1,0 +1,1769 @@
+{% extends 'components/base.html' %}
+{% load static %}
+{% load humanize %}
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+        
+							<!-- PAGE-HEADER -->
+							<div class="page-header">
+								<div>
+									<h1 class="page-title">손익계산서</h1>
+								</div>
+								<div class="ms-auto pageheader-btn">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item">재무제표</li>
+										<li class="breadcrumb-item">주요원장</li>
+										<li class="breadcrumb-item active" aria-current="page"><a href="javascript:void(0);">손익계산서</a></li>
+									</ol>
+								</div>
+							</div>
+							<!-- PAGE-HEADER END -->
+
+							<!-- row -->
+							<div class="row">
+								<div class="col-lg-4 col-xl-3">
+									<div class="card mb-4">
+										<div class="card-header border-bottom d-flex flex-row-reverse">
+                
+
+                      <div class="btn-group">
+                        <button id="btn_selectedYear"  type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                           {{selectedYear}} 년<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                          <li class="dropdown-plus-title">
+                            결산연도
+                            <b class="fa fa-angle-up" aria-hidden="true"></b>
+                          </li>
+													<div class="list-group">
+														{% for node in statementYears %}
+															<li class='list-group-item list-group-item-action'><a href='javascript:handleButtonClose({{node.work_yy}},{{node.ki}})' >{{node.work_yy}}년</a></li>
+														{% endfor %}
+													</div>
+                        </ul>
+                      </div>
+										</div>
+                    <div class="card-body" id="leftBody">
+                      <div class="ps-5 d-flex justify-content-between">
+                        <div class="text-muted fs-13 btn-list"><h4>연도별 매출/비용 <i class="icon icon-graph"></i></h3></div>
+                        <div><a href="javascript:summitGraph(1)"><i class="fe fe-search"></i></a></div>
+                      </div>
+                      <div id="chartCurrentA" class="d-flex ms-auto" style="height:240px"></div>
+
+                      <div class="ps-5 d-flex mt-6  justify-content-between">
+                        <div class="text-muted fs-13 btn-list"><h4>영업이익증가율 <i class="icon icon-vector"></i></h4></div>
+                        <div><a href="javascript:summitGraph(2)"><i class="fe fe-search"></i></a></div>
+                      </div>
+                      <div id="chartCurrentR" class="d-flex ms-auto" style="height:240px"></div>
+
+                      <div class="ps-5 d-flex mt-6  justify-content-between">
+                        <div class="d-flex justify-content-between">
+                          <div class="text-muted fs-13 "><h4>비용구조 </h4></div>
+                          <div class="ms-1"><h4><i class="lnr lnr-pie-chart"></i></h4></div>
+                        </div>
+                        <div><a href="javascript:summitGraph(3)"><i class="fe fe-search"></i></a></div>
+                      </div>
+                      <div id="chartCurrentC" class="d-flex ms-auto" style="height:240px"></div>
+                      
+                    </div>
+                  </div>
+                  <div class="card bg-primary-transparent">
+										<div class="card-body upgrade-storage ">
+											<a href="javascript:void(0)">
+												<div class="upgrade-main text-center">
+                          <span class="demo-icon">
+                            <svg class="fe-spin text-primary" xmlns="http://www.w3.org/2000/svg"  style="width: 3rem;" viewBox="0 0 24 24"><path d="M11.5,7.9c-2.3,0-4,1.9-4,4.2s1.9,4,4.2,4c2.2,0,4-1.9,4-4.1c0,0,0-0.1,0-0.1C15.6,9.7,13.7,7.9,11.5,7.9z M14.6,12.1c0,1.7-1.5,3-3.2,3c-1.7,0-3-1.5-3-3.2c0-1.7,1.5-3,3.2-3C13.3,8.9,14.7,10.3,14.6,12.1C14.6,12,14.6,12.1,14.6,12.1z M20,13.1c-0.5-0.6-0.5-1.5,0-2.1l1.4-1.5c0.1-0.2,0.2-0.4,0.1-0.6l-2.1-3.7c-0.1-0.2-0.3-0.3-0.5-0.2l-2,0.4c-0.8,0.2-1.6-0.3-1.9-1.1l-0.6-1.9C14.2,2.1,14,2,13.8,2H9.5C9.3,2,9.1,2.1,9,2.3L8.4,4.3C8.1,5,7.3,5.5,6.5,5.3l-2-0.4C4.3,4.9,4.1,5,4,5.2L1.9,8.8C1.8,9,1.8,9.2,2,9.4l1.4,1.5c0.5,0.6,0.5,1.5,0,2.1L2,14.6c-0.1,0.2-0.2,0.4-0.1,0.6L4,18.8c0.1,0.2,0.3,0.3,0.5,0.2l2-0.4c0.8-0.2,1.6,0.3,1.9,1.1L9,21.7C9.1,21.9,9.3,22,9.5,22h4.2c0.2,0,0.4-0.1,0.5-0.3l0.6-1.9c0.3-0.8,1.1-1.2,1.9-1.1l2,0.4c0.2,0,0.4-0.1,0.5-0.2l2.1-3.7c0.1-0.2,0.1-0.4-0.1-0.6L20,13.1z M18.6,18l-1.6-0.3c-1.3-0.3-2.6,0.5-3,1.7L13.4,21H9.9l-0.5-1.6c-0.4-1.3-1.7-2-3-1.7L4.7,18l-1.8-3l1.1-1.3c0.9-1,0.9-2.5,0-3.5L2.9,9l1.8-3l1.6,0.3c1.3,0.3,2.6-0.5,3-1.7L9.9,3h3.5l0.5,1.6c0.4,1.3,1.7,2,3,1.7L18.6,6l1.8,3l-1.1,1.3c-0.9,1-0.9,2.5,0,3.5l1.1,1.3L18.6,18z"/></svg>
+                          </span>
+                          <h3 class="mb-1" id="uploadDate"></h3>
+													<span class="text-primary-lit mt-1">까지 회계처리 전표가 업로드 되었습니다. </span>
+												</div>
+											</a>
+										</div>
+									</div>
+								</div>
+								<div class="col-lg-8 col-xl-9">
+									<div class="row">
+										<div class="col-xl-12 col-lg-12 col-md-12">
+											<div class="card custom-card overflow-hidden">
+												<div class="card-footer p-3  d-flex ">
+													<div class="breadcrumb-main">
+														<nav aria-label="breadcrumb">
+															<ol class="breadcrumb mb-0" id="selectedYear">
+															</ol>
+														</nav>
+													</div>
+                          <div class="btn-list  ms-auto">
+                            <!-- <button type="button" class="btn btn-primary mb-1" onclick="javascript:window.print();"><i class="fa fa-file-excel-o"></i> 엑셀다운</button> -->
+                            <button type="button" class="btn btn-info mb-1" onclick="printDiv('totalBody')"><i class="si si-printer"></i> 출력</button>
+                          </div>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div class="row">
+										<div class="col-xl-12 ">
+											<div class="card">
+												<div class="card-body h-100" id="totalBody" >
+                          <table class='table  table-sm mb-0 '>
+                            <thead>
+                              <tr>
+                                <th class=" text-center" style="vertical-align: middle;" rowSpan='2'>과목</th>
+                                <th class=" text-center" colSpan='2' id="thisYear"></th>
+                                <th class="text-center" colSpan='2' id="lastYear"></th>
+                              </tr>
+                              <tr>
+                                  <th class="text-center" colSpan='2' id="thisDuration"></th>
+                                  <th class="text-center" colSpan='2' id="lastDuration"></th>
+                              </tr>
+                            </thead>
+                            <tbody id="statmentBody"></tbody>
+                          </table>
+                        </div>
+											</div>
+										</div>
+									</div>
+									
+								</div>
+							</div>
+							<!-- End Row -->
+              <!-- 모달 : 그래프 -->
+              <div class="modal fade" id="graphModal1">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo">          
+                    <div class="modal-header ">
+                      <div id="graphModalTitle1"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    
+                    <div class="modal-body p-0 border-top-0"> 
+                      <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                        <div  id="graphModalBody1"  class="d-flex ms-auto" style="height:400px;"></div>
+                      </div>
+                    </div>             
+                  </div>
+                </div>
+              </div>
+              <div class="modal fade" id="graphModal2">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo">          
+                    <div class="modal-header ">
+                      <div id="graphModalTitle2"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body p-0 border-top-0"> 
+                      <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                        <div  id="graphModalBody2"  class="d-flex ms-auto" style="height:400px;"></div>
+                      </div>
+                    </div>             
+                  </div>
+                </div>
+              </div>
+              <div class="modal fade" id="graphModal3">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo">          
+                    <div class="modal-header ">
+                      <div id="graphModalTitle3"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body p-0 border-top-0"> 
+                      <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                        <div  id="graphModalBody3"  class="d-flex ms-auto" style="height:500px;width:100%"></div>
+                      </div>
+                    </div>             
+                  </div>
+                </div>
+              </div>
+              <!-- 모달 : 계정별원장 -->
+              <div class="modal fade" id="summitModal">
+                <div class="modal-dialog modal-dialog-centered task-view-modal" role="document">
+                  <div class="modal-content modal-content-demo">
+          
+                    <div class="modal-header ">
+                      <div id="summitModalTitle"></div>
+                      <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"><span aria-hidden="true">&times;</span></button>
+                    </div>
+          
+          
+                    <div class="modal-body p-0 border-top-0" >
+                      <!-- Tabs -->
+                      <div class="tabs-menu4 w-100">
+                        <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#task-1">
+                            일자별 거래내역
+                          </a>
+                          <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                            거래처별 거래내역
+                          </a>
+                          <!-- <a class="nav-link border border-bottom-0 py-1 br-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#task-2">
+                            연도별 잔액
+                          </a> -->
+                        </nav>
+                      </div>
+                      
+                      <div class="tab-content w-100">
+                        <!-- 계정별원장 -->
+                        <div class="tab-pane active task-files-tab" id="task-1">
+                          <div class="row">
+                            <div class="col-xl-12 ">
+                              <div class="card">
+                                <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                                  <div class="d-flex flex-row justify-content-between ">
+                                    <div style='width:55%;text-align:center;'>집계월</div>
+                                    <div style='width:15%;text-align:center;'>차변</div>
+                                    <div style='width:15%;text-align:center;'>대변</div>
+                                    <div style='width:15%;text-align:center'>잔액</div>
+                                  </div>
+                                  <div id="loading" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                  </div>
+                                  <div id="accordionLedgr" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- 거래처원장 -->
+                        <div class="tab-pane" id="task-2">
+                          <div class="row">
+                            <div >
+                              <div class="card">
+                                <div class="card-body h-100" style="max-height: calc(100vh - 200px); overflow-x: hidden; overflow-y: auto;">
+                                  <div class="d-flex flex-row justify-content-between ">
+                                    <div style='width:40%;text-align:center;'>거래처명</div>
+                                    <div style='width:15%;text-align:right;margin-right:20px;'>기초</div>
+                                    <div style='width:15%;text-align:right;margin-right:20px;'>차변</div>
+                                    <div style='width:15%;text-align:right;margin-right:30px;'>대변</div>
+                                    <div style='width:15%;text-align:right;margin-right:30px;'>잔액</div>
+                                  </div>
+                                  <div id="loading2" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                  </div>
+                                  <div id="accordionTrader" class="w-100 overflow-hidden Accordion-Style02 "></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+													
+        {% endblock %}
+
+        {% block scripts %}
+        <script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+				<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet" />
+        <style>
+          #chartCurrentA {
+            width: 100%;
+            height: 150px;
+          }
+          #graphModalBody3 {
+            width: 100%;
+            height: 500px;
+          }
+          </style>
+        <script src="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.js'%}"></script>
+				<link href="{% static 'assets/plugins/jquery-bootgrid-master/dist/jquery.bootgrid.css'%}" rel="stylesheet"/>
+        <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+        <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+        <script>
+				am5.addLicense("AM5C372573951");
+        var leftArr;
+				var biz_name = "{{ memuser.biz_name }}";
+				var selectedYear="";
+        var selectedKi="";
+        var fiscalMM = "{{fiscalMM}}";
+				$(document).ready(function(){
+          selectedYear = "{{selectedYear}}"
+					setSelectedFolder("{{selectedYear}}년  >> 손익계산서");
+          gridLoad("{{selectedYear}}","{{selectedKi}}")
+          majorRatio("{{selectedYear}}")
+				});
+        function summitModal(acnt_cd,acnt_nm){
+          //계정별원장
+          $('#accordionLedgr').empty();
+          var ledgrData = [];
+          
+          $.ajax({
+						url:"{% url 'setLedgrGrid' %}",
+            data:{
+              selYear:selectedYear,
+              selAcntcd:acnt_cd
+            },
+						dataType:"Json",
+						success:async function(data){
+              var ledgrData=data.rows;
+              let htmlContent = '';  // DOM 조작 전에 미리 HTML을 문자열로 준비
+              let startNum = 0;  // startNum을 처음에 초기화
+              document.getElementById('loading').style.display = 'block';  
+              for (var i = 0; i < ledgrData.length; i++) {
+                  // 이전 아이템의 잔액을 현재의 시작 값으로 설정
+                  if (i > 0) {
+                      startNum = ledgrData[i - 1].TranAmt_Sum;
+                  }
+
+                  htmlContent += `<div class="mt-2" id="headerAccord${i}">
+                                    <div class="accor" id="headingOne${i}">
+                                      <h4 class="m-0">
+                                        <a href="#ledgrAccord${i}" class="active" data-bs-toggle="collapse" data-bs-controls="ledgrAccord${i}" aria-expanded="false">
+                                          <div class='d-flex flex-row justify-content-between'>
+                                            <div style='width:55%;text-align:center'>${ledgrData[i].Work_MM}</div>
+                                            <div style='width:15%;text-align:right'>${numberWithCommas(ledgrData[i].TranAmt_Cr)}</div>
+                                            <div style='width:15%;text-align:right'>${numberWithCommas(ledgrData[i].TranAmt_Dr)}</div>
+                                            <div style='width:15%;text-align:right'>${numberWithCommas(ledgrData[i].TranAmt_Sum)}</div>
+                                          </div>
+                                        </a>
+                                      </h4>
+                                    </div>
+                                    <div class="collapse mb-2" id="ledgrAccord${i}" aria-labelledby="headingOne${i}" data-bs-parent="#accordionLedgr">
+                                      <div class="border p-3 br-bottom-radius-5">
+                                        ${await ledgrDetail(selectedYear, ledgrData[i].Real_MM, acnt_cd, startNum)}
+                                      </div>
+                                    </div>
+                                  </div>`;
+              }
+              document.getElementById('accordionLedgr').innerHTML = htmlContent; 
+              document.getElementById('loading').style.display = 'none';
+              // for(var i=0;i<ledgrData.length;i++){
+              //   // 디테일거래내역
+              //   const divHeader = document.createElement("div")
+              //   divHeader.setAttribute("class","mt-2")
+              //   divHeader.setAttribute("id","headerAccord"+i)
+              //   const divHeader2 = document.createElement("div")
+              //   divHeader2.setAttribute("class","accor")
+              //   divHeader2.setAttribute("id","headingOne"+i)
+              //   const h4 = document.createElement("h4")
+              //   h4.setAttribute("class","m-0")
+              //   const anchorHead = document.createElement("a")
+              //   var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+              //   tmpHtml2 += "<div style='width:55%;text-align:center'>"+ledgrData[i].Work_MM+"</div>"
+              //   tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(ledgrData[i].TranAmt_Cr)+"</div>"
+              //   tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(ledgrData[i].TranAmt_Dr)+"</div>"
+              //   tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(ledgrData[i].TranAmt_Sum)+"</div>"
+              //   tmpHtml2 += "</div>"
+              //   anchorHead.innerHTML = tmpHtml2;
+              //   anchorHead.setAttribute("class","active")
+              //   anchorHead.setAttribute("data-bs-toggle","collapse")
+              //   anchorHead.setAttribute("data-bs-controls","ledgrAccord"+i)
+              //   anchorHead.setAttribute("aria-expanded","false")
+              //   anchorHead.href="#ledgrAccord"+i
+              //   h4.appendChild(anchorHead)
+              //   divHeader2.appendChild(h4)
+              //   divHeader.appendChild(divHeader2)
+
+              //   const divBody = document.createElement("div")
+              //   divBody.setAttribute("class","collapse mb-2")
+              //   divBody.setAttribute("id","ledgrAccord"+i)
+              //   divBody.setAttribute("aria-labelledby","headingOne"+i)
+              //   divBody.setAttribute("data-bs-parent","#accordionLedgr")
+              //   const divBody2 = document.createElement("div")
+              //   divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+              //   if(i==0) {
+              //     startNum = 0
+              //   } else {
+              //     startNum = ledgrData[i-1].TranAmt_Sum
+              //   }
+              //   divBody2.innerHTML = await ledgrDetail(selectedYear,ledgrData[i].Real_MM,acnt_cd,startNum)
+              //   divBody.appendChild(divBody2)
+
+              //   document.getElementById('accordionLedgr').appendChild(divHeader);
+              //   document.getElementById('accordionLedgr').appendChild(divBody);
+              // }
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+
+          //거래처원장
+          $('#accordionTrader').empty();
+          var gridData = [];
+          $.ajax({
+						url:"{% url 'getTraderGrid' %}",
+            data:{
+              selYear:selectedYear,
+              selAcntcd:acnt_cd
+            },
+						dataType:"Json",
+            //async:false,
+						success:async function(data){
+              gridData = data.rows;
+              let htmlContent = '';  // DOM 조작 전에 미리 HTML을 문자열로 준비
+
+              // 로딩 스피너를 보여줌
+              document.getElementById('loading2').style.display = 'block';  
+
+              for (var i = 0; i < gridData.length; i++) {
+                  // 이전 거래내역을 HTML 문자열로 생성
+                  var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+                  tmpHtml2 += "<div style='width:40%'>" + gridData[i].CompanyName + "</div>";
+                  tmpHtml2 += "<div style='width:15%;text-align:right'>" + numberWithCommas(gridData[i].TStart) + "</div>";
+                  tmpHtml2 += "<div style='width:15%;text-align:right'>" + numberWithCommas(gridData[i].TCr) + "</div>";
+                  tmpHtml2 += "<div style='width:15%;text-align:right'>" + numberWithCommas(gridData[i].TDr) + "</div>";
+                  tmpHtml2 += "<div style='width:15%;text-align:right'>" + numberWithCommas(gridData[i].TEnd) + "</div>";
+                  tmpHtml2 += "</div>";
+
+                  // 각 헤더와 내용에 대한 HTML을 생성
+                  htmlContent += `
+                    <div class="mt-2" id="headerAccord${i}">
+                      <div class="accor" id="headingOne${i}">
+                        <h4 class="m-0">
+                          <a href="#detailAccord${i}" class="active" data-bs-toggle="collapse" data-bs-controls="detailAccord${i}" aria-expanded="false">
+                            ${tmpHtml2}
+                          </a>
+                        </h4>
+                      </div>
+                    </div>
+                    <div class="collapse mb-2" id="detailAccord${i}" aria-labelledby="headingOne${i}" data-bs-parent="#accordionTrader">
+                      <div class="border p-3 br-bottom-radius-5">
+                        ${await keraeDetail(selectedYear, acnt_cd, gridData[i].Trd_Cd)}
+                      </div>
+                    </div>`;
+              }
+
+              // DOM에 한 번에 삽입
+              document.getElementById('accordionTrader').innerHTML = htmlContent;
+
+              // 로딩 스피너를 숨김
+              document.getElementById('loading2').style.display = 'none';
+              // gridData=data.rows;
+              // for(var i=0;i<gridData.length;i++){
+              //   // 디테일거래내역
+              //   const divHeader = document.createElement("div")
+              //   divHeader.setAttribute("class","mt-2")
+              //   divHeader.setAttribute("id","headerAccord"+i)
+              //   const divHeader2 = document.createElement("div")
+              //   divHeader2.setAttribute("class","accor")
+              //   divHeader2.setAttribute("id","headingOne"+i)
+              //   const h4 = document.createElement("h4")
+              //   h4.setAttribute("class","m-0")
+              //   const anchorHead = document.createElement("a")
+              //   var tmpHtml2 = "<div class='d-flex flex-row justify-content-between '>"
+              //   tmpHtml2 += "<div style='width:40%'>"+gridData[i].CompanyName+"</div>"
+							// 	tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TStart)+"</div>"
+              //   tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TCr)+"</div>"
+              //   tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TDr)+"</div>"
+              //   tmpHtml2 += "<div style='width:15%;text-align:right'>"+numberWithCommas(gridData[i].TEnd)+"</div>"
+              //   tmpHtml2 += "</div>"
+              //   anchorHead.innerHTML = tmpHtml2;
+              //   anchorHead.setAttribute("class","active")
+              //   anchorHead.setAttribute("data-bs-toggle","collapse")
+              //   anchorHead.setAttribute("data-bs-controls","detailAccord"+i)
+              //   anchorHead.setAttribute("aria-expanded","false")
+              //   anchorHead.href="#detailAccord"+i
+              //   h4.appendChild(anchorHead)
+              //   divHeader2.appendChild(h4)
+              //   divHeader.appendChild(divHeader2)
+
+              //   const divBody = document.createElement("div")
+              //   divBody.setAttribute("class","collapse mb-2")
+              //   divBody.setAttribute("id","detailAccord"+i)
+              //   divBody.setAttribute("aria-labelledby","headingOne"+i)
+              //   divBody.setAttribute("data-bs-parent","#accordionTrader")
+              //   const divBody2 = document.createElement("div")
+              //   divBody2.setAttribute("class","border p-3 br-bottom-radius-5")
+                
+              //   divBody2.innerHTML = await keraeDetail(selectedYear,acnt_cd,gridData[i].Trd_Cd)
+              //   divBody.appendChild(divBody2)
+
+              //   document.getElementById('accordionTrader').appendChild(divHeader);
+              //   document.getElementById('accordionTrader').appendChild(divBody);
+              // }
+              
+						},
+						error:function(request,status,error){
+							console.log('fail:'+error);
+						}
+					})
+          //최종세팅
+          tmpHead = "<nav aria-label='breadcrumb'>"
+          tmpHead += "<ol class='breadcrumb breadcrumb-style'>"
+          tmpHead += "<li class='breadcrumb-item'>"+selectedYear+"년</li>"
+          tmpHead += "<li class='breadcrumb-item'>재무상태표</li>"
+          tmpHead += "<li class='breadcrumb-item active'>"+acnt_nm+"</li>"
+          tmpHead += "</ol></nav>"
+          $('[id="summitModalTitle"]').html(tmpHead);
+			    $("#summitModal").modal('show');
+        }
+        function ledgrDetail(selYear2,selMM,selAcntcd,startNum){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getLedgrDetail' %}",
+              data:{
+                selYear2:selYear2,
+                selMonth:selMM,
+                selAcntcd:selAcntcd,
+                startNum:startNum
+              },
+              dataType:"Json",
+              success:function(data){
+
+                tmpHTML = "<table class='table  table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th>"
+                tmpHTML += "<th>적요(품목 등)</th>"
+                tmpHTML += "<th style='text-align:center'>거래처</th>"
+                tmpHTML +=  "<th style='text-align:center'>차변</th>"
+                tmpHTML +=  "<th style='text-align:center'>대변</th>"
+                tmpHTML +=  "<th style='text-align:center'>잔액</th>"
+                //tmpHTML +=  "<th style='text-align:center'>상세</th>"
+                tmpHTML +=  "</tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr class='hoverrow'><th style='text-align:center;width:55px' scope='row'>"+data.rows[j].Tran_Dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].Remk+"</td>"
+                  tmpHTML += "  <td style='text-align:center;width:15%'>"+data.rows[j].Trader_Name+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right;width:15%'>"+numberWithCommas(data.rows[j].TranAmt_Sum)+"</td>"
+                  //tmpHTML += "  <td style='text-align:right;width:55px'><a href='#' class='btn btn-warning-light btn-square  br-50 ' data-bs-toggle='tooltip' title='' data-bs-original-title='상세보기'><i class='fa fa-commenting fs-13'></i></a></td></tr>"
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+        function keraeDetail(selYear,selAcntcd,trdCd){
+          return new Promise((resolve,reject)=>{
+            var tmpHTML="";
+            $.ajax({
+              url:"{% url 'getTraderDetailGrid' %}",
+              data:{
+                selYear:selYear,
+                selAcntcd:selAcntcd,
+                Trd_Cd:trdCd
+              },
+              dataType:"Json",
+              //async:false,
+              success:function(data){
+                tmpHTML = "<table class='table table-sm mb-0 '>"
+                tmpHTML += "<thead><tr><th>날짜</th><th>적요</th><th style='text-align:right'>기초</th>"
+                tmpHTML +=  "<th style='text-align:right'>차변</th>"
+                tmpHTML +=  "<th style='text-align:right'>대변</th>"
+                tmpHTML +=  "<th style='text-align:right'>잔액</th></tr></thead>"
+                tmpHTML += "<tbody>"
+                for(var j=0;j<data.rows.length;j++){
+                  tmpHTML += "<tr><th scope='row'>"+data.rows[j].tran_dt+"</th>"
+                  tmpHTML += "  <td>"+data.rows[j].remk+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].TStart)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Cr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Dr)+"</td>"
+                  tmpHTML += "  <td style='text-align:right'>"+numberWithCommas(data.rows[j].tranAmt_Sum)+"</td></tr>"
+
+                }//endfor
+                tmpHTML += "</tbody></table>"
+                resolve(tmpHTML)
+              },
+              error:function(request,status,error){
+                console.log('fail:'+error);
+              }
+            });//end ajax      
+          })
+        }
+
+        function yearlyRation(selYear,isNew,thisLeftArr){
+          am5.ready(function(){
+            var rootC;
+            if(isNew){
+              rootC = am5.Root.new("chartCurrentC");
+            }else{
+              am5.array.each(am5.registry.rootElements, function(root) {
+                if(root)
+                  if (root.dom.id == "chartCurrentC") 
+                    root.dispose();
+              });
+              rootC = am5.Root.new("chartCurrentC");
+            }
+            isNew = false;
+
+            rootC.setThemes([
+              am5themes_Animated.new(rootC)
+            ]);
+            var chartC = rootC.container.children.push(
+              am5percent.PieChart.new(rootC, {
+                layout: rootC.verticalLayout
+              })
+            );
+            var series0C = chartC.series.push(
+              am5percent.PieSeries.new(rootC, {
+                valueField: "value",
+                categoryField: "category",
+                alignLabels: false,
+                radius: am5.percent(90),
+                innerRadius: am5.percent(65)
+              })
+            );
+            series0C.states.create("hidden", {
+              startAngle: 180,
+              endAngle: 180
+            });
+            series0C.slices.template.setAll({
+              fillOpacity: 0.5,
+              strokeOpacity: 0,
+              templateField: "settings"
+            });
+            series0C.slices.template.states.create("hover", { scale: 1 });
+            series0C.slices.template.states.create("active", { shiftRadius:0 });
+            series0C.labels.template.setAll({
+              templateField: "settings"
+            });
+            series0C.ticks.template.setAll({
+              templateField: "settings"
+            });
+            series0C.labels.template.setAll({
+              textType: "circular",
+              radius: 30
+            });
+
+            var costWonka=0;costPankwan=0;costEtc=0;
+            for(var i=0;i<leftArr.totalData.length;i++){
+              if(selYear == leftArr.totalData[i][0].year){
+                costWonka   = leftArr.totalData[i][0].F10;
+                costPankwan = leftArr.totalData[i][0].H10;
+                costEtc     = leftArr.totalData[i][0].L10;
+              }
+            }
+            series0C.data.setAll([
+              {
+                category: "매출원가 + 판관비",
+                value: (costWonka*1 + costPankwan*1) / (costWonka*1 + costPankwan*1 +costEtc*1 ) *100
+              },
+              {
+                category: "Unused",
+                value: (costEtc*1 ) / (costWonka*1 + costPankwan*1 +costEtc*1 ) *100,
+                settings: { forceHidden: true }
+              }
+            ]);
+
+            var series1C = chartC.series.push(
+              am5percent.PieSeries.new(rootC, {
+                radius: am5.percent(95),
+                innerRadius: am5.percent(85),
+                valueField: "value",
+                categoryField: "category",
+                alignLabels: false
+              })
+            );
+
+            series1C.states.create("hidden", {
+              startAngle: 180,
+              endAngle: 180
+            });
+
+            series1C.slices.template.setAll({
+              templateField: "sliceSettings",
+              strokeOpacity: 0
+            });
+
+            series1C.labels.template.setAll({
+              textType: "circular"
+            });
+
+            series1C.labels.template.adapters.add("radius", function (radius, target) {
+              var dataItem = target.dataItem;
+              var slice = dataItem.get("slice");
+              return -(slice.get("radius") - slice.get("innerRadius")) / 2 - 10;
+            });
+
+            series1C.slices.template.states.create("hover", { scale: 1 });
+            series1C.slices.template.states.create("active", { shiftRadius:0 });
+
+            series1C.ticks.template.setAll({
+              forceHidden: true
+            });
+
+            series1C.data.setAll([{
+              category: "매출원가",
+              value: (costWonka*1) / (costWonka*1 + costPankwan*1 +costEtc*1 ) *100
+            }, {
+              category: "판관비",
+              value: (costPankwan*1) / (costWonka*1 + costPankwan*1 +costEtc*1 ) *100
+            }, {
+              category: "기타",
+              value: (costEtc*1) / (costWonka*1 + costPankwan*1 +costEtc*1 ) *100,
+              sliceSettings: { fill: am5.color(0xdedede) }
+            }]);
+          })//amchart end   
+        }
+        
+        function majorRatio(selYear){
+          $.ajax({
+						url:"{% url 'getFinancialData' %}",
+            data:{
+              selYear:selYear,
+              flag:'PL'
+            },
+						dataType:"Json",
+						success: function(data){
+              leftArr = data;
+              var isDomNotExist = true;
+              am5.array.each(am5.registry.rootElements, function(root) {
+                if (root.dom.id == "chartCurrentA"||root.dom.id == "chartCurrentR") {
+                  isDomNotExist = false;
+                }
+              });
+              // amcharts.com - piechart
+              if(isDomNotExist){
+                am5.ready(function() {
+                  /*==========================================================================================================================연도별매출액*/
+                  var root = am5.Root.new("chartCurrentA");
+                  // Set themes https://www.amcharts.com/docs/v5/concepts/themes/
+                  root.setThemes([
+                    am5themes_Animated.new(root)
+                  ]);
+                  root.numberFormatter.setAll({
+                    numberFormat: "#a",
+                    bigNumberPrefixes: [
+                      { "number": 1e+4, "suffix": "만" },
+                      { "number": 1e+6, "suffix": "백만" },
+                      { "number": 1e+8, "suffix": "억" }
+                    ],
+                    smallNumberPrefixes: []
+                  });
+                  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                    panX: false,
+                    panY: false,
+                    wheelX: "panX",
+                    wheelY: "zoomX",
+                    layout: root.verticalLayout
+                  }));
+                  var legend = chart.children.push(am5.Legend.new(root, {
+                    centerX: am5.p50,
+                    x: am5.p50
+                  }))
+                  var saleCost = new Array();
+                  var maxSale1 = 0;
+                  for(var i=0;i<leftArr.totalData.length;i++){
+                    var saleYear = new Object();
+                    saleYear.year=leftArr.totalData[i][0].year;
+                    saleYear.income=leftArr.totalData[i][0].E10*1;
+                    saleYear.expenses=leftArr.totalData[i][0].E10*1-leftArr.totalData[i][0].N10*1;
+                    saleCost.push(saleYear);
+                    maxSale1<leftArr.totalData[i][0].E10 ? maxSale1=leftArr.totalData[i][0].E10:maxSale1=maxSale1
+                  }
+                  var yAxis = chart.yAxes.push(
+                    am5xy.CategoryAxis.new(root, {
+                      categoryField: "year",
+                      renderer: am5xy.AxisRendererY.new(root, {
+                        cellStartLocation: 0,
+                        cellEndLocation: 1    //막대그래프 굵기
+                      }),
+                      tooltip: am5.Tooltip.new(root, {})
+                    })
+                  );
+                  yAxis.data.setAll(saleCost);
+                  var xAxis = chart.xAxes.push(
+                    am5xy.ValueAxis.new(root, {
+                      min: maxSale1*0.2,
+                      max: maxSale1,
+                      extraMax: 0.1,
+                      renderer: am5xy.AxisRendererX.new(root, {})
+                    })
+                  );
+
+                  var series1 = chart.series.push(am5xy.ColumnSeries.new(root, {
+                    name: "매출액",
+                    xAxis: xAxis,
+                    yAxis: yAxis,
+                    valueXField: "income",
+                    categoryYField: "year",
+                    sequencedInterpolation: true,
+                    tooltip: am5.Tooltip.new(root, {
+                      pointerOrientation: "horizontal",
+                      labelText: "[bold]{name}[/]\n{categoryY}년 : {valueX}"
+                    })
+                  }));
+                  //막대그래프 폭
+                  series1.columns.template.setAll({
+                    height: am5.percent(70)
+                  });
+
+                  var series2 = chart.series.push(am5xy.LineSeries.new(root, {
+                    name: "비용",
+                    xAxis: xAxis,
+                    yAxis: yAxis,
+                    valueXField: "expenses",
+                    categoryYField: "year",
+                    sequencedInterpolation: true,
+                    tooltip: am5.Tooltip.new(root, {
+                      pointerOrientation: "horizontal",
+                      labelText: "[bold]{name}[/]\n{categoryY}년 : {valueX}"
+                    })
+                  }));
+                  series2.strokes.template.setAll({
+                    strokeWidth: 2,
+                  });
+                  series2.bullets.push(function() {
+                    return am5.Bullet.new(root, {
+                      locationY: 0.5,
+                      sprite: am5.Circle.new(root, {
+                        radius: 5,    //원 굵기
+                        stroke: series2.get("stroke"),
+                        strokeWidth: 2,
+                        fill: root.interfaceColors.get("background")
+                      })
+                    });
+                  });
+                  var legend = chart.children.push(am5.Legend.new(root, {
+                    centerX: am5.p50,
+                    x: am5.p50
+                  }));
+
+                  legend.data.setAll(chart.series.values);
+
+                  var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+                    behavior: "zoomY"
+                  }));
+                  cursor.lineX.set("visible", false);
+
+                  series1.data.setAll(saleCost);
+                  series2.data.setAll(saleCost);
+                  series1.appear();
+                  series2.appear();
+                  chart.appear(1000, 100);          
+                  /*=======================================================================================================================ModalGraph1*/
+
+                  // ✅ 1. Root & Chart 생성
+                    var rootM1 = am5.Root.new("graphModalBody1");
+                    rootM1.setThemes([am5themes_Animated.new(rootM1)]);
+
+                    var chartM1 = rootM1.container.children.push(
+                      am5xy.XYChart.new(rootM1, {
+                        panX: false,
+                        panY: false,
+                        wheelX: "panX",
+                        wheelY: "zoomX",
+                        layout: rootM1.verticalLayout
+                      })
+                    );
+
+                    chartM1.set(
+                      am5.Scrollbar.new(rootM1, {
+                        orientation: "horizontal"
+                      })
+                    );
+
+                    // ✅ 2. 데이터 준비
+                    var saleCostM1 = [];
+                    var realSaleM1 = 1;     // 실제매출
+                    var predictSaleM1 = 1;  // 예상매출
+
+                    for (var i = leftArr.totalData.length - 1; i >= 0; i--) {
+                      var saleYear = {};
+                      saleYear.year = leftArr.totalData[i][0].year;
+                      saleYear.income = leftArr.totalData[i][0].E10 * 1;
+                      saleYear.expenses = leftArr.totalData[i][0].E10 * 1 - leftArr.totalData[i][0].N10 * 1;
+
+                      if (i == 1) {
+                        saleYear.strokeSettings = { stroke: chartM1.get("colors").getIndex(1), strokeWidth: 3, strokeDasharray: [5, 5] }
+                      }
+                      if (i == 0) {
+                        realSaleM1 = leftArr.totalData[i][0].E10;
+                        predictSaleM1 = realSaleM1 * 12 / fiscalMM;
+                        saleYear.income = leftArr.totalData[i][0].E10 * 12 / fiscalMM;
+                        saleYear.expenses = leftArr.totalData[i][0].E10 * 12 / fiscalMM - leftArr.totalData[i][0].N10 * 12 / fiscalMM;
+                        saleYear.columnSettings = { strokeWidth: 1, strokeDasharray: [5], fillOpacity: 0.2 };
+                        saleYear.info = "(예상)";
+                      }
+                      saleCostM1.push(saleYear);
+                    }
+
+                    // ✅ 3. X축 (CategoryAxis)
+                    // ✅ X축 셀 범위를 넓혀서 카테고리 공간 활용
+                    var xRenderer = am5xy.AxisRendererX.new(rootM1, {
+                      minGridDistance: 30,
+                      cellStartLocation: 0.05,   // 기본 0 → 0.05로 조정 (막대가 칸의 95% 사용)
+                      cellEndLocation: 0.95      // 기본 1 → 0.95로 조정
+                    });
+
+                    var xAxisM1 = chartM1.xAxes.push(
+                      am5xy.CategoryAxis.new(rootM1, {
+                        categoryField: "year",
+                        renderer: xRenderer,
+                        tooltip: am5.Tooltip.new(rootM1, {})
+                      })
+                    );
+
+                    // ✅ X축 라벨 강제 표시
+                    xAxisM1.get("renderer").labels.template.setAll({
+                      visible: true,
+                      forceHidden: false,
+                      oversizedBehavior: "wrap",
+                      rotation: 0   // 필요 시 45도 (ex: rotation: 45)
+                    });
+
+                    xAxisM1.data.setAll(saleCostM1);
+
+                    // ✅ 4. Y축 (ValueAxis)
+                    var yAxisM1 = chartM1.yAxes.push(
+                      am5xy.ValueAxis.new(rootM1, {
+                        min: 0,
+                        renderer: am5xy.AxisRendererY.new(rootM1, {})
+                      })
+                    );
+
+                    // ✅ 5. Range (현재 & 예상 매출액 표시)
+                    var rangeDataItem = yAxisM1.makeDataItem({
+                      value: realSaleM1,
+                      endValue: predictSaleM1
+                    });
+                    var range = yAxisM1.createAxisRange(rangeDataItem);
+
+                    rangeDataItem.get("grid").setAll({
+                      stroke: am5.color(0xff0000),
+                      strokeOpacity: 1,
+                      location: 0
+                    });
+                    rangeDataItem.get("axisFill").setAll({
+                      fill: am5.color(0xFF621F),
+                      fillOpacity: 0.2,
+                      visible: true
+                    });
+                    rangeDataItem.get("label").setAll({
+                      fill: am5.color(0xffffff),
+                      text: "현재(" + fiscalMM + "월) 매출액 : " + Number.parseFloat(realSaleM1 / 100000000).toFixed(2) + " 억",
+                      location: 0,
+                      background: am5.RoundedRectangle.new(rootM1, {
+                        fill: am5.color(0xff0000)
+                      })
+                    });
+
+                    // ✅ 예상 매출액 Range 추가
+                    var rangeDataItemPredM1 = yAxisM1.makeDataItem({
+                      value: predictSaleM1,
+                      endValue: predictSaleM1
+                    });
+                    var rangePredM1 = yAxisM1.createAxisRange(rangeDataItemPredM1);
+
+                    rangeDataItemPredM1.get("grid").setAll({
+                      stroke: am5.color(0xff0000),
+                      strokeOpacity: 1,
+                      location: 0
+                    });
+                    rangeDataItemPredM1.get("axisFill").setAll({
+                      fill: am5.color(0xff0000),
+                      fillOpacity: 0.1,
+                      visible: true
+                    });
+                    rangeDataItemPredM1.get("label").setAll({
+                      fill: am5.color(0xffffff),
+                      text: "연도말 예상 매출액 : " + Number.parseFloat(predictSaleM1 / 100000000).toFixed(2) + " 억",
+                      location: 0,
+                      background: am5.RoundedRectangle.new(rootM1, {
+                        fill: am5.color(0xff0000)
+                      })
+                    });
+
+                    // ✅ 6. 시리즈 (매출액 - Column)
+                    var series1M1 = chartM1.series.push(
+                      am5xy.ColumnSeries.new(rootM1, {
+                        name: "매출액",
+                        xAxis: xAxisM1,
+                        yAxis: yAxisM1,
+                        valueYField: "income",
+                        categoryXField: "year",
+                        tooltip: am5.Tooltip.new(rootM1, {
+                          pointerOrientation: "horizontal",
+                          labelText: "{categoryX}년 {name} : {valueY} {info}"
+                        })
+                      })
+                    );
+
+                    series1M1.columns.template.setAll({
+                      width: am5.percent(70),
+                      tooltipY: am5.percent(10),
+                      templateField: "columnSettings"
+                      // strokeOpacity: 0,
+                      // fillOpacity: 1,
+                      // fill: am5.color(0x4A90E2)   // ✅ 파란색 막대 강제 지정 (테마 무시)
+                    });
+                    series1M1.data.setAll(saleCostM1);
+
+                    // ✅ 7. 시리즈 (비용합계 - Line)
+                    var series2M1 = chartM1.series.push(
+                      am5xy.LineSeries.new(rootM1, {
+                        name: "비용합계",
+                        xAxis: xAxisM1,
+                        yAxis: yAxisM1,
+                        valueYField: "expenses",
+                        categoryXField: "year",
+                        tooltip: am5.Tooltip.new(rootM1, {
+                          pointerOrientation: "horizontal",
+                          labelText: "{categoryX}년 {name} : {valueY} {info}"
+                        })    
+                      })
+                    );
+
+                    series2M1.strokes.template.setAll({
+                      strokeWidth: 3,
+                      templateField: "strokeSettings"
+                    });
+                    series2M1.data.setAll(saleCostM1);
+
+                    // ✅ 꼭지점 원 표시
+                    series2M1.bullets.push(function () {
+                      return am5.Bullet.new(rootM1, {
+                        sprite: am5.Circle.new(rootM1, {
+                          strokeWidth: 3,
+                          stroke: series2M1.get("stroke"),
+                          radius: 5,
+                          fill: rootM1.interfaceColors.get("background")
+                        })
+                      });
+                    });
+
+                    // ✅ 8. 기타 설정
+                    chartM1.set("cursor", am5xy.XYCursor.new(rootM1, {}));
+
+                    // ✅ 범례
+                    var legend = chartM1.children.push(
+                      am5.Legend.new(rootM1, {
+                        centerX: am5.p50,
+                        x: am5.p50
+                      })
+                    );
+                    legend.data.setAll(chartM1.series.values);
+
+                    // ✅ 애니메이션
+                    chartM1.appear(1000, 100);
+                    series1M1.appear();
+
+                  /*=======================================================================================================================ModalGraph2*/
+                  /*=======================================================================================================================ModalGraph2*/
+                  var rootM2 = am5.Root.new("graphModalBody2");
+                  rootM2.setThemes([am5themes_Animated.new(rootM2)]);
+
+                  var chartM2 = rootM2.container.children.push(
+                    am5xy.XYChart.new(rootM2, {
+                      panX: false,
+                      panY: false,
+                      wheelX: "panX",
+                      wheelY: "zoomX",
+                      layout: rootM2.verticalLayout
+                    })
+                  );
+
+                  chartM2.set(
+                    am5.Scrollbar.new(rootM2, {
+                      orientation: "horizontal"
+                    })
+                  );
+
+                  var saleCostM2 = [];
+                  var realSaleM2 = 1;
+                  var predictSaleM2 = 1;
+
+                  // ✅ 데이터 구성
+                  for (var i = leftArr.totalData.length - 1; i >= 0; i--) {
+                    var saleYear = {};
+                    saleYear.year = leftArr.totalData[i][0].year;
+                    saleYear.income = leftArr.totalData[i][0].N10 * 1;
+                    saleYear.expenses = leftArr.totalData[i][0].O10 * 1;
+
+                    if (i == 1) {
+                      saleYear.strokeSettings = { stroke: chartM2.get("colors").getIndex(1), strokeWidth: 3, strokeDasharray: [5, 5] }
+                    }
+                    if (i == 0) {
+                      realSaleM2 = leftArr.totalData[i][0].N10;
+                      predictSaleM2 = Math.round(leftArr.totalData[i][0].N10 * 12 / fiscalMM);
+                      saleYear.income = Math.round(leftArr.totalData[i][0].N10 * 12 / fiscalMM);
+                      saleYear.expenses = Math.round(leftArr.totalData[1][0].O10 / leftArr.totalData[1][0].N10 * leftArr.totalData[i][0].N10);
+                      saleYear.columnSettings = { fill: am5.color(0x4A90E2), fillOpacity: 0.2 }; // ✅ 예상 데이터만 연한 파란색
+                      saleYear.info = "(예상)";
+                    } else {
+                      saleYear.columnSettings = { fill: am5.color(0x4A90E2), fillOpacity: 1 };  // ✅ 일반 데이터 진한 파란색
+                    }
+                    saleCostM2.push(saleYear);
+                  }
+
+                  // ✅ X축 설정 (모든 연도 라벨 표시 + 폭 조정)
+                  var xRendererM2 = am5xy.AxisRendererX.new(rootM2, {
+                    minGridDistance: 30,
+                    cellStartLocation: 0.05,
+                    cellEndLocation: 0.95
+                  });
+
+                  var xAxisM2 = chartM2.xAxes.push(
+                    am5xy.CategoryAxis.new(rootM2, {
+                      categoryField: "year",
+                      renderer: xRendererM2,
+                      tooltip: am5.Tooltip.new(rootM2, {})
+                    })
+                  );
+
+                  // ✅ X축 라벨 강제 표시
+                  xAxisM2.get("renderer").labels.template.setAll({
+                    visible: true,
+                    forceHidden: false,
+                    oversizedBehavior: "wrap",
+                    rotation: 0
+                  });
+
+                  xAxisM2.data.setAll(saleCostM2);
+
+                  // ✅ Y축
+                  var yAxisM2 = chartM2.yAxes.push(
+                    am5xy.ValueAxis.new(rootM2, {
+                      min: 0,
+                      renderer: am5xy.AxisRendererY.new(rootM2, {})
+                    })
+                  );
+
+                  // ✅ 빨간 범위 라벨 설정 (현재 & 예상)
+                  var rangeDataItemM2 = yAxisM2.makeDataItem({ value: realSaleM2, endValue: predictSaleM2 });
+                  var range = yAxisM2.createAxisRange(rangeDataItemM2);
+
+                  rangeDataItemM2.get("grid").setAll({ stroke: am5.color(0xff0000), strokeOpacity: 1 });
+                  rangeDataItemM2.get("axisFill").setAll({ fill: am5.color(0xFF621F), fillOpacity: 0.2, visible: true });
+
+                  rangeDataItemM2.get("label").setAll({
+                      fill: am5.color(0xffffff),
+                      text: "현재(" + fiscalMM + "월) 매출액 : " + Number.parseFloat(realSaleM2 / 100000000).toFixed(2) + " 억",
+                      location: 0,
+                      background: am5.RoundedRectangle.new(rootM1, {
+                        fill: am5.color(0xff0000)
+                      })
+                    });
+
+
+                  // ✅ 예상 순이익 라벨 설정
+                  var rangeDataItemPred = yAxisM2.makeDataItem({ value: predictSaleM2, endValue: predictSaleM2 });
+                  var rangePred = yAxisM2.createAxisRange(rangeDataItemPred);
+                  rangeDataItemPred.get("grid").setAll({ stroke: am5.color(0xff0000), strokeOpacity: 1 });
+                  rangeDataItemPred.get("axisFill").setAll({ fill: am5.color(0xff0000), fillOpacity: 0.1, visible: true });
+                  rangeDataItemPred.get("label").setAll({
+                    fill: am5.color(0xffffff),
+                    text: "연도말 예상 순이익 : " + Number.parseFloat(predictSaleM2 / 100000000).toFixed(2) + " 억",
+                    background: am5.RoundedRectangle.new(rootM2, { fill: am5.color(0xff0000) })
+                  });
+
+                  // ✅ ColumnSeries (순이익)
+                  var series1M2 = chartM2.series.push(
+                    am5xy.ColumnSeries.new(rootM2, {
+                      name: "순이익",
+                      xAxis: xAxisM2,
+                      yAxis: yAxisM2,
+                      valueYField: "income",
+                      categoryXField: "year",
+                      tooltip: am5.Tooltip.new(rootM2, {
+                        pointerOrientation: "horizontal",
+                        labelText: "{categoryX}년 {name} : {valueY} {info}"
+                      })
+                    })
+                  );
+
+                  // ✅ 막대 스타일 (파란색, 넓게)
+                  series1M2.columns.template.setAll({
+                    width: am5.percent(70),
+                    // strokeOpacity: 0,
+                    // fillOpacity: 1,
+                    tooltipY: am5.percent(10),
+                    templateField: "columnSettings"  // ✅ 연도별 columnSettings 반영
+                  });
+
+                  series1M2.data.setAll(saleCostM2);
+
+                  // ✅ LineSeries (세금)
+                  var series2M2 = chartM2.series.push(
+                    am5xy.LineSeries.new(rootM2, {
+                      name: "세금",
+                      xAxis: xAxisM2,
+                      yAxis: yAxisM2,
+                      valueYField: "expenses",
+                      categoryXField: "year",
+                      tooltip: am5.Tooltip.new(rootM2, {
+                        pointerOrientation: "horizontal",
+                        labelText: "{categoryX}년 {name} : {valueY} {info}"
+                      })
+                    })
+                  );
+
+                  series2M2.strokes.template.setAll({
+                    strokeWidth: 3,
+                    templateField: "strokeSettings"
+                  });
+
+                  series2M2.data.setAll(saleCostM2);
+
+                  // ✅ 꼭지점 원 표시
+                  series2M2.bullets.push(function () {
+                    return am5.Bullet.new(rootM2, {
+                      sprite: am5.Circle.new(rootM2, {
+                        strokeWidth: 3,
+                        stroke: series2M2.get("stroke"),
+                        radius: 5,
+                        fill: rootM2.interfaceColors.get("background")
+                      })
+                    });
+                  });
+
+                  // ✅ 마우스 커서, 범례, 애니메이션
+                  chartM2.set("cursor", am5xy.XYCursor.new(rootM2, {}));
+
+                  var legendM2 = chartM2.children.push(
+                    am5.Legend.new(rootM2, {
+                      centerX: am5.p50,
+                      x: am5.p50
+                    })
+                  );
+                  legendM2.data.setAll(chartM2.series.values);
+
+                  chartM2.appear(1000, 100);
+                  series1M2.appear();
+
+                  
+                  /*==========================================================================================================영업이익증가율*/                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+
+                  var rootVI = am5.Root.new("chartCurrentR");
+                  rootVI.numberFormatter.setAll({
+                    numberFormat: "#a",
+                    bigNumberPrefixes: [
+                      { "number": 1e+4, "suffix": "만" },
+                      { "number": 1e+6, "suffix": "백만" },
+                      { "number": 1e+8, "suffix": "억" }
+                    ],
+                    smallNumberPrefixes: []
+                  });
+                  rootVI.setThemes([
+                    am5themes_Animated.new(rootVI)
+                  ]);
+                  var chartVI = rootVI.container.children.push(am5xy.XYChart.new(rootVI, {
+                    panX: false,
+                    panY: false,
+                    wheelX: "none",
+                    wheelY: "none",
+                    layout: rootVI.verticalLayout
+                  }));
+                  var dataVI = new Array();
+                  for(var i=leftArr.totalData.length-1;i>=0;i--){
+                    var saleYear = new Object();
+                    saleYear.year=leftArr.totalData[i][0].year;
+                    saleYear.value=leftArr.totalData[i][0].N10*1;
+                    dataVI.push(saleYear);
+                  }
+                  for (var i = 0; i < (dataVI.length - 1); i++) {
+                    dataVI[i].valueNext = dataVI[i + 1].value;
+                  }
+
+                  var xAxisVI = chartVI.xAxes.push(am5xy.CategoryAxis.new(rootVI, {
+                    categoryField: "year",
+                    renderer: am5xy.AxisRendererX.new(rootVI, {
+                      cellStartLocation: 0.1,
+                      cellEndLocation: 0.9,
+                      minGridDistance: 30
+                    }),
+                    tooltip: am5.Tooltip.new(rootVI, {})
+                  }));
+
+                  xAxisVI.data.setAll(dataVI);
+
+                  var yAxisVI = chartVI.yAxes.push(am5xy.ValueAxis.new(rootVI, {
+                    //min: 0,
+                    //logarithmic: true,
+                    renderer: am5xy.AxisRendererY.new(rootVI, {})
+                  }));
+                  var seriesVI = chartVI.series.push(am5xy.ColumnSeries.new(rootVI, {
+                    xAxis: xAxisVI,
+                    yAxis: yAxisVI,
+                    valueYField: "value",
+                    categoryXField: "year"
+                  }));
+                  seriesVI.columns.template.setAll({
+                    tooltipText: "{categoryX}년: {valueY}",
+                    width: am5.percent(90),
+                    tooltipY: 0
+                  });
+                  seriesVI.data.setAll(dataVI);
+                  var series2VI = chartVI.series.push(am5xy.ColumnSeries.new(rootVI, {
+                    xAxis: xAxisVI,
+                    yAxis: yAxisVI,
+                    valueYField: "valueNext",
+                    openValueYField: "value",
+                    categoryXField: "year",
+                    fill: am5.color(0x555555),
+                    stroke: am5.color(0x555555)
+                  }));
+                  series2VI.columns.template.setAll({
+                    width: 1
+                  });
+                  series2VI.data.setAll(dataVI);
+                  series2VI.bullets.push(function () {
+                    var label = am5.Label.new(rootVI, {
+                      text: "{valueY}",
+                      fontWeight: "500",
+                      fill: am5.color(0x00cc00),
+                      centerY: am5.p100,
+                      centerX: am5.p50,
+                      populateText: true
+                    });
+                    label.adapters.add("text", function(text, target) {
+                      var percent = getVariancePercent(target.dataItem);
+                      return percent ? percent + "%" : text;
+                    });
+                    label.adapters.add("centerY", function(center, target) {
+                      return getVariancePercent(target.dataItem) < 0 ? 0 : center;
+                    });
+                    label.adapters.add("fill", function(fill, target) {
+                      return getVariancePercent(target.dataItem) < 0 ? am5.color(0xcc0000) : fill;
+                    });
+                    
+                    return am5.Bullet.new(rootVI, {
+                      locationY: 1,
+                      sprite: label
+                    });
+                  });
+                  series2VI.bullets.push(function() {
+                    var arrow = am5.Graphics.new(rootVI, {
+                      rotation: -90,
+                      centerX: am5.p50,
+                      centerY: am5.p50,
+                      dy: 3,
+                      fill: am5.color(0x555555),
+                      stroke: am5.color(0x555555),
+                      draw: function (display) {
+                        display.moveTo(0, -3);
+                        display.lineTo(8, 0);
+                        display.lineTo(0, 3);
+                        display.lineTo(0, -3);
+                      }
+                    });
+                    arrow.adapters.add("rotation", function(rotation, target) {
+                      return getVariancePercent(target.dataItem) < 0 ? 90 : rotation;
+                    });
+                    arrow.adapters.add("dy", function(dy, target) {
+                      return getVariancePercent(target.dataItem) < 0 ? -3 : dy;
+                    });
+                    return am5.Bullet.new(rootVI, {
+                      locationY: 1,
+                      sprite: arrow
+                    })
+                  })
+                  seriesVI.appear();
+                  chartVI.appear(1000, 100);
+                  function getVariancePercent(dataItem) {
+                    if (dataItem) {
+                      var value = dataItem.get("valueY");
+                      var openValue = dataItem.get("openValueY");
+                      var change = value - openValue;
+                      return Math.round(change / openValue * 100);
+                    }
+                    return 0;
+                  }
+                }); // end am5.ready()
+              }
+              yearlyRation("{{selectedYear}}",true,leftArr)
+            }//success
+          });
+        }
+        function gridLoad(selectedYear,ki){
+          $.ajax({
+						url:"{% url 'getStatementList' %}",
+            cache:false,
+            data:{
+              selYear:selectedYear,
+              flag:'PL'
+            },
+						dataType:"Json",
+						success: function(data){
+              fiscalMM = data.rowDuration.thisEndDate.split("월")[0];
+              $('#statmentBody').empty();
+              $('[id="thisYear"]').html(selectedYear + " 년 (제 "+ki+" 기)");
+              $('[id="lastYear"]').html((selectedYear-1) + " 년 (제 "+(ki-1)+" 기)");
+              $('[id="thisDuration"]').html(data.rowDuration.start_dt + " ~ " + data.rowDuration.thisEndDate);
+              $('[id="lastDuration"]').html(data.rowDuration.start_dt + " ~ " + data.rowDuration.lastEndDate);
+              $('[id="uploadDate"]').html(selectedYear+"년 "+data.rowDuration.thisEndDate);
+              for(var i=0;i<data.rows.length;i++){
+                 StatementDetail(data.rows[i])
+              }
+              $('.table > tbody > tr').click(function() {
+                var tmpName=""
+                for(var i=0;i<data.rows.length;i++){
+                  if(data.rows[i].acnt_cd==this.id) {
+                    tmpName = data.rows[i].acnt_nm.replaceAll(" ","");
+                    break;
+                  }
+                }
+                if(isNumber(this.id)){
+                  summitModal(this.id,tmpName);
+                }
+              });
+              $('tr').hover(function() {
+                  $(this).css('background-color', 'lightgray');
+              }, function() {
+                  $(this).css('background-color', '');
+              });
+            },
+            beforeSend: function () {
+              var width = 0;
+              var height = 0;
+              var left = 0;
+              var top = 0;
+              width = 50;
+              height = 50;
+              top = ( $(window).height() - height ) / 2 + $(window).scrollTop()-20;
+              left = ( $(window).width() - width ) / 2 + $(window).scrollLeft();
+              if($("#div_ajax_load_image").length != 0) {
+                $("#div_ajax_load_image").css({
+                  "top": top+"px",
+                  "left": left+"px"
+                });
+                $("#div_ajax_load_image").show();
+              }
+              else {
+                $('[id="totalBody"]').append('<div id="div_ajax_load_image" class="dimmer active"><div class="lds-heart"><div></div></div></div>');
+              }
+            },
+            complete: function () {
+              $("#div_ajax_load_image").hide();
+            }            
+          });
+        }
+        function summitGraph(modalName){
+          if(modalName=="1"){
+            $('[id="graphModalTitle1"]').html("연도별 매출 vs 비용");
+            $("#graphModal1").modal('show');
+            $("#graphModal2").modal('hide');
+            $("#graphModal3").modal('hide');
+          }else if(modalName=="2"){
+            $('[id="graphModalTitle2"]').html("연도별 순이익 vs 세금");
+            $("#graphModal1").modal('hide');
+            $("#graphModal2").modal('show');
+            $("#graphModal3").modal('hide');
+          }
+          else if(modalName=="3"){
+            $('[id="graphModalTitle3"]').html(selectedYear + "년 비용내역 순위(그래프가 보이지 않으면 크롬브라우저를 사용바랍니다)");
+            $("#graphModal1").modal('hide');
+            $("#graphModal2").modal('hide');
+            $("#graphModal3").modal('show');
+            showModal3();
+          }
+        }
+        // var isNewM3 = true;
+        function showModal3(){
+          am5.ready(function() {
+            /*=======================================================================================================================ModalGraph3*/
+            /*=======================================================================================================================ModalGraph3*/
+            /*=======================================================================================================================ModalGraph3*/ 
+            am5.array.each(am5.registry.rootElements, function(root) {
+              if(root)
+                if (root.dom.id == "graphModalBody3") 
+                  root.dispose();
+            });
+            var rootM3 = am5.Root.new("graphModalBody3");
+            // Data
+            var firstYear = "{{firstYear}}"
+            var costYears = "{{costYears|escapejs}}";
+            costYears = costYears.replaceAll("'","")
+            costYears = costYears.replaceAll("#","'")
+            costYears = costYears.replaceAll("'","\"")
+            costYears = JSON.parse(costYears);
+            var allData = costYears
+                              
+            rootM3.numberFormatter.setAll({
+              numberFormat: "#a",
+              bigNumberPrefixes: [
+                { "number": 1e+4, "suffix": "만" },
+                { "number": 1e+6, "suffix": "백만" },
+                { "number": 1e+8, "suffix": "억" }
+              ],
+              smallNumberPrefixes: []
+            });
+
+            var stepDuration = 2000;
+            rootM3.setThemes([am5themes_Animated.new(rootM3)]);
+            var chartM3 = rootM3.container.children.push(am5xy.XYChart.new(rootM3, {
+              panX: true,
+              panY: true,
+              wheelX: "none",
+              wheelY: "none"
+            }));
+            chartM3.zoomOutButton.set("forceHidden", true);
+            // Create axes
+            var yRendererM3 = am5xy.AxisRendererY.new(rootM3, {
+              minGridDistance: 20,
+              inversed: true
+            });
+            // hide grid
+            yRendererM3.grid.template.set("visible", false);
+            var yAxisM3 = chartM3.yAxes.push(am5xy.CategoryAxis.new(rootM3, {
+              maxDeviation: 0,
+              categoryField: "network",
+              renderer: yRendererM3
+            }));
+            var xAxisM3 = chartM3.xAxes.push(am5xy.ValueAxis.new(rootM3, {
+              maxDeviation: 0,
+              min: 0,
+              strictMinMax: true,
+              extraMax: 0.1,
+              renderer: am5xy.AxisRendererX.new(rootM3, {})
+            }));
+
+            xAxisM3.set("interpolationDuration", stepDuration / 10);
+            xAxisM3.set("interpolationEasing", am5.ease.linear);
+            var seriesM3 = chartM3.series.push(am5xy.ColumnSeries.new(rootM3, {
+              xAxis: xAxisM3,
+              yAxis: yAxisM3,
+              valueXField: "value",
+              categoryYField: "network"
+            }));
+            seriesM3.columns.template.setAll({ cornerRadiusBR: 5, cornerRadiusTR: 5 });
+            seriesM3.columns.template.adapters.add("fill", function (fill, target) {
+              return chartM3.get("colors").getIndex(seriesM3.columns.indexOf(target));
+            });
+            seriesM3.columns.template.adapters.add("stroke", function (stroke, target) {
+              return chartM3.get("colors").getIndex(seriesM3.columns.indexOf(target));
+            });
+            seriesM3.bullets.push(function () {
+              return am5.Bullet.new(rootM3, {
+                locationX: 1,
+                sprite: am5.Label.new(rootM3, {
+                  text: "{valueXWorking.formatNumber('#.# a')}",
+                  fill: rootM3.interfaceColors.get("alternativeText"),
+                  centerX: am5.p100,
+                  centerY: am5.p50,
+                  populateText: true
+                })
+              });
+            });
+            var labelM3 = chartM3.plotContainer.children.push(am5.Label.new(rootM3, {
+              text: firstYear,
+              fontSize: "8em",
+              opacity: 0.2,
+              x: am5.p100,
+              y: am5.p100,
+              centerY: am5.p100,
+              centerX: am5.p100
+            }));
+            function getSeriesItem(category) {
+              for (var i = 0; i < seriesM3.dataItems.length; i++) {
+                var dataItem = seriesM3.dataItems[i];
+                if (dataItem.get("categoryY") == category) {
+                  return dataItem;
+                }
+              }
+            }
+            function sortCategoryAxis() {
+              seriesM3.dataItems.sort(function (x, y) {
+                return y.get("valueX") - x.get("valueX"); // descending
+                //return x.get("valueX") - y.get("valueX"); // ascending
+              });
+              am5.array.each(yAxisM3.dataItems, function (dataItem) {
+                var seriesDataItem = getSeriesItem(dataItem.get("category"));
+                if (seriesDataItem) {
+                  var index = seriesM3.dataItems.indexOf(seriesDataItem);
+                  var deltaPosition =
+                    (index - dataItem.get("index", 0)) / seriesM3.dataItems.length;
+                  if (dataItem.get("index") != index) {
+                    dataItem.set("index", index);
+                    dataItem.set("deltaPosition", -deltaPosition);
+                    dataItem.animate({
+                      key: "deltaPosition",
+                      to: 0,
+                      duration: stepDuration / 2,
+                      easing: am5.ease.out(am5.ease.cubic)
+                    });
+                  }
+                }
+              });
+              yAxisM3.dataItems.sort(function (x, y) {
+                return x.get("index") - y.get("index");
+              });
+            }
+            var yearM3 = firstYear;
+            var interval = setInterval(function () {
+              yearM3++;
+              if (yearM3 > selectedYear) {
+                clearInterval(interval);
+                clearInterval(sortInterval);
+              }
+              updateData();
+            }, stepDuration);
+            var sortInterval = setInterval(function () {
+              sortCategoryAxis();
+            }, 100);
+            function setInitialData() {
+              var d = allData[yearM3];
+              for (var n in d) {
+                seriesM3.data.push({ network: n, value: d[n] });
+                yAxisM3.data.push({ network: n });
+              }
+            }
+            
+            function updateData() {
+              if(yearM3<=selectedYear){
+                var itemsWithNonZero = 0;
+                if (allData[yearM3]) {
+                  labelM3.set("text", yearM3.toString());
+                  am5.array.each(seriesM3.dataItems, function (dataItem) {
+                    var category = dataItem.get("categoryY");
+                    var value = allData[yearM3][category];
+                    if (value > 0) {
+                      itemsWithNonZero++;
+                    }
+                    dataItem.animate({
+                      key: "valueX",
+                      to: value,
+                      duration: stepDuration,
+                      easing: am5.ease.linear
+                    });
+                    dataItem.animate({
+                      key: "valueXWorking",
+                      to: value,
+                      duration: stepDuration,
+                      easing: am5.ease.linear
+                    });
+                  });
+                  yAxisM3.zoom(0, itemsWithNonZero / yAxisM3.dataItems.length);
+                }
+              }
+            }
+            setInitialData();
+            setTimeout(function () {
+              yearM3++;
+              updateData();
+            }, 50);
+
+            seriesM3.appear(1000);
+            chartM3.appear(1000, 100);
+          });
+        }
+				const setSelectedFolder = (strFolder) => {
+          var innerHtml=""
+          var tmpArr = strFolder.split(">>")
+          for(var i=0;i<tmpArr.length;i++){
+            if(i<(tmpArr.length-1)){
+              innerHtml += "<li class='breadcrumb-item'>"+tmpArr[i]+"</li>"
+            }else{
+              innerHtml += "<li class='breadcrumb-item'><a href='javascript:void(0);'>"+tmpArr[i]+"</a></li>"
+            }
+          }
+					$('[id="selectedYear"]').html(innerHtml);
+				}
+        var tmpAmt=0;
+        var tmpAmt_pre=0;
+        const StatementDetail = (props)=>{
+          //var acnt_nm=props.acnt_nm.replaceAll(" ","&nbsp;")
+          var rightAmt = Number(props.amt_now);
+          var rightAmt_pre = Number(props.amt_bef);
+          var acnt_cd= props.acnt_cd;
+          var leftAmt=0;
+          var leftAmt_pre=0;
+          var isModAcc=0;
+          if(isNumber(props.acnt_cd)){
+            if( (acnt_cd >= 195 && acnt_cd <= 200) || (acnt_cd >= 202 && acnt_cd <= 217) || (acnt_cd >= 471 && acnt_cd <= 500) || (acnt_cd >= 401 && acnt_cd <= 430) || (acnt_cd >= 459 && acnt_cd <= 470) || (acnt_cd >= 901 && acnt_cd <= 997) || (acnt_cd >= 801 && acnt_cd <= 900) ){
+              leftAmt = Number(props.amt_now);
+              leftAmt_pre = Number(props.amt_bef);
+              rightAmt = 0;
+              rightAmt_pre = 0;
+              isModAcc = acnt_cd % 2;
+
+              //유형자산
+              //계정코드가 짝수이면 자산 / 홀수이면 누계액으로 인식 21.8.8
+              if( (acnt_cd >= 195 && acnt_cd <= 200) || (acnt_cd >= 215 && acnt_cd <= 216) || (acnt_cd >= 471 && acnt_cd <= 500) ){
+                if (isModAcc === 1 ) {
+                  tmpAmt = leftAmt;
+                  tmpAmt_pre = leftAmt_pre;                 
+                } else {
+                  //합계를 내지 않는 경우 : 매출원가							영업외손익											판관비
+                  if( !(acnt_cd >= 401 && acnt_cd <= 430) &&  !(acnt_cd >= 459 && acnt_cd <= 470) && !(acnt_cd >= 901 && acnt_cd <= 997) && !(acnt_cd >= 801 && acnt_cd <= 900) ){
+                    rightAmt = leftAmt + tmpAmt;
+                    rightAmt_pre = leftAmt_pre + tmpAmt_pre                                         
+                  }
+                }
+              } else {
+                if (isModAcc === 0 ) {
+                  tmpAmt = leftAmt
+                  tmpAmt_pre = leftAmt_pre
+                } else {
+                  //'합계를 내지 않는 경우 : 매출원가							영업외손익											판관비
+                  if(  !(acnt_cd >= 401 && acnt_cd <= 430) && !(acnt_cd >= 459 && acnt_cd <= 470) && !(acnt_cd >= 901 && acnt_cd <= 997) && !(acnt_cd >= 801 && acnt_cd <= 900) ){
+                    rightAmt = leftAmt + tmpAmt
+                    rightAmt_pre = leftAmt_pre + tmpAmt_pre
+                  }
+                }
+              }
+            }
+          }
+          if(leftAmt!="" || rightAmt!=0 || rightAmt_pre!=0 || leftAmt_pre!=""){
+            const tr = document.createElement("tr")
+            tr.setAttribute("class","hpx-10")
+            tr.setAttribute("id",props.acnt_cd)
+            tr.setAttribute("style",props.acnt_nm)
+            const td1 = document.createElement("td")
+            const td2 = document.createElement("td")
+            const td3 = document.createElement("td")
+            const td4 = document.createElement("td")
+            const td5 = document.createElement("td")
+            td1.innerHTML = props.acnt_nm
+            // isNumber(props.acnt_cd)?td1.setAttribute("class","editable-pre-wrapped ps-5"):td1.setAttribute("class","editable-pre-wrapped h5 text-gray-500")
+            isNumber(props.acnt_cd)?td1.setAttribute("class","editable-pre-wrapped ps-7"):props.acnt_nm.substr(4,1)=="("?td1.setAttribute("class","editable-pre-wrapped  h5 text-gray-500 ps-5"):td1.setAttribute("class","editable-pre-wrapped h5 text-gray-500")
+
+            leftAmt<0?td2.setAttribute("style","text-align:right;color:red;"):td2.setAttribute("style","text-align:right;")
+            leftAmt<0?td2.innerText = "("+numberWithCommas(leftAmt*-1)+")":td2.innerText = numberWithCommas(leftAmt)
+            if(leftAmt==0){td2.innerText = ""}
+
+            isNumber(props.acnt_cd)?rightAmt<0?td3.setAttribute("style","text-align:right;color:red;"):td3.setAttribute("style","text-align:right;"):td3.setAttribute("style","text-align:right;color: #949eb7 !important;")
+            rightAmt<0?td3.innerText = "("+numberWithCommas(rightAmt*-1)+")":td3.innerText = numberWithCommas(rightAmt)
+
+            leftAmt_pre<0?td4.setAttribute("style","text-align:right;color:red;"):td4.setAttribute("style","text-align:right;")
+            leftAmt_pre<0?td4.innerText = "("+numberWithCommas(leftAmt_pre*-1)+")":td4.innerText = numberWithCommas(leftAmt_pre)
+            if(leftAmt_pre==0){td4.innerText = ""}
+            isNumber(props.acnt_cd)?rightAmt_pre<0?td5.setAttribute("style","text-align:right;color:red;"):td5.setAttribute("style","text-align:right;"):td5.setAttribute("style","text-align:right;color: #949eb7 !important;")
+            rightAmt_pre<0?td5.innerText = "("+numberWithCommas(rightAmt_pre*-1)+")":td5.innerText = numberWithCommas(rightAmt_pre)
+            tr.appendChild(td1)
+            tr.appendChild(td2)
+            tr.appendChild(td3)
+            tr.appendChild(td4)
+            tr.appendChild(td5)
+            document.getElementById('statmentBody').appendChild(tr);
+          }
+        }
+				const handleButtonClose = (work_yy,ki) => {
+					const btnElement  = document.getElementById('btn_selectedYear');
+  				btnElement.innerHTML = work_yy+" 년";
+					selectedYear = work_yy;
+          selectedKi = ki;
+					setSelectedYear(work_yy,ki);
+					setSelectedFolder(selectedYear+" 년" + " >> 손익계산서")
+				};  
+				const setSelectedYear = (selYear,selKi) => {
+          selectedYear = selYear;
+          // treeLoad(selectedYear);
+					gridLoad(selYear,selKi);
+          yearlyRation(selYear,false,leftArr)
+				}
+        function isNumber(s) {
+          s += ''; // 문자열로 변환
+          s = s.replace(/^\s*|\s*$/g, ''); // 좌우 공백 제거
+          if (s === '' || isNaN(s)) return false;
+          return true;
+        }
+        function printDiv(divName) {
+          var printContents = document.getElementById(divName).innerHTML;
+          var originalContents = document.body.innerHTML;
+          document.body.innerHTML = printContents;
+          window.print();
+          document.body.innerHTML = originalContents;
+        }
+
+        </script>
+
+        {% endblock %}
+

@@ -1,0 +1,29 @@
+{% extends 'components/mobile-base.html' %}
+{% load static %}
+
+    {% block styles %}
+
+    {% endblock %}
+    
+        {% block content %}
+
+<div class="card">
+  <div class="card-header border-bottom">
+    <h4 class="card-title fw-bold" id = "Subject">[{{biz_name}}] {{work_yy}}년 {{work_mm}}월 고지세액 안내</h4>
+  </div>
+  <div class="card-body">
+    <div class="email-media">
+      <div class="mt-0 d-sm-flex">
+        <img class="me-2 rounded-circle avatar-xl" src="{% get_static_prefix %}assets/images/faces/{{ recordset_adminInfo.admin_name }}.png" alt="avatar">
+        <div class="media-body">
+          <div class="media-title fw-bold mt-0">업무담당자 {{recordset_adminInfo.admin_name}} <span class="tx-13 fw-semibold">(<i class="fe fe-phone-call"></i> {{recordset_adminInfo.admin_tel_no}} )</span></div>
+          <p class="mb-0"> <span class="text-muted">책임세무사 {{recordset_adminInfo.TXT_DutyCTA}} (<i class="fe fe-smartphone"></i> {{recordset_adminInfo.TXT_DutyCTAHP}} )</span> </p>
+          <p class="mb-0"> <span class="text-muted">{{recordset_adminInfo.TXT_OfficeAddress}} </span> </p>
+        </div>
+      </div>
+    </div>
+    <div class="eamil-body mt-5">
+      
+    </div>
+  </div>
+{% endblock %}

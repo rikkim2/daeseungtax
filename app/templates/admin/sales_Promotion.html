@@ -1,0 +1,441 @@
+{% load static %}
+{% load humanize %}
+
+<style>
+    /* 부트스트랩 배경색 오버라이드 */
+    .bg-primary-light {
+        background-color: #e8f5e9 !important; 
+    }
+    .modal-xxl {
+        min-width: 1200px;
+        max-width: 1400px; 
+    }
+    
+    /* ★ 스크롤 컨테이너 */
+    .promo-scroll-container {
+        position: absolute;
+        top: 0; 
+        bottom: 0; 
+        left: 0; 
+        right: 0;
+        overflow-y: auto;   
+        overflow-x: hidden; 
+        padding: 15px;      
+    }
+</style>
+
+<div class="promo-scroll-container">
+
+    <div class="row">
+        <div class="col-xl-8 col-md-12">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body project-type-container projects p-4">
+                            <h4 class="m-0" id="typeTitle"></h4>
+                            <div class="d-sm-flex align-items-center">
+                                <div class="btn-list mx-4"></div> 
+                                <nav class="nav card-body p-1 project-type ">
+                                    <a class="btn btn-primary active" data-bs-toggle="tab" href="#pjAll" id="pwAll">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-inner-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,13h-8.0005493C13.2234497,13.0001831,12.9998169,13.223999,13,13.5v8.0005493C13.0001831,21.7765503,13.223999,22.0001831,13.5,22h8.0006104C21.7765503,21.9998169,22.0001831,21.776001,22,21.5v-8.0006104C21.9998169,13.2234497,21.776001,12.9998169,21.5,13z M21,21h-7v-7h7V21z M10.5,2H2.4993896C2.2234497,2.0001831,1.9998169,2.223999,2,2.5v8.0005493C2.0001831,10.7765503,2.223999,11.0001831,2.5,11h8.0006104C10.7765503,10.9998169,11.0001831,10.776001,11,10.5V2.4993896C10.9998169,2.2234497,10.776001,1.9998169,10.5,2z M10,10H3V3h7V10z M10.5,13H2.4993896C2.2234497,13.0001831,1.9998169,13.223999,2,13.5v8.0005493C2.0001831,21.7765503,2.223999,22.0001831,2.5,22h8.0006104C10.7765503,21.9998169,11.0001831,21.776001,11,21.5v-8.0006104C10.9998169,13.2234497,10.776001,12.9998169,10.5,13z M10,21H3v-7h7V21z M21.5,2h-8.0005493C13.2234497,2.0001831,12.9998169,2.223999,13,2.5v8.0005493C13.0001831,10.7765503,13.223999,11.0001831,13.5,11h8.0006104C21.7765503,10.9998169,22.0001831,10.776001,22,10.5V2.4993896C21.9998169,2.2234497,21.776001,1.9998169,21.5,2z M21,10h-7V3h7V10z"/></svg>
+                                    </a>                               
+                                    {% for year in corpYears %}
+                                    <a class="btn btn-primary-light btn-sm " data-bs-toggle="tab" href="#pj{{year}}" id="pw{{year}}">
+                                        {{year}}
+                                    </a>
+                                    {% endfor %}
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row ">
+                <div class="tab-content">
+                    {% for selectedYear in corpYears %}
+                    <div class="tab-pane  h-100" id="pj{{selectedYear}}">
+                        <div class="row">
+                            {% for invoice in invoiceAll %}
+                            {%  if invoice.work_YY  ==  selectedYear%}
+                            <div class="col-sm-12 col-md-12 col-lg-12 col-xl-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="row">
+                                                    <div class="col">
+                                                        <div class="d-sm-flex align-items-center">
+                                                            <div class="me-2">
+                                                                <img alt="User Avatar" class="rounded-circle avatar-lg" src="{% get_static_prefix %}assets/images/faces/{{invoice.admin_name}}.png">
+                                                            </div>
+                                                            <div class="ms-1">
+                                                                <h6 class="mb-1 text-normal"> <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.work_YY}}','{{invoice.work_MM}}')" class="float-start">{{invoice.work_YY}}년 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+                                                                <span class="text-muted border-end pe-2 fs-11 float-start mt-1"> 정산월</span>
+                                                                <span class="text-teritary ps-1 fs-11">{{invoice.reg_date }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-auto">
+                                                        <div class="d-flex align-items-center">
+                                                            <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.work_YY}}','{{invoice.work_MM}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+                                                                <h6 class="text-muted">수수료</h6>
+                                                                <h4 class="mb-0">{{invoice.promoAmt|intcomma}}</h4>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mt-4">
+                                                <div class="row align-items-center">
+                                                    <div class="col">
+                                                        <p class="mb-0">
+                                                            <span class="text-muted d-block">{{invoice.admon_name}}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr class="mt-0 mb-0">
+                                            <div class=" d-flex justify-content-end align-items-center p-0 mt-4 mb-0" style="height: 8px;">
+                                                <p class="badge rounded-pill bg-{{invoice.corpColor}}-transparent text-{{invoice.corpColor}} mb-0">{{invoice.isCorpPaid}}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="tab-pane active h-100" id="pjAll">
+                        <div class="row">
+                            {% for invoice in invoiceAll  %}
+                            <div class="col-sm-12 col-md-12 col-lg-12 col-xl-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="row">
+                                                    <div class="col">
+                                                        <div class="d-sm-flex align-items-center">
+                                                            <div class="me-2">
+                                                                <img alt="User Avatar" class="rounded-circle avatar-lg" src="{% get_static_prefix %}assets/images/faces/{{invoice.admin_name}}.png">
+                                                            </div>
+                                                            <div class="ms-1">
+                                                                <h6 class="mb-1 text-normal"> <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.work_YY}}','{{invoice.work_MM}}')" class="float-start">{{invoice.work_YY}}년 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+                                                                <span class="text-muted border-end pe-2 fs-11 float-start mt-1"> 정산월</span>
+                                                                <span class="text-teritary ps-1 fs-11">{{invoice.reg_date }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-auto">
+                                                        <div class="d-flex align-items-center">
+                                                            <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.work_YY}}','{{invoice.work_MM}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+                                                                <h6 class="text-muted">수수료</h6>
+                                                                <h4 class="mb-0">{{invoice.promoAmt|intcomma}}</h4>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mt-4">
+                                                <div class="row align-items-center">
+                                                    <div class="col">
+                                                        <p class="mb-0">
+                                                            <span class="text-muted d-block">{{invoice.admon_name}}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr class="mt-0 mb-0">
+                                            <div class=" d-flex justify-content-end align-items-center p-0 mt-4 mb-0" style="height: 8px;">
+                                                <p class="badge rounded-pill bg-{{invoice.corpColor}}-transparent text-{{invoice.corpColor}} mb-0 me-2">{{invoice.isCorpPaid}}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-12">
+            <div class="row">
+                <div class="card overflow-hidden">
+                    <div class="card-header border-bottom">
+                        <h3 class="card-title">영업수당 지급기준</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">귀하의 노고에 감사드립니다.</p>
+                        <div class="panel-group1" id="accordion11" role="tablist">
+                            <div class="card overflow-hidden mb-2 border-0">
+                                <a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse1" aria-expanded="true">
+                                    배수 기준</a>
+                                <div id="collapse1" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+                                    <div class="panel-body">
+                                        <p>법인과 성실신고대상인 개인사업자는 월기장료의 160%</p>
+                                        <p>개인사업자는 월기장료의 140%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card overflow-hidden mb-2 border-0">
+                                <a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse2" aria-expanded="false">지급방식</a>
+                                <div id="collapse2" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+                                    <div class="panel-body ">
+                                        <p>계약월에 800%를 선지급하고 나머지는 8개월 후에 지급합니다.</p>
+                                        <p>법인 및 성실신고대상자 잔액 800%, 개인사업자 잔액 600%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card overflow-hidden mb-2 border-0">
+                                <a class="accordion-toggle panel-heading1 collapsed" data-bs-toggle="collapse" data-bs-parent="#accordion11" href="#collapse3" aria-expanded="false">차감</a>
+                                <div id="collapse3" class="panel-collapse collapse" role="tabpanel" aria-expanded="false">
+                                    <div class="panel-body ">
+                                        <p>계약월부터 배수기준이 적용되는 월까지 해임되는 경우 잔여수수료는 차감정산 합니다.</p>
+                                        <p>법인과 성실신고대상인 개인사업자는 계약월부터 16개월내</p>
+                                        <p>개인사업자는 계약월부터 14개월내</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div> <div class="modal fade" id="modalFile2">
+    <div class="modal-dialog modal-xxl" role="document">
+        <div class="modal-content modal-content-demo">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="summitModal"></div>
+                            </div>
+                            <div class="card-footer text-end">
+                                <button type="button" class="btn btn-info mb-1 me-2" onclick="printDiv('summitModal')">
+                                    <i class="si si-printer"></i> 출력
+                                </button>
+                                <button class="btn btn-light mb-1" onclick="closeModal('modalFile2')">닫기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 탭 전용 스크립트 캡슐화
+(function() {
+    
+    // 데이트피커 초기화
+    $(".datepicker_noval").datepicker({
+        autoclose: true,
+        format: 'yyyy-mm-dd',
+        todayHighlight: true,
+    }).val('');
+
+    // 숫자에 3자리마다 콤마 추가
+    function formatNumber(value) {
+        return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    const faultAmt = $("#faultAmt input");
+    faultAmt.on("input", function() {
+        let rawValue = $(this).val().replace(/,/g, "");
+        if (!isNaN(rawValue) && rawValue !== "") {
+            $(this).val(formatNumber(rawValue));
+        }
+    });
+
+    var pyJsonStr = "{{invoiceAll|escapejs}}";
+    var pyJson = [];
+    if(pyJsonStr) {
+        pyJsonStr = pyJsonStr.replaceAll("'", "\"");
+        try { pyJson = JSON.parse(pyJsonStr); } catch(e){}
+    }
+
+    // 탭 타이틀 이벤트 바인딩
+    if(pyJson.length > 0) {
+        for (var i = 0; i < pyJson.length; i++) {
+            $(document).on('click', '#pw' + pyJson[i].work_YY, function(e) {
+                $('#typeTitle').html(e.target.innerText + " 년");
+            });
+        }
+    }
+    
+    $(document).on('click', '#pwAll', function(e) {
+        $('#typeTitle').html("");
+    });
+
+    // 실수 저장 버튼 (해당 폼이 이 페이지에 없어도 기존 JS 유지)
+    $("#saveBtn_fault").click(function(e) {
+        e.preventDefault();
+        // ... (필요하다면 기존 로직 유지, 없으면 삭제 가능) ...
+        // ...
+    });
+
+    // ----------------------------------------------------------------
+    // 전역 함수 노출 (HTML onclick에서 호출 가능하도록)
+    // ----------------------------------------------------------------
+
+    window.invoiceDetail = function(ADID, work_YY, work_MM) {
+        $.ajax({
+            url: "{% url 'getSalesInvoiceDetail' %}",
+            type: "POST",
+            data: {
+                ADID: ADID,
+                work_YY: work_YY,
+                work_MM: work_MM,
+                csrfmiddlewaretoken: "{{ csrf_token }}"
+            },
+            success: function(response) {
+                if (!response.data || response.data.length === 0) {
+                    alert("조회된 데이터가 없습니다.");
+                    return;
+                }
+                let tmpContent = `
+                    <div class="clearfix">
+                      <div class="float-start">
+                        <h3 class="card-title mb-0">${work_YY}년 ${work_MM}월 마케팅 수수료 - ${ADID}</h3>
+                      </div>
+                      <div class="float-end">
+                        <h3 class="card-title">지급일: ${parseInt(work_YY)}년 ${parseInt(work_MM)}월말</h3>
+                      </div>
+                    </div>
+                    <hr>
+                    <div class="table-responsive push">
+                      <table class="table table-bordered table-hover mb-0 text-nowrap border-bottom">
+                        <thead>
+                          <tr class="bg-primary-transparent text-primary-dark fw-bold fs-15">
+                            <th class="text-center">#</th>
+                            <th class="text-center">업체명</th>
+                            <th class="text-center">유형</th>
+                            <th class="text-center">담당자</th>
+                            <th class="text-center">계약일</th>
+                            <th class="text-center">월기장료</th>
+                            <th class="text-center">총수수료</th>
+                            <th class="text-center">당월분</th>
+                            <th class="text-center">지급내용</th>
+                            <th class="text-center">잔여분</th>
+                            <th class="text-center">잔여지급월</th>                                
+                          </tr>
+                        </thead>
+                        <tbody>`;
+
+                let t_feeamt = 0, t_total_payment_amount = 0, t_payment_amount = 0, t_remaining_payment_amount = 0;
+                
+                response.data.forEach((item, index) => {
+                    t_feeamt += parseFloat(item.feeamt) || 0;
+                    t_total_payment_amount += parseFloat(item.total_payment_amount) || 0;
+                    t_payment_amount += parseFloat(item.payment_amount) || 0;
+                    t_remaining_payment_amount += parseFloat(item.remaining_payment_amount) || 0;
+                    
+                    tmpContent += `
+                      <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td>${item.biz_name}</td>
+                        <td class="text-center">${item.Biz_Type}</td>
+                        <td class="text-center">${item.Biz_Par_Chk}</td>
+                        <td class="text-center">${item.createddate}</td>
+                        <td class="text-end">${parseFloat(item.feeamt).toLocaleString()}</td>
+                        <td class="text-end">${parseFloat(item.total_payment_amount).toLocaleString()}</td>
+                        <td class="text-end">${parseFloat(item.payment_amount).toLocaleString()}</td>
+                        <td class="text-center">${item.payment_reason}</td>
+                        <td class="text-end">${parseFloat(item.remaining_payment_amount).toLocaleString()}</td>
+                        <td class="text-center">${item.next_payment_due_month}</td>                              
+                      </tr>`;
+                });
+                
+                let aftertax_payment = t_payment_amount * 0.967; // 세후 금액
+                
+                tmpContent += `
+                        <tr>
+                          <td colspan="5" class="fw-bold text-uppercase text-end">합계</td>
+                          <td class="fw-bold text-end">${t_feeamt.toLocaleString()}</td>
+                          <td class="fw-bold text-end">${t_total_payment_amount.toLocaleString()}</td>
+                          <td class="fw-bold text-end h4">${t_payment_amount.toLocaleString()}</td>
+                          <td class="fw-bold text-end h4">${aftertax_payment.toLocaleString()}</td>
+                          <td class="fw-bold text-end">${t_remaining_payment_amount.toLocaleString()}</td>
+                          <td class="fw-bold text-end"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>`;
+
+                // 모달 내용 업데이트
+                $("#summitModal").html(tmpContent);
+                $("#modalFile2").modal("show");
+            },
+            error: function(xhr, status, error) {
+                alert("데이터를 불러오는 중 오류가 발생했습니다.");
+                console.error(error);
+            }
+        });
+    };
+
+    window.mailFile = function() {
+        $("#modalFile2").modal('hide');
+        $("#modalMail").modal('show');
+    };
+
+    window.ValidateEmail = function(input) {
+        var validRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+        if (input.match(validRegex)) {
+            return true;
+        } else {
+            alert("이메일 주소 형식에 맞지 않습니다");
+            $('#eMail').focus();
+            return false;
+        }
+    };
+
+    window.saveFile = function() {
+        // openedFile 변수가 이 스코프에 없으므로, 전역이나 상위에서 관리 필요
+        // 또는 파일 저장 로직이 이 페이지에 필요한지 확인 필요
+        // 기존 코드 유지
+        if(typeof openedFile !== 'undefined') {
+            const filename = openedFile.onlyFileName;
+            const data = openedFile.onlyFilePath + filename;
+            const link = document.createElement('a');
+            link.href = data;
+            link.download = filename;
+            link.click();
+            link.remove();
+            $("#modalFile2").modal('hide');
+        }
+    };
+
+    window.printDiv = function(divId) {
+        var printContents = document.getElementById(divId).innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.innerHTML = "<div>" + printContents + "</div>";
+        window.print();
+        document.body.innerHTML = originalContents;
+        window.location.reload(); 
+    };
+
+    window.closeModal = function(modalId) {
+        var modalElement = document.getElementById(modalId);
+        if(typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+             var modalInstance = bootstrap.Modal.getInstance(modalElement);
+             if (modalInstance) {
+                 modalInstance.hide();
+             } else {
+                 $(modalElement).modal('hide');
+             }
+        } else {
+             $(modalElement).modal('hide');
+        }
+    };
+
+})();
+</script>

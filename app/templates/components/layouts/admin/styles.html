@@ -1,0 +1,192 @@
+﻿{% load static %}
+
+<!-- FAVICON -->
+<link rel="shortcut icon" type="image/x-icon" href="{% static 'assets/images/brand/favicon.ico'%}" />
+
+<!-- BOOTSTRAP CSS -->
+<link id="style" href="{% static 'assets/plugins/bootstrap/css/bootstrap.min.css'%}" rel="stylesheet" />
+
+<!-- THEME CSS -->
+<link href="{% static 'assets/css/style.css'%}" rel="stylesheet" />
+<link href="{% static 'assets/css/skin-modes.css'%}" rel="stylesheet" />
+
+<!-- ICONS & FONTS -->
+<link href="{% static 'assets/css/icons.css'%}" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'assets/css/googlefont.css' %}">
+
+<!-- SWITCHER -->
+<link href="{% static 'assets/switcher/css/switcher.css'%}" rel="stylesheet">
+<link href="{% static 'assets/switcher/demo.css'%}" rel="stylesheet">
+
+<!-- ag-grid -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.1/styles/ag-grid.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.1/styles/ag-theme-alpine.css" />
+
+<style>
+    /* 1. 레이아웃 초기화 */
+    html, body, .page, .page-main {
+        height: 100%;
+        overflow: hidden; 
+    }
+
+    /* 2. stickyAdmin.js가 만드는 강제 여백 제거 (2번 갭의 숨겨진 원인 차단) */
+    .jumps-prevent {
+        display: none !important;
+        height: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 3. 상단 헤더 공간 확보 및 갭 제거 (2번 해결) */
+    .app-content {
+        /* ★ 중요: 이 값을 줄여서 헤더 바로 밑에 붙입니다. */
+        /* 헤더가 얇아 보이므로 60px로 설정합니다. 만약 겹치면 65px나 70px로 늘리세요 */
+        margin-top: 40px !important; 
+        
+        margin-bottom: 0 !important;
+        height: calc(100vh - 40px) !important; 
+        overflow: hidden; 
+    }
+
+    /* 4. ★ 핵심: 주황색 영역(내부 패딩) 제거 (1번 해결) */
+    /* 개발자 도구에 보였던 .side-app이 범인입니다 */
+    .side-app, 
+    .main-container, 
+    .container-fluid {
+        padding: 0 !important; /* 상하좌우 안쪽 여백 강제 삭제 */
+        margin: 0 !important;
+        width: 100% !important;
+        height: 100%;
+        display: flex; 
+        flex-direction: column;
+    }
+    
+    /* 5. 탭 컨테이너 */
+    #tab-container {
+        background-color: #f0f2f5; 
+        padding: 0; 
+        width: 100%;
+        flex: 1; 
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* 6. 탭 네비게이션바 (상단 미세 공백 조정) */
+    .page-tabs {
+        border-bottom: none !important;
+        gap: 4px;
+        padding-left: 10px; 
+        padding-top: 5px !important; /* 탭 위쪽 공백도 최소화 */
+        background-color: #f0f2f5; 
+        flex-shrink: 0; 
+        margin-bottom: 0 !important; 
+        min-height: 40px; /* 탭 높이 확보 */
+    }
+
+    .page-tabs .nav-item {
+        margin-bottom: 0 !important;
+    }
+
+    /* 탭 디자인 */
+    .page-tabs .nav-link {
+        border: none !important;
+        border-radius: 8px 8px 0 0 !important;
+        background-color: #e2e5eb; 
+        color: #5c677d;
+        
+        /* ★ 1. 대시보드 글자 중앙 정렬 핵심 */
+        display: flex;
+        align-items: center;
+        justify-content: center; /* 내용물 전체 중앙 정렬 */
+        
+        padding: 8px 18px; /* 좌우 패딩을 넉넉하게 줌 */
+        min-width: 100px;  /* 탭의 최소 너비를 주어 안정감 확보 */
+        
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        margin-right: 2px;
+        cursor: pointer;
+    }
+    /* ★ [추가] 탭 안의 아이콘 스타일 (보이게 강제 설정) */
+    .page-tabs .nav-link i {
+        display: inline-block !important; /* 화면에 강제로 표시 */
+        font-size: 14px !important;       /* 아이콘 크기 지정 */
+        margin-right: 6px !important;     /* 텍스트와의 간격 */
+        margin-top: -2px;                 /* 수직 중앙 정렬 미세 조정 */
+        color: inherit;                   /* 탭 글자색 따라가기 */
+    }
+    .page-tabs .nav-link:hover {
+        background-color: #d1d5db;
+    }
+
+    /* 활성 탭 */
+    .page-tabs .nav-link.active {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        font-weight: bold;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.03);
+        z-index: 1;
+    }
+    
+    .page-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background-color: #2563eb;
+        border-radius: 8px 8px 0 0;
+    }
+    /* ★ 2. 닫기 버튼(X) 위치 및 디자인 정밀 조정 */
+    .tab-close-btn {
+        /* 위치 조정: 텍스트 쪽으로 조금 더 당김 */
+        margin-left: 8px; 
+        
+        /* 원형 디자인 및 아이콘 정중앙 정렬 */
+        width: 20px; 
+        height: 20px;
+        border-radius: 50%;
+        display: inline-flex; /* flex를 써야 아이콘이 원 안에 정확히 가운데 옴 */
+        align-items: center;
+        justify-content: center;
+        
+        font-size: 11px; /* 아이콘 크기 */
+        color: #94a3b8;
+        transition: all 0.2s;
+    }
+
+    /* 닫기 버튼 호버 효과 */
+    .tab-close-btn:hover {
+        background-color: #fee2e2; /* 연한 빨강 배경 */
+        color: #ef4444; /* 진한 빨강 아이콘 */
+        transform: scale(1.1); /* 살짝 커지는 효과 추가 */
+    }
+    
+    /* 아이콘 미세 위치 조정 (폰트에 따라 중심이 다를 수 있음) */
+    .tab-close-btn i {
+        margin-top: 1px; 
+    }
+
+    /* 7. 탭 내용 영역 */
+    #page-tab-content {
+        background-color: #f0f2f5;
+        flex: 1;
+        width: 100%;
+        position: relative;
+        overflow: hidden; 
+        border-top: none; 
+        padding: 15px !important; /* 카드형 디자인을 위한 여백 */
+    }
+    
+    .ext-grid-wrapper {
+        height: 100%;
+        width: 100%;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+</style>
