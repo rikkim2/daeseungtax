@@ -15,7 +15,15 @@
   // ★ [핵심 수정] 높이 계산 함수
   // 전체창 높이 - (헤더 + 탭높이 + 패딩 등 여유분 약 160px)
   function getGridHeight() {
-      return window.innerHeight - 160; 
+      return window.innerHeight - 160;
+  }
+
+  // HTMLEditor 높이 동적 계산 (전체 높이에서 다른 요소들 제외)
+  function getEditorHeight() {
+      var totalHeight = getGridHeight();
+      // 폼 패널 헤더(40) + toolbar(45) + fieldset 헤더(30) + 제목필드(65) +
+      // 첨부파일(65) + padding/margin(80) + 여유(50) = 약 375px
+      return Math.max(totalHeight - 375, 250); // 최소 250px 보장
   }
   // ─────────────────────────────────────────────
   // 1. Config & Templates (주제별 내용 정의)
@@ -187,13 +195,24 @@ function onItemClickHandler(item) {
       {
         dock: 'top',
         xtype: 'toolbar',
-        style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+        style: {
+            background: '#f8f9fa',
+            borderBottom: '1px solid #dee2e6',
+            padding: '8px 12px'
+        },
+        defaults: {
+            minWidth: 110,
+            height: 36
+        },
         items: dockedItemsConfig.concat([
           '->',
           {
             text: '메일보내기',
             iconCls: 'fa fa-paper-plane',
-            handler: sendMailAction
+            handler: sendMailAction,
+            minWidth: 120, // 주요 액션 버튼은 약간 더 크게
+            height: 36,
+            style: 'font-weight: 600;'
           }
         ])
       }
@@ -204,7 +223,7 @@ function onItemClickHandler(item) {
   var formPanel = Ext.create('Ext.form.Panel', {
     region: 'center', // Border Layout: 가운데(나머지 전체)
     title: '메일 작성 및 전송',
-    bodyPadding: 15,
+    bodyPadding: '20 25 20 25', // 상하좌우 여백 조정
     autoScroll: true,
     defaults: { anchor: '100%', labelAlign: 'top' },
     layout: 'anchor',
@@ -213,32 +232,46 @@ function onItemClickHandler(item) {
         xtype: 'fieldset',
         title: '1. 내용 작성',
         layout: 'anchor',
-        defaults: { anchor: '100%' },
+        padding: '15 20 20 20', // fieldset 내부 여백 추가
+        defaults: {
+            anchor: '100%',
+            margin: '0 0 15 0' // 각 필드 간격 통일
+        },
         items: [
             {
                 xtype: 'textfield',
-                fieldLabel: '제목',
+                fieldLabel: '<b>제목</b>',
                 id: 'mngMsgMail_subject',
                 allowBlank: false,
-                emptyText: '메일 제목을 입력하세요'
+                emptyText: '메일 제목을 입력하세요',
+                labelStyle: 'font-weight: 600; color: #333;',
+                height: 50 // 입력 필드 높이 고정
             },
             {
                 xtype: 'fieldcontainer',
-                fieldLabel: '첨부파일',
+                fieldLabel: '<b>첨부파일</b>',
+                labelStyle: 'font-weight: 600; color: #333;',
                 layout: 'hbox',
+                defaults: { margin: '0 8 0 0' }, // 버튼 간 간격
                 items: [
                   {
                     xtype: 'filefield',
                     buttonText: '파일 선택',
                     flex: 1,
+                    minWidth: 120,
+                    height: 38, // 버튼 높이 고정
+                    buttonConfig: {
+                        minWidth: 90,
+                        height: 36
+                    },
                     listeners: {
                       change: function(obj){
                         var fileDom = obj.fileInputEl.dom;
                         if (!fileDom.files[0]) return;
-                        
+
                         var fd = new FormData();
                         fd.append('file', fileDom.files[0]);
-                        
+
                         // 파일명 표시용 임시 업데이트
                         Ext.getCmp('mngMsgMail_fileName').setValue('업로드 중...');
 
@@ -262,23 +295,26 @@ function onItemClickHandler(item) {
                       }
                     }
                   },
-                  { xtype: 'displayfield', width: 10 },
                   {
                     xtype: 'textfield',
                     id: 'mngMsgMail_fileName',
                     readOnly: true,
-                    flex: 1,
-                    emptyText: '선택된 파일 없음'
+                    flex: 2,
+                    height: 38, // 높이 통일
+                    emptyText: '선택된 파일 없음',
+                    fieldStyle: 'background-color: #f5f5f5;'
                   }
                 ]
             },
             {
                 xtype: 'htmleditor',
-                fieldLabel: '내용',
+                fieldLabel: '<b>내용</b>',
+                labelStyle: 'font-weight: 600; color: #333;',
                 id: 'mngMsgMail_body',
-                height: 350,
+                height: getEditorHeight(), // 동적 높이 계산
                 enableColors: true,
-                enableAlignments: true
+                enableAlignments: true,
+                margin: '0 0 0 0' // 마지막 요소는 하단 여백 제거
             }
         ]
       }
@@ -287,7 +323,15 @@ function onItemClickHandler(item) {
       {
         dock: 'top',
         xtype: 'toolbar',
-        style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+        style: {
+            background: '#f8f9fa',
+            borderBottom: '1px solid #dee2e6',
+            padding: '8px 12px' // toolbar 내부 여백
+        },
+        defaults: {
+            minWidth: 110, // 모든 버튼 최소 너비 통일
+            height: 36     // 모든 버튼 높이 통일
+        },
         items: [
           {
             text: '템플릿 선택',
@@ -397,6 +441,13 @@ function onItemClickHandler(item) {
       if (mainPanel && !mainPanel.isDestroyed) {
           // 부모 패널의 높이만 조절하면 내부의 grid와 formPanel은 border 레이아웃에 의해 자동 조절됨
           mainPanel.setHeight(getGridHeight());
+
+          // HTMLEditor 높이도 동적으로 조정
+          var editorCmp = Ext.getCmp('mngMsgMail_body');
+          if (editorCmp && !editorCmp.isDestroyed) {
+              editorCmp.setHeight(getEditorHeight());
+          }
+
           // mainPanel.doLayout(); // ExtJS 4.x 이상에서는 setHeight시 자동 레이아웃 되므로 생략 가능 (필요시 주석 해제)
       }
   });
