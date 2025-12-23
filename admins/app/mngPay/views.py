@@ -620,6 +620,13 @@ def api_kani_sa_il_list(request):
         text_mm = f"{work_mm:02d}"
         yyyymm = _yyyymm(input_workyear, work_mm)
 
+        DBG("🔍 REQUEST PARAMS", {
+            "input_workyear": input_workyear,
+            "work_mm": work_mm,
+            "ADID": ADID,
+            "yyyymm": yyyymm
+        })
+
         # -------------------------
         # 1) MAIN rows
         # -------------------------
@@ -711,6 +718,8 @@ def api_kani_sa_il_list(request):
                 rows.append(item)
                 biz_no_list.append(item["biz_no"])
 
+            DBG(f"📊 MAIN QUERY - Found {len(rows)} rows")
+
         # -------------------------
         # 2) 지급조서간이소득 1번에 조회 → biz_no별로 누적
         # (ASP: rs("biz_no")별로 조회하던 것을 일괄 조회로 최적화)
@@ -741,7 +750,10 @@ def api_kani_sa_il_list(request):
                 DBG("INCOME PARAMS(head)", params_income[:12])
                 cur.execute(sql_income, params_income)
 
-                for biz_no, kind, amt in cur.fetchall():
+                income_rows = cur.fetchall()
+                DBG(f"📊 INCOME QUERY - Found {len(income_rows)} rows")
+
+                for biz_no, kind, amt in income_rows:
                     amt = int(amt or 0)
                     if kind == "일용근로소득지급명세서":
                         income_map[biz_no]["kun"] += amt
@@ -807,12 +819,13 @@ def api_kani_sa_il_list(request):
                 "isSkele": True if (hasSkeleton and ((kunAmt+saAmt+kiAmt) != 0 or (wh_k+wh_s+wh_i) != 0)) else False,
             })
 
+        DBG(f"✅ RESPONSE SUCCESS - Returning {len(out)} rows")
         return JsonResponse({"ok": True, "rows": out})
 
     except Exception as e:
         DBG("❌ EXCEPTION", str(e))
         traceback.print_exc()
-        raise
+        return JsonResponse({"ok": False, "error": str(e), "rows": []}, status=500)
 
 @csrf_exempt
 @require_POST

@@ -84,6 +84,8 @@ console.log(ADID)
     proxy.extraParams.ADID           = ADID;
     proxy.extraParams.flag           = flag;   // 필요하면
 
+    console.log('🔄 Reloading store with params:', proxy.extraParams);
+
     store.reload({
       callback: function () {
         if (ADID === "전체") store.group('groupManager');
@@ -131,9 +133,27 @@ console.log(ADID)
       proxy: {
         type: 'ajax',
         url: "{% url 'api_kani_sa_il_list' %}",
-        reader: { type: 'json', root: 'rows' }
+        reader: {
+          type: 'json',
+          root: 'rows',
+          successProperty: 'ok'
+        }
       },
-      autoLoad: false
+      autoLoad: false,
+      listeners: {
+        load: function(store, records, successful, operation) {
+          console.log('Store load event:', {
+            successful: successful,
+            recordCount: records.length,
+            rawResponse: operation.getResponse() ? operation.getResponse().responseText : 'N/A'
+          });
+          if (!successful) {
+            var response = operation.getResponse();
+            console.error('Load failed. Response:', response ? response.responseText : 'No response');
+            Ext.Msg.alert('오류', '데이터를 불러오는데 실패했습니다.');
+          }
+        }
+      }
     });
 
     var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
@@ -273,15 +293,24 @@ console.log(ADID)
     }      
     
     // proxy.extraParams 초기값 세팅 후 조회
-    mainStore.getProxy().extraParams = {
+    var initialParams = {
       input_workyear: work_YY,
       work_mm: work_MM,
       ADID: ADID,
       flag: flag
     };
+    mainStore.getProxy().extraParams = initialParams;
+    console.log('📡 Initial load with params:', initialParams);
+
     mainStore.load({
-      callback: function () {
-        if (ADID === "전체") mainStore.group('groupManager');
+      callback: function (records, operation, success) {
+        console.log('Store load callback:', { records: records, success: success, recordCount: records ? records.length : 0 });
+        if (success) {
+          console.log('Data loaded successfully. Record count:', mainStore.getCount());
+          if (ADID === "전체") mainStore.group('groupManager');
+        } else {
+          console.error('Store load failed!', operation);
+        }
       }
     });
 
