@@ -731,7 +731,21 @@ def admin_update(request):
 
           # AJAX 요청인 경우 JSON 반환
           if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': '업데이트되었습니다.'})
+            return JsonResponse({
+              'success': True,
+              'message': '업데이트되었습니다.',
+              'data': {
+                'admin_id': admin.admin_id,
+                'admin_name': admin.admin_name,
+                'admin_tel_no': admin.admin_tel_no or '',
+                'admin_email': admin.admin_email or '',
+                'admin_biz_area': admin.admin_biz_area or '',
+                'biz_level': admin.biz_level or '',
+                'grade': admin.grade or '',
+                'manage_YN': admin.manage_YN or '',
+                'htx_id': admin.htx_id or '',
+              }
+            })
 
           return redirect('staffList')
         except Exception as e:

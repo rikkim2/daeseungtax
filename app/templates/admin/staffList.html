@@ -572,6 +572,7 @@
         e.preventDefault();
 
         const formData = new FormData(this);
+        const originalAdminId = $('#admin_id').val();
 
         $.ajax({
             url: $(this).attr('action'),
@@ -584,9 +585,13 @@
             },
             success: function(response) {
                 if (response.success) {
-                    alert('저장되었습니다.');
                     $('#adminModal').modal('hide');
-                    location.reload();
+
+                    // DOM 업데이트
+                    updateAdminInDOM(originalAdminId, response.data);
+
+                    // 성공 메시지 (선택적)
+                    showToast('저장되었습니다.');
                 } else {
                     alert('저장 실패: ' + response.error);
                 }
@@ -596,6 +601,118 @@
             }
         });
     });
+
+    // DOM 업데이트 함수
+    function updateAdminInDOM(adminId, data) {
+        // 모든 수정 버튼에서 해당 admin_id를 가진 요소 찾기
+        const $editBtn = $(`.edit-leader-btn[data-admin-id="${adminId}"], .edit-member-btn[data-admin-id="${adminId}"]`);
+
+        if ($editBtn.length === 0) return;
+
+        const isLeader = $editBtn.hasClass('edit-leader-btn');
+
+        if (isLeader) {
+            // 팀장(세무사) 정보 업데이트
+            const $teamHeader = $editBtn.closest('.team-header');
+
+            // 이름 업데이트
+            $teamHeader.find('.leader-details h4').text(data.admin_name);
+
+            // 아바타 업데이트
+            const avatarSrc = "{% static 'assets/images/faces/' %}" + data.admin_name + ".png";
+            $teamHeader.find('.leader-avatar').attr('src', avatarSrc);
+
+            // 소속/전화번호 업데이트
+            let bizInfo = '<i class="fe fe-briefcase me-1"></i>' + (data.admin_biz_area || '미지정');
+            if (data.admin_tel_no) {
+                bizInfo += ' · <i class="fe fe-phone me-1"></i>' + data.admin_tel_no;
+            }
+            $teamHeader.find('.leader-details p').first().html(bizInfo);
+
+            // 이메일 업데이트
+            const emailInfo = '<i class="fe fe-mail me-1"></i>' + (data.admin_email || '이메일 없음');
+            $teamHeader.find('.leader-details p').eq(1).html(emailInfo);
+
+        } else {
+            // 팀 멤버 정보 업데이트
+            const $memberItem = $editBtn.closest('.member-item');
+
+            // 이름 업데이트
+            $memberItem.find('.member-details h5').text(data.admin_name);
+
+            // 아바타 업데이트
+            const avatarSrc = "{% static 'assets/images/faces/' %}" + data.admin_name + ".png";
+            $memberItem.find('.member-avatar').attr('src', avatarSrc);
+
+            // ID/전화번호 업데이트
+            let memberInfo = data.admin_id;
+            if (data.admin_tel_no) {
+                memberInfo += ' · ' + data.admin_tel_no;
+            }
+            $memberItem.find('.member-details p').text(memberInfo);
+        }
+    }
+
+    // 토스트 메시지 표시 함수 (간단한 알림)
+    function showToast(message) {
+        // 기존 토스트가 있으면 제거
+        $('.custom-toast').remove();
+
+        const toast = $(`
+            <div class="custom-toast" style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                animation: slideIn 0.3s ease-out;
+            ">
+                <i class="fe fe-check-circle me-2"></i>${message}
+            </div>
+        `);
+
+        // 애니메이션 스타일 추가
+        if (!$('#toastAnimation').length) {
+            $('head').append(`
+                <style id="toastAnimation">
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                    }
+                </style>
+            `);
+        }
+
+        $('body').append(toast);
+
+        // 3초 후 자동 제거
+        setTimeout(function() {
+            toast.css('animation', 'slideOut 0.3s ease-out');
+            setTimeout(function() {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
 
 })();
 </script>
