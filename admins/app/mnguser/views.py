@@ -594,7 +594,7 @@ def kijang_member_save(request):
             is_new = True
 
     # MemUser 필드 매핑
-    member.duzon_id = duzon_id
+    member.duzon_id = duzon_id or '1'
     member.user_id  = user_id
     if user_pwd:
         member.user_pwd = user_pwd
