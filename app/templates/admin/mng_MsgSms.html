@@ -1,309 +1,701 @@
 {% load static %}
-
-<style>
-    /* 1. 전체 컨테이너: 스크롤바의 핵심 */
-    .sms-container {
-        padding: 15px;
-        background-color: #f8f9fa;
-        
-        /* 부모(탭 콘텐츠 영역) 높이를 꽉 채우되 */
-        height: 100%;     
-        /* 내용이 더 길면 세로 스크롤바 생성 (중요!) */
-        overflow-y: auto; 
-    }
-
-    .grid-card {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e0e0e0;
-        overflow: hidden; 
-        /* 카드 자체는 높이를 내용물에 맞김 */
-    }
-
-    .control-card {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e0e0e0;
-        margin-bottom: 15px;
-    }
-
-    .control-header {
-        background-color: #fff;
-        border-bottom: 2px solid #f0f0f0;
-        padding: 12px 15px;
-        font-weight: 600;
-        color: #333;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .control-body {
-        padding: 15px;
-    }
-
-    /* 2. ExtJS Grid 래퍼: 최소 높이 보장 */
-    .ext-grid-wrapper {
-        width: 100%;
-        /* 높이를 100%로 하면 부모 스크롤과 충돌할 수 있으므로 
-           고정된 최소 높이를 줍니다. 
-           이렇게 하면 브라우저가 이 높이보다 작아질 때 스크롤이 생깁니다.
-        */
-        height: 750px; 
-    }
-    
-    /* 탭 스타일 커스텀 */
-    .nav-tabs .nav-link { color: #666; border: none; border-bottom: 2px solid transparent; }
-    .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 2px solid #0d6efd; background: transparent; font-weight: 600; }
-</style>
-
-<div class="sms-container">
-    <div class="row g-3">
-        <div class="col-lg-8 col-md-12">
-            <div class="grid-card">
-                <div class="ext-grid-wrapper"
-                     id="grid-target-{{ flag }}"
-                     data-role="sms-grid"
-                     data-flag="{{ flag }}"></div>
-            </div>
-        </div>
-
-        <div class="col-lg-4 col-md-12">
-            <div class="control-card">
-                <div class="control-header">
-                    <i class="bi bi-chat-text-fill me-2 text-primary"></i> 문자 내용 작성
-                </div>
-                <div class="control-body">
-                    <textarea id="sms-content-{{ flag }}" class="form-control bg-light" rows="8" placeholder="전송할 내용을 입력하세요..."></textarea>
-                    <div class="mt-3">
-                        <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm" id="btn-sms-send-{{ flag }}" type="button">
-                            <i class="bi bi-send me-1"></i> 전송하기
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="control-header">
-                    <span><i class="bi bi-clock me-2 text-warning"></i> 예약 전송 설정</span>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="chk-rsv-{{ flag }}">
-                    </div>
-                </div>
-                <div class="control-body bg-light bg-opacity-25">
-                    <div class="mb-2">
-                        <label class="form-label text-muted small">예약날짜</label>
-                        <input type="date" class="form-control" id="sms-date-{{ flag }}">
-                    </div>
-                    <div class="row g-2">
-                        <div class="col">
-                            <label class="form-label text-muted small">시(Hour)</label>
-                            <input type="number" min="8" max="20" class="form-control" id="sms-hour-{{ flag }}" placeholder="09">
-                        </div>
-                        <div class="col">
-                            <label class="form-label text-muted small">분(Min)</label>
-                            <input type="number" min="0" max="60" step="10" class="form-control" id="sms-min-{{ flag }}" placeholder="00">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="control-card">
-                <div class="card-header border-bottom-0 bg-white pt-3 pb-0 px-3">
-                    <ul class="nav nav-tabs" id="smsTplTabs-{{ flag }}" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#smsTpl1-{{ flag }}" type="button">템플릿 1</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#smsTpl2-{{ flag }}" type="button">템플릿 2</button>
-                        </li>
-                    </ul>
-                </div>
-                <div class="control-body pt-0">
-                    <div class="tab-content border-0 p-3 bg-white">
-                        <div class="tab-pane fade show active" id="smsTpl1-{{ flag }}">
-                            <div class="d-flex flex-column gap-2">
-                                <textarea class="form-control bg-light" rows="5" id="sms-tpl-1-{{ flag }}" readonly>안녕하세요 세무법인대승입니다.&#13;&#10;신고 기간 안내 드립니다.</textarea>
-                                <button class="btn btn-outline-secondary btn-sm" type="button" data-role="apply-tpl" data-target="sms-tpl-1-{{ flag }}">
-                                    <i class="bi bi-arrow-up-circle"></i> 본문 적용
-                                </button>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="smsTpl2-{{ flag }}">
-                            <div class="d-flex flex-column gap-2">
-                                <textarea class="form-control bg-light" rows="5" id="sms-tpl-2-{{ flag }}" readonly>(안내) 부가세 신고 자료 요청드립니다.</textarea>
-                                <button class="btn btn-outline-secondary btn-sm" type="button" data-role="apply-tpl" data-target="sms-tpl-2-{{ flag }}">
-                                    <i class="bi bi-arrow-up-circle"></i> 본문 적용
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="mngmsg-sms-wrap" id="mngMsgSmsMount"></div>
 <script>
 (function(){
-    const flag = "{{ flag }}";
-    // 고유한 타겟 ID를 사용하여 정확한 위치를 찾습니다.
-    const targetId = `grid-target-${flag}`;
+  // ✅ 탭 임베디드 중복 렌더 방지
+  if (window.__MNGMSG_SMS_INITED__) return;
+  window.__MNGMSG_SMS_INITED__ = true;
 
-    function initGridOnce(){
-        const targetEl = document.getElementById(targetId);
-        
-        // 1. 타겟이 없거나, 이미 초기화되었다면(ExtJS 클래스가 붙음) 중단
-        if (!targetEl || targetEl.dataset.inited === "1") return;
+  // ✅ 요청 순서 보장용
+  window.__adminInfoReqSeq = window.__adminInfoReqSeq || 0;
+  window.__MNGMSG_SMS_SELECTED_ADID__ = window.__MNGMSG_SMS_SELECTED_ADID__ || '';
+  window.__MNGMSG_SMS_ALL_MODE__ = window.__MNGMSG_SMS_ALL_MODE__ || false;
 
-        // 2. 초기화 플래그 설정
-        targetEl.dataset.inited = "1";
+  // ✅ 렌더 타겟 찾기
+  var renderTarget = document.getElementById('mngMsgSmsMount');
+  if (!renderTarget) {
+    renderTarget = document.querySelector('div.tab-pane.active .mngmsg-sms-wrap');
+  }
+  if (!renderTarget) return;
 
-        Ext.onReady(function(){
-            Ext.QuickTips.init();
+  function getGridHeight() { return window.innerHeight - 160; }
 
-            // Store 정의
-            const store = Ext.create('Ext.data.Store', {
-                fields: [
-                    'row_num','seq_no','biz_name','ceo_name','hp_no',
-                    'sms_send_dt_rsv','sms_send_dt','sms_send_result','sms_contents'
-                ],
-                proxy: {
-                    type: 'ajax',
-                    url: "{% url 'sms_data' %}", // Django URL 태그 확인 필요
-                    extraParams: { flag: flag },
-                    reader: { type: 'json', root: 'rows' }
-                },
-                autoLoad: true
-            });
+  // ─────────────────────────────────────────────
+  // 1. Config
+  // ─────────────────────────────────────────────
+  var flag = '{{ flag }}';
+  var adminBizLevel = '{{ admin_biz_level }}'.trim();
+  const isSuperuser = '{{ admin_grade }}' === 'SA';
+  var ADID = '{{ ADID }}'.trim();
+  var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+  const ALL_ADID_VALUE = (arrADID && arrADID[0]) || '전체';
+  const isAllADID = (val) => (val === '전체' || val === ALL_ADID_VALUE);
 
-            const sm = Ext.create('Ext.selection.CheckboxModel', { checkOnly: true });
+  var DATA_URL = "{% url 'sms_data' %}";
+  var SEND_URL = "{% url 'sms_data' %}";
 
-            // Grid Panel 생성
-            Ext.create('Ext.grid.Panel', {
-                renderTo: targetEl, // 명확한 ID 지정
-                store: store,
-                selModel: sm,
-                columnLines: true,
-                width: '100%',
-                height: '100%', // CSS height를 따르도록 설정
-                border: false,  // CSS border 사용
-                title: '수신자 목록 (' + flag + ')',
-                tools: [{
-                    type: 'refresh',
-                    tooltip: '새로고침',
-                    handler: function(){ store.reload(); }
-                }],
-                columns: [
-                    { xtype:'rownumberer', width: 40 },
-                    { text:'회사명', dataIndex:'biz_name', flex: 1, minWidth: 120 }, // flex 사용
-                    { text:'이름', dataIndex:'ceo_name', width: 80, align: 'center' },
-                    { text:'휴대폰', dataIndex:'hp_no', width: 120, align: 'center' },
-                    { text:'예약일시', dataIndex:'sms_send_dt_rsv', width: 130, align: 'center' },
-                    { text:'발송일시', dataIndex:'sms_send_dt', width: 130, align: 'center' },
-                    { text:'결과', dataIndex:'sms_send_result', width: 60, align: 'center' },
-                    {
-                        text:'상세', width: 70, sortable:false, align: 'center',
-                        renderer: function(v, meta, rec){
-                             // 버튼 ID 충돌 방지
-                            const id = Ext.id();
-                            Ext.defer(function(){
-                                if(!Ext.get(id)) return; // 존재 체크
-                                Ext.widget('button', {
-                                    renderTo: id,
-                                    text: '보기',
-                                    scale: 'small',
-                                    handler: function(){
-                                        alert("상세 정보: " + rec.get('biz_name'));
-                                    }
-                                });
-                            }, 50);
-                            return Ext.String.format('<div id="{0}"></div>', id);
-                        }
-                    }
-                ]
-            });
+  // ✅ 운영 기본값
+  var GLOBAL_DEFAULTS = {
+    담당자: '{{ admin_name|default_if_none:"" }}',
+    연락처: '{{ admin_tel_no|default_if_none:"" }}'
+  };
 
-            // 이벤트 바인딩 (ExtJS 로직 외부 DOM)
-            bindDomEvents(sm, store);
-        });
+  // ─────────────────────────────────────────────
+  // 2. 템플릿 정의
+  // ─────────────────────────────────────────────
+  const CONTACT_PLACEHOLDERS = { 담당자: '{담당자}', 연락처: '{연락처}' };
+
+  function currentContactVarsForPreview() {
+    if (window.__MNGMSG_SMS_ALL_MODE__) return { ...CONTACT_PLACEHOLDERS };
+    return { 담당자: GLOBAL_DEFAULTS.담당자, 연락처: GLOBAL_DEFAULTS.연락처 };
+  }
+
+  var smsTemplates = {
+    custom: {
+      title: '직접 입력',
+      content: ''
+    },
+    pay: {
+      title: '급여자료 요청',
+      content: '[세무법인 대승] 안녕하세요. 급여 신고를 위한 자료 제출 부탁드립니다.\n- 제출기한: 매월 7일까지\n- 담당자: {담당자}\n- 연락처: {연락처}'
+    },
+    vat: {
+      title: '부가세 신고',
+      content: '[세무법인 대승] 부가세 신고 기간입니다. 세금계산서 및 카드매출 누락분 확인 부탁드립니다.\n- 담당자: {담당자}\n- 연락처: {연락처}'
+    },
+    younmal: {
+      title: '연말정산',
+      content: '[세무법인 대승] 연말정산 진행을 위해 간소화자료 제출 부탁드립니다.\n- 제출기한: 1월 15일까지\n- 담당자: {담당자}\n- 연락처: {연락처}'
+    },
+    notice: {
+      title: '일반 안내',
+      content: '[세무법인 대승] 안녕하세요. {회사명} 담당 세무사입니다.\n문의사항이 있으시면 연락 주세요.\n- 담당자: {담당자}\n- 연락처: {연락처}'
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  // 3. Data Store (좌측)
+  // ─────────────────────────────────────────────
+  var store = Ext.create('Ext.data.Store', {
+    fields: [
+      'groupManager',
+      'admin_name',
+      'admin_tel_no',
+      'seq_no',
+      'biz_name',
+      'ceo_name',
+      'hp_no',
+      'sms_send_dt_rsv',
+      'sms_send_dt',
+      'sms_send_result',
+      'sms_contents'
+    ],
+    proxy: {
+      type: 'ajax',
+      url: DATA_URL,
+      reader: { type: 'json', root: 'rows', totalProperty: 'total' },
+      extraParams: { flag: flag, ADID: ADID }
+    },
+    autoLoad: true
+  });
+
+  if (isAllADID(ADID) && store.group) {
+    store.group('groupManager');
+  }
+
+  var sm = Ext.create('Ext.selection.CheckboxModel', {
+    checkOnly: false,
+    mode: 'SIMPLE'
+  });
+
+  // ─────────────────────────────────────────────
+  // 4. 관리자 정보 갱신
+  // ─────────────────────────────────────────────
+  function refreshPreview(){
+    var tpl = smsTemplates[currentTemplateKey] || smsTemplates.custom;
+    var previewContent = tpl.content || '';
+
+    var textarea = Ext.getCmp('mngMsgSms_content');
+    if (textarea) textarea.setValue(previewContent);
+
+    updateAllModeHintVisibility();
+  }
+
+  function updateAllModeHintVisibility() {
+    if (typeof formPanel === 'undefined' || !formPanel) return;
+    var hint = formPanel.down('#allModeHint');
+    if (!hint) return;
+
+    if (typeof hint.setHidden === 'function') {
+      hint.setHidden(!window.__MNGMSG_SMS_ALL_MODE__);
+      return;
+    }
+    if (typeof hint.setVisible === 'function') {
+      hint.setVisible(window.__MNGMSG_SMS_ALL_MODE__);
+      return;
+    }
+    if (typeof hint.show === 'function' && typeof hint.hide === 'function') {
+      window.__MNGMSG_SMS_ALL_MODE__ ? hint.show() : hint.hide();
+    }
+  }
+
+  function updateAdminInfo(adid) {
+    const reqSeq = ++window.__adminInfoReqSeq;
+    const selectedAtRequest = adid;
+
+    if (!adid || isAllADID(adid)) {
+      window.__MNGMSG_SMS_ALL_MODE__ = true;
+      GLOBAL_DEFAULTS.담당자 = CONTACT_PLACEHOLDERS.담당자;
+      GLOBAL_DEFAULTS.연락처 = CONTACT_PLACEHOLDERS.연락처;
+      refreshPreview();
+      return;
     }
 
-    function bindDomEvents(sm, store) {
-        // 전송 버튼
-        const sendBtn = document.getElementById(`btn-sms-send-${flag}`);
-        if(sendBtn) {
-            sendBtn.addEventListener('click', async function(){
-                const msg = (document.getElementById(`sms-content-${flag}`).value || "").trim();
-                if (!msg) return alert("문자 내용을 입력하세요.");
+    window.__MNGMSG_SMS_ALL_MODE__ = false;
 
-                const recs = sm.getSelection();
-                if (!recs || recs.length === 0) return alert("받는 사람을 선택하세요.");
+    Ext.Ajax.request({
+      url: DATA_URL,
+      method: 'GET',
+      params: { adminflag: 'get_admin_info', admin_id: adid },
+      success: function(response) {
+        if (reqSeq !== window.__adminInfoReqSeq) return;
+        if (window.__MNGMSG_SMS_SELECTED_ADID__ !== selectedAtRequest) return;
 
-                // 예약 체크 확인
-                const isRsv = document.getElementById(`chk-rsv-${flag}`)?.checked;
-                let toSendDate = "", toSendHours = "", toSendMinute = "";
-                
-                if(isRsv) {
-                    toSendDate = document.getElementById(`sms-date-${flag}`).value;
-                    toSendHours = document.getElementById(`sms-hour-${flag}`).value;
-                    toSendMinute = document.getElementById(`sms-min-${flag}`).value;
-                    if(!toSendDate) return alert("예약 날짜를 입력하세요.");
-                }
+        var res = Ext.decode(response.responseText);
+        GLOBAL_DEFAULTS.담당자 = (res && res.admin_name) ? res.admin_name : "";
+        GLOBAL_DEFAULTS.연락처 = (res && res.admin_tel_no) ? res.admin_tel_no : "";
 
-                // FormData 구성
-                const form = new FormData();
-                form.append("flag", flag);
-                form.append("msg", msg);
-                form.append("toSendDate", toSendDate);
-                form.append("toSendHours", toSendHours);
-                form.append("toSendMinute", toSendMinute);
+        refreshPreview();
+      },
+      failure: function() {
+        if (reqSeq !== window.__adminInfoReqSeq) return;
+        if (window.__MNGMSG_SMS_SELECTED_ADID__ !== selectedAtRequest) return;
 
-                recs.forEach(r => {
-                    form.append("seq_no[]", r.get("seq_no"));
-                    form.append("hp_no[]", (r.get("hp_no") || "").replaceAll("-", ""));
-                });
+        GLOBAL_DEFAULTS.담당자 = "";
+        GLOBAL_DEFAULTS.연락처 = "";
+        refreshPreview();
+      }
+    });
+  }
 
-                // AJAX 전송
-                try {
-                    // 예시 URL, 실제 urls.py 설정 필요
-                    const res = await fetch("{% url 'sms_data' %}", {
-                        method: "POST",
-                        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-                        body: form
-                    });
-                    const json = await res.json();
-                    if (json.success) {
-                        alert("정상적으로 전송되었습니다.");
-                        store.reload();
-                        sm.deselectAll();
-                    } else {
-                        alert("전송 실패: " + (json.message || "오류 발생"));
-                    }
-                } catch(e) {
-                    console.error(e);
-                    alert("서버 통신 중 오류가 발생했습니다.");
-                }
-            });
+  function onItemClickHandler(item) {
+    ADID = item;
+    window.__MNGMSG_SMS_SELECTED_ADID__ = ADID;
+
+    if (typeof updateScrollMenuText === 'function') updateScrollMenuText(item);
+
+    if (store && store.getProxy()) {
+      store.getProxy().setExtraParam('ADID', ADID);
+
+      if (isAllADID(ADID) && store.group) {
+        store.group('groupManager');
+      } else if (store.clearGrouping) {
+        store.clearGrouping();
+      }
+
+      store.load({
+        callback: function() {
+          updateAdminInfo(item);
         }
+      });
+    } else {
+      updateAdminInfo(item);
+    }
+  }
 
-        // 템플릿 적용 버튼들
-        document.querySelectorAll(`[data-role="apply-tpl"]`).forEach(btn => {
-            btn.addEventListener("click", () => {
-                const srcId = btn.getAttribute("data-target");
-                const src = document.getElementById(srcId);
-                const dst = document.getElementById(`sms-content-${flag}`);
-                if (src && dst) dst.value = src.value;
-            });
-        });
+  const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+
+  // ─────────────────────────────────────────────
+  // 5. 템플릿 적용 / 메뉴
+  // ─────────────────────────────────────────────
+  var currentTemplateKey = 'custom';
+
+  function applyTemplateToForm(key) {
+    currentTemplateKey = key;
+    var tpl = smsTemplates[key];
+    if (!tpl) return;
+
+    var previewContent = tpl.content || '';
+    Ext.getCmp('mngMsgSms_content')?.setValue(previewContent);
+
+    if (typeof formPanel !== 'undefined' && formPanel) {
+      var btn = formPanel.down('#tb_template');
+      if (btn) btn.setText(tpl.title || key);
+
+      updateAllModeHintVisibility();
     }
 
-    // ★ 핵심 수정: 스크립트가 로드되자마자 실행하되, DOM 렌더링 틱을 맞추기 위해 setTimeout 사용
-    // HTML이 AJAX로 삽입된 직후에 이 스크립트가 실행됩니다.
-    setTimeout(function() {
-        initGridOnce();
-    }, 100);
+    if (store && store.getProxy()) {
+      store.getProxy().setExtraParam('smsFlag', currentTemplateKey);
+      store.load();
+    }
+  }
+
+  var templateMenu = Ext.create('Ext.menu.Menu', {
+    height: 300,
+    scrollable: { x: false, y: true },
+    items: Object.keys(smsTemplates).map(function(k) {
+      return {
+        text: smsTemplates[k].title || k,
+        handler: function(){
+          applyTemplateToForm(k);
+        }
+      };
+    })
+  });
+
+  // ─────────────────────────────────────────────
+  // 6. 좌측 그리드 (60%)
+  // ─────────────────────────────────────────────
+  function sendSmsAction(){ /* 아래에서 정의 */ }
+
+  var mainGrid = Ext.create('Ext.grid.Panel', {
+    region: 'west',
+    width: '60%',
+    split: true,
+    collapsible: false,
+    title: '발송 대상자 목록',
+    store: store,
+    selModel: sm,
+    columnLines: true,
+    features: [{
+      id: 'groupManager',
+      ftype: 'groupingsummary',
+      startCollapsed: false,
+      groupHeaderTpl: '{name}',
+      hideGroupedHeader: false,
+      enableGroupingMenu: true
+    }],
+    columns: [
+      { xtype: 'rownumberer', width: 40 },
+      { dataIndex: 'groupManager', header: '<center>관리자</center>', width: 0 },
+      { text: '회사명', dataIndex: 'biz_name', width: 140, style: 'text-align:center' },
+      { text: '이름', dataIndex: 'ceo_name', width: 80, align: 'center' },
+      { text: '휴대폰', dataIndex: 'hp_no', width: 120, align: 'center' },
+      {
+        text: '상태',
+        dataIndex: 'sms_send_result',
+        width: 60,
+        align: 'center',
+        renderer: function(v) {
+          if(v === '성공') return '<span style="color:green; font-weight:bold;">✓</span>';
+          if(v === '실패') return '<span style="color:red;">✗</span>';
+          return '-';
+        }
+      },
+      { text: '예약일시', dataIndex: 'sms_send_dt_rsv', width: 130, align: 'center' },
+      { text: '발송일시', dataIndex: 'sms_send_dt', width: 130, align: 'center' }
+    ],
+    dockedItems: [{
+      dock: 'top',
+      xtype: 'toolbar',
+      style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+      items: dockedItemsConfig.concat([
+        '->',
+        { text: '문자보내기', iconCls: 'fa fa-paper-plane', handler: function(){ sendSmsAction(); } }
+      ])
+    }]
+  });
+
+  // ─────────────────────────────────────────────
+  // 7. 우측 폼 패널 (40%)
+  // ─────────────────────────────────────────────
+  var formPanel = Ext.create('Ext.form.Panel', {
+    region: 'center',
+    title: '문자 작성 및 전송',
+    bodyPadding: '15px',
+    layout: { type: 'vbox', align: 'stretch' },
+    autoScroll: true,
+    items: [
+      {
+        xtype: 'textarea',
+        fieldLabel: '문자 내용',
+        labelAlign: 'top',
+        id: 'mngMsgSms_content',
+        allowBlank: false,
+        emptyText: '전송할 내용을 입력하세요',
+        height: 200,
+        margin: '0 0 15 0',
+        enableKeyEvents: true,
+        listeners: {
+          keyup: function(field) {
+            var len = (field.getValue() || '').length;
+            var label = Ext.getCmp('smsLengthLabel');
+            if (label) {
+              var smsType = len > 90 ? 'LMS' : 'SMS';
+              label.setValue('<span style="color:#666;">문자길이: <b>' + len + '자</b> (' + smsType + ')</span>');
+            }
+          }
+        }
+      },
+      {
+        xtype: 'displayfield',
+        id: 'smsLengthLabel',
+        value: '<span style="color:#666;">문자길이: <b>0자</b> (SMS)</span>',
+        margin: '0 0 15 0'
+      },
+      {
+        xtype: 'fieldset',
+        title: '예약 전송 설정',
+        collapsible: true,
+        collapsed: true,
+        margin: '0 0 15 0',
+        items: [
+          {
+            xtype: 'checkbox',
+            boxLabel: '예약 전송 사용',
+            id: 'chk_rsv_sms',
+            margin: '0 0 10 0',
+            listeners: {
+              change: function(cb, checked) {
+                var dateField = Ext.getCmp('sms_rsv_date');
+                var hourField = Ext.getCmp('sms_rsv_hour');
+                var minField = Ext.getCmp('sms_rsv_min');
+
+                if (dateField) dateField.setDisabled(!checked);
+                if (hourField) hourField.setDisabled(!checked);
+                if (minField) minField.setDisabled(!checked);
+              }
+            }
+          },
+          {
+            xtype: 'datefield',
+            fieldLabel: '예약날짜',
+            id: 'sms_rsv_date',
+            format: 'Y-m-d',
+            disabled: true,
+            margin: '0 0 10 0'
+          },
+          {
+            xtype: 'fieldcontainer',
+            fieldLabel: '예약시간',
+            layout: 'hbox',
+            items: [
+              {
+                xtype: 'numberfield',
+                id: 'sms_rsv_hour',
+                emptyText: '시(Hour)',
+                minValue: 8,
+                maxValue: 20,
+                width: 100,
+                disabled: true,
+                margin: '0 5 0 0'
+              },
+              {
+                xtype: 'displayfield',
+                value: ':',
+                width: 20,
+                margin: '0 5 0 0'
+              },
+              {
+                xtype: 'numberfield',
+                id: 'sms_rsv_min',
+                emptyText: '분(Min)',
+                minValue: 0,
+                maxValue: 59,
+                width: 100,
+                disabled: true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        xtype: 'fieldset',
+        title: '템플릿',
+        collapsible: true,
+        collapsed: false,
+        items: [
+          {
+            xtype: 'container',
+            html: '<div style="color:#666; margin-bottom:10px;">자주 사용하는 템플릿을 선택하여 빠르게 작성하세요.</div>'
+          },
+          {
+            xtype: 'dataview',
+            store: Ext.create('Ext.data.Store', {
+              fields: ['key', 'title', 'content'],
+              data: Object.keys(smsTemplates).map(function(k) {
+                return {
+                  key: k,
+                  title: smsTemplates[k].title,
+                  content: smsTemplates[k].content
+                };
+              })
+            }),
+            tpl: new Ext.XTemplate(
+              '<tpl for=".">',
+              '  <div class="sms-template-item" style="padding:10px; margin:5px 0; border:1px solid #e0e0e0; border-radius:6px; cursor:pointer; background:#fafbfc;">',
+              '    <div style="font-weight:600; color:#333; margin-bottom:5px;">{title}</div>',
+              '    <div style="font-size:12px; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{content:ellipsis(50)}</div>',
+              '  </div>',
+              '</tpl>'
+            ),
+            itemSelector: 'div.sms-template-item',
+            listeners: {
+              itemclick: function(view, record) {
+                applyTemplateToForm(record.get('key'));
+              }
+            }
+          }
+        ]
+      }
+    ],
+    dockedItems: [{
+      dock: 'top',
+      xtype: 'toolbar',
+      style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+      items: [
+        {
+          text: '템플릿 선택',
+          itemId: 'tb_template',
+          iconCls: 'fa fa-bars',
+          menu: templateMenu,
+          scale: 'medium',
+          margin: '0 8 0 0'
+        },
+        {
+          xtype: 'displayfield',
+          itemId: 'allModeHint',
+          hidden: true,
+          value: '<span style="color:#64748b;">※ 전체 선택 시 발송 시점에 <b>업체별 담당자/연락처</b>가 자동 반영됩니다.</span>'
+        }
+      ]
+    }]
+  });
+
+  // ─────────────────────────────────────────────
+  // 8. placeholder 치환
+  // ─────────────────────────────────────────────
+  function replaceAllPlaceholders(text, map) {
+    let out = String(text || '');
+    Object.keys(map || {}).forEach((k) => {
+      const v = map[k] == null ? '' : String(map[k]);
+      const re = new RegExp('\\{' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\}', 'g');
+      out = out.replace(re, v);
+    });
+    return out;
+  }
+
+  // ─────────────────────────────────────────────
+  // 9. 발송 로직
+  // ─────────────────────────────────────────────
+  var adminInfoCache = {};
+
+  function getAdminInfoForManager(admin_id) {
+    return new Promise(function(resolve) {
+      if (!admin_id) return resolve({ 담당자: '', 연락처: '' });
+
+      if (adminInfoCache[admin_id]) {
+        resolve(adminInfoCache[admin_id]);
+        return;
+      }
+
+      Ext.Ajax.request({
+        url: DATA_URL,
+        method: 'GET',
+        params: { adminflag: 'get_admin_info', admin_id: admin_id },
+        success: function(response) {
+          var res = Ext.decode(response.responseText);
+          var info = {
+            담당자: (res && res.admin_name) ? res.admin_name : "",
+            연락처: (res && res.admin_tel_no) ? res.admin_tel_no : ""
+          };
+          adminInfoCache[admin_id] = info;
+          resolve(info);
+        },
+        failure: function() {
+          var info = { 담당자: "", 연락처: "" };
+          adminInfoCache[admin_id] = info;
+          resolve(info);
+        }
+      });
+    });
+  }
+
+  function getVarsForSend(rec) {
+    const recAdminName = rec.get('admin_name') || '';
+    const recAdminTel = rec.get('admin_tel_no') || '';
+    const base = {
+      ...GLOBAL_DEFAULTS,
+      회사명: rec.get('biz_name') || '',
+      이름: rec.get('ceo_name') || ''
+    };
+    const mergedWithRecContact = {
+      ...base,
+      담당자: recAdminName || base.담당자,
+      연락처: recAdminTel || base.연락처,
+    };
+
+    if (isAllADID(ADID)) {
+      if (recAdminName || recAdminTel) {
+        return Promise.resolve(mergedWithRecContact);
+      }
+
+      var managerAdminId = rec.get('groupManager') || '';
+      return getAdminInfoForManager(managerAdminId).then(function(info) {
+        const contactName = info.담당자 || mergedWithRecContact.담당자;
+        const contactTel = info.연락처 || mergedWithRecContact.연락처;
+        return {
+          ...mergedWithRecContact,
+          담당자: contactName,
+          연락처: contactTel
+        };
+      });
+    }
+
+    return Promise.resolve(mergedWithRecContact);
+  }
+
+  sendSmsAction = function() {
+    var records = sm.getSelection();
+    if (!records.length) {
+      Ext.Msg.alert('알림', '좌측 리스트에서 발송 대상을 선택해주세요.');
+      return;
+    }
+
+    var msg = Ext.getCmp('mngMsgSms_content').getValue();
+    if (!msg) {
+      Ext.Msg.alert('알림', '문자 내용을 입력해주세요.');
+      return;
+    }
+
+    var isRsv = Ext.getCmp('chk_rsv_sms').getValue();
+    var toSendDate = '', toSendHours = '', toSendMinute = '';
+
+    if (isRsv) {
+      var dateField = Ext.getCmp('sms_rsv_date');
+      var hourField = Ext.getCmp('sms_rsv_hour');
+      var minField = Ext.getCmp('sms_rsv_min');
+
+      if (dateField && dateField.getValue()) {
+        toSendDate = Ext.Date.format(dateField.getValue(), 'Y-m-d');
+      }
+      toSendHours = hourField ? hourField.getValue() : '';
+      toSendMinute = minField ? minField.getValue() : '';
+
+      if (!toSendDate) {
+        Ext.Msg.alert('알림', '예약 날짜를 입력해주세요.');
+        return;
+      }
+    }
+
+    Ext.MessageBox.confirm(
+      '발송 확인',
+      '총 <b>' + records.length + '명</b>에게 문자를 발송하시겠습니까?',
+      function(btn){ if(btn === 'yes') doSend(records, msg, toSendDate, toSendHours, toSendMinute); }
+    );
+  };
+
+  function doSend(records, msgContent, toSendDate, toSendHours, toSendMinute) {
+    Ext.getBody().mask('문자 발송중... (0/' + records.length + ')');
+
+    var total = records.length;
+    var completed = 0;
+
+    var promises = records.map(function(rec) {
+      if (!rec.get('hp_no')) {
+        completed++;
+        Ext.getBody().mask('문자 발송중... (' + completed + '/' + total + ')');
+        return Promise.resolve({
+          rec: rec,
+          success: false,
+          error: '휴대폰 번호 없음'
+        });
+      }
+
+      return getVarsForSend(rec).then(function(vars) {
+        var finalMsg = replaceAllPlaceholders(msgContent, vars);
+        var cleanHpNo = (rec.get('hp_no') || '').replace(/-/g, '');
+
+        var formData = new FormData();
+        formData.append('flag', flag);
+        formData.append('msg', finalMsg);
+        formData.append('seq_no[]', rec.get('seq_no'));
+        formData.append('hp_no[]', cleanHpNo);
+        formData.append('toSendDate', toSendDate || '');
+        formData.append('toSendHours', toSendHours || '');
+        formData.append('toSendMinute', toSendMinute || '');
+
+        return fetch(SEND_URL, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+          },
+          body: formData
+        })
+        .then(function(r) {
+          return r.json()
+            .catch(function() { return { success: false, message: '응답 파싱 실패' }; })
+            .then(function(json) { return { status: r.status, success: json.success, message: json.message }; });
+        })
+        .then(function(result) {
+          completed++;
+          Ext.getBody().mask('문자 발송중... (' + completed + '/' + total + ')');
+          var ok = result.success === true && result.status >= 200 && result.status < 300;
+          return { rec: rec, success: ok, error: result.message };
+        })
+        .catch(function(err) {
+          completed++;
+          Ext.getBody().mask('문자 발송중... (' + completed + '/' + total + ')');
+          return { rec: rec, success: false, error: (err && err.message) ? err.message : String(err) };
+        });
+      });
+    });
+
+    Promise.all(promises).then(function(results) {
+      var successCnt = 0;
+      var failItems = [];
+
+      results.forEach(function(res) {
+        if (res.success) {
+          successCnt++;
+          res.rec.set('sms_send_result', '성공');
+          res.rec.set('sms_send_dt', Ext.Date.format(new Date(), 'Y-m-d H:i'));
+        } else {
+          failItems.push(res);
+          res.rec.set('sms_send_result', '실패');
+          res.rec.set('sms_send_dt', '');
+        }
+        res.rec.commit();
+      });
+
+      Ext.getBody().unmask();
+      if (failItems.length) {
+        var firstErr = failItems[0].error || '알 수 없는 오류';
+        Ext.Msg.alert('실패', '성공 ' + successCnt + '건, 실패 ' + failItems.length + '건\n첫 실패 사유: ' + firstErr);
+      } else {
+        Ext.Msg.alert('알림', '모든 문자를 성공적으로 전송했습니다.');
+      }
+
+      // 폼 초기화
+      if (Ext.getCmp('chk_rsv_sms')) Ext.getCmp('chk_rsv_sms').setValue(false);
+
+      store.load();
+    }).catch(function(err) {
+      Ext.getBody().unmask();
+      Ext.Msg.alert('알림', '문자 발송 실패: ' + ((err && err.message) ? err.message : String(err)));
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // 10. Main Layout
+  // ─────────────────────────────────────────────
+  var mainPanel = Ext.create('Ext.panel.Panel', {
+    renderTo: renderTarget,
+    layout: 'border',
+    width: '100%',
+    height: getGridHeight(),
+    items: [mainGrid, formPanel]
+  });
+
+  Ext.EventManager.onWindowResize(function() {
+    if (mainPanel && !mainPanel.isDestroyed) mainPanel.setHeight(getGridHeight());
+  });
+
+  // ✅ 초기 상태
+  window.__MNGMSG_SMS_ALL_MODE__ = isAllADID(ADID);
+  applyTemplateToForm('custom');
+  updateAdminInfo(ADID);
 
 })();
 </script>
