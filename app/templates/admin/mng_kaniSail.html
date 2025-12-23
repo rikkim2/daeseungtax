@@ -142,15 +142,17 @@ console.log(ADID)
       autoLoad: false,
       listeners: {
         load: function(store, records, successful, operation) {
+          var response = operation && operation.response ? operation.response : null;
           console.log('Store load event:', {
             successful: successful,
             recordCount: records.length,
-            rawResponse: operation.getResponse() ? operation.getResponse().responseText : 'N/A'
+            rawResponse: response ? response.responseText : 'N/A'
           });
           if (!successful) {
-            var response = operation.getResponse();
             console.error('Load failed. Response:', response ? response.responseText : 'No response');
             Ext.Msg.alert('오류', '데이터를 불러오는데 실패했습니다.');
+          } else {
+            console.log('✅ Load successful! Records:', records.length);
           }
         }
       }
