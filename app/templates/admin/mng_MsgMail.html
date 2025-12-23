@@ -292,49 +292,98 @@
         return buildMailShell({
           title: '',
           bodyContent: `
-  
-            <div style="font-size:15px; color:#111; line-height:1.85; text-align:center; margin-top:24px;">
-              <div style="font-weight:900; font-size:18px; margin-bottom:16px;">안녕하세요 세무법인 대승입니다.</div>
-              
-              <div style="margin-bottom:14px;">
-                숨 가쁘게 달려온 ${year}년 한 해, 정말 고생 많으셨습니다.
+            <!-- 새해 인사 헤더 -->
+            <div style="text-align:center; margin-top:20px; margin-bottom:32px;">
+              <div style="font-size:32px; font-weight:900; color:#d32f2f; margin-bottom:12px; letter-spacing:-1px;">
+                🎊 ${year+1}년 새해 복 많이 받으세요 🎊
               </div>
-              
-              <div style="margin-bottom:14px;">
-                올해는 글로벌 관세 이슈와 내수 부진 등 대내외적으로 많은 도전이 있었던 해였습니다. 
-                하지만 위기 속에서도 새로운 돌파구를 찾으려는 귀사의 열정이 있었기에, 우리는 한 걸음 더 나아갈 수 있었습니다.<br>
+              <div style="font-size:16px; font-weight:700; color:#1f6f5a; margin-top:8px;">
+                세무법인 대승 올림
               </div>
-              
-              <div style="margin-bottom:14px;">
-                이제 붉은 말의 해, 역동적인 ${year+1}년이 우리를 기다리고 있습니다.
+            </div>
+
+            <!-- 인사말 -->
+            <div style="font-size:15px; color:#111; line-height:1.9; text-align:center;">
+              <div style="margin-bottom:18px; font-size:16px; font-weight:700;">
+                안녕하세요, <b style="color:#1f6f5a;">{회사명}</b> 담당 세무법인 대승입니다.
               </div>
-              
-              <div style="margin:24px 0; padding:16px; background:#f8f9fa; border-radius:10px;">
-                <div style="font-weight:800; color:#1f6f5a; margin-bottom:8px;">
-                  다가오는 ${year+1}년에는,
-                </div>
-                <div>
-                  더 많은 고객들이 문을 두드리고, 매출은 더욱 신장되며, <br/>
-                  지금보다 훨씬 더 안정된 내일을 맞이하시길 진심으로 바랍니다.                  <br/>
-                </div>
+
+              <div style="margin-bottom:16px; color:#333;">
+                숨 가쁘게 달려온 <b style="color:#d32f2f;">${year}년 한 해</b>, 정말 고생 많으셨습니다.
               </div>
-              
-              <div style="margin-bottom:14px;">
+            </div>
+
+            <!-- 올해 회고 -->
+            <div style="margin:24px 0; padding:20px; background:linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%); border-radius:12px; border-left:4px solid #d32f2f;">
+              <div style="font-size:14px; color:#333; line-height:1.8; text-align:center;">
+                올해는 글로벌 관세 이슈와 내수 부진 등 대내외적으로 많은 도전이 있었던 해였습니다.<br/>
+                하지만 위기 속에서도 새로운 돌파구를 찾으려는 <b style="color:#d32f2f;">귀사의 열정</b>이 있었기에,<br/>
+                우리는 한 걸음 더 나아갈 수 있었습니다.
+              </div>
+            </div>
+
+            <!-- 새해 전망 -->
+            <div style="text-align:center; margin:28px 0;">
+              <div style="font-size:17px; font-weight:800; color:#c62828; margin-bottom:16px;">
+                🐴 이제 붉은 말의 해, 역동적인 <span style="font-size:20px;">${year+1}년</span>이 우리를 기다리고 있습니다.
+              </div>
+            </div>
+
+            <!-- 축복 메시지 박스 -->
+            <div style="margin:28px auto; max-width:520px; padding:24px; background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius:16px; box-shadow:0 4px 12px rgba(27,94,32,0.15);">
+              <div style="font-weight:800; color:#1b5e20; font-size:16px; margin-bottom:14px; text-align:center;">
+                ✨ 다가오는 ${year+1}년에는 ✨
+              </div>
+              <div style="font-size:14px; color:#2e7d32; line-height:2; text-align:center;">
+                💼 더 많은 고객들이 문을 두드리고<br/>
+                📈 매출은 더욱 신장되며<br/>
+                🏆 지금보다 훨씬 더 안정된 내일을 맞이하시길<br/>
+                <b style="font-size:15px; color:#1b5e20;">진심으로 바랍니다.</b>
+              </div>
+            </div>
+
+            <!-- 감사 인사 -->
+            <div style="margin:28px 0; padding:20px; background:#f8f9fa; border-radius:12px; text-align:center;">
+              <div style="font-size:15px; color:#444; line-height:1.9;">
                 변화무쌍한 시기에도 항상 곁에 있어 주셔서 고맙습니다.<br/>
-                저희 대승도 여러분의 든든한 파트너로서 새해를 함께 열겠습니다.
+                저희 <b style="color:#1f6f5a;">세무법인 대승</b>도 여러분의 든든한 파트너로서<br/>
+                새해를 함께 열겠습니다.
               </div>
-              
-              <div style="margin-top:24px; font-weight:900; font-size:17px; color:#1f6f5a;">
-                새해 복 많이 받으십시오.
-              </div>
-              
-              <div style="margin-top:32px; padding-top:20px; border-top:1px solid #e9ecef; font-size:13px; color:#666;">
-                <div style="margin-bottom:4px;">- 12월 31일 업무 단축 안내 -</div>
-                <div style="line-height:1.6;">
-                  저희 사무실은 ${year}년 12월 31일에는 종무식 관계로 오후에는 전화 및 온라인<br/>
-                  업무가 중단되오니, 연말 못한 내용은 이메일이나 문자 남겨주시면 빠짐없이 처리<br/>
-                  드리겠습니다. 감사합니다.
+            </div>
+
+            <!-- 새해 인사 -->
+            <div style="margin:32px 0; text-align:center;">
+              <div style="display:inline-block; padding:20px 40px; background:linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%); border-radius:50px; box-shadow:0 4px 16px rgba(255,193,7,0.4);">
+                <div style="font-size:22px; font-weight:900; color:#f57c00; letter-spacing:2px;">
+                  🎉 새해 복 많이 받으십시오 🎉
                 </div>
+              </div>
+            </div>
+
+            <!-- 구분선 -->
+            <div style="margin:36px 0; border-top:2px dashed #e0e0e0;"></div>
+
+            <!-- 업무 단축 안내 -->
+            <div style="margin-top:28px; padding:18px; background:#fff8e1; border:2px solid #ffd54f; border-radius:12px;">
+              <div style="font-size:14px; color:#e65100; font-weight:800; margin-bottom:10px; text-align:center;">
+                📢 12월 31일 업무 단축 안내
+              </div>
+              <div style="font-size:13px; color:#555; line-height:1.8; text-align:center;">
+                저희 사무실은 <b style="color:#d32f2f;">${year}년 12월 31일</b>에는 종무식 관계로<br/>
+                <b>오후에는 전화 및 온라인 업무가 중단</b>되오니,<br/>
+                연말 못한 내용은 <b style="color:#1976d2;">이메일이나 문자</b> 남겨주시면<br/>
+                빠짐없이 처리드리겠습니다.
+              </div>
+            </div>
+
+            <!-- 마무리 인사 -->
+            <div style="margin-top:32px; text-align:center;">
+              <div style="font-size:14px; color:#666; line-height:1.6;">
+                항상 감사드리며,<br/>
+                ${year+1}년에도 변함없는 성원 부탁드립니다.
+              </div>
+              <div style="margin-top:16px; font-size:15px; font-weight:700; color:#1f6f5a;">
+                세무법인 대승 임직원 일동
               </div>
             </div>
           `
