@@ -92,6 +92,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',  # 중복 주의 (위에도 있음)
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'allauth.account.middleware.AccountMiddleware',  # Django 4.1.8과 호환성 문제로 주석 처리
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 

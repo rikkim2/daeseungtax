@@ -6,400 +6,1124 @@
   if (window.__MNGMSG_MAIL_INITED__) return;
   window.__MNGMSG_MAIL_INITED__ = true;
 
+  // ✅ 요청 순서 보장용
+  window.__adminInfoReqSeq = window.__adminInfoReqSeq || 0;
+  window.__MNGMSG_MAIL_SELECTED_ADID__ = window.__MNGMSG_MAIL_SELECTED_ADID__ || '';
+  window.__MNGMSG_MAIL_ALL_MODE__ = window.__MNGMSG_MAIL_ALL_MODE__ || false;
+
   // ✅ 렌더 타겟 찾기
   var renderTarget = document.getElementById('mngMsgMailMount');
   if (!renderTarget) {
-    renderTarget = document.querySelector('div.tab-pane.active .mngmsg-mail-wrap'); // 클래스명 변경
+    renderTarget = document.querySelector('div.tab-pane.active .mngmsg-mail-wrap');
   }
   if (!renderTarget) return;
-  // ★ [핵심 수정] 높이 계산 함수
-  // 전체창 높이 - (헤더 + 탭높이 + 패딩 등 여유분 약 160px)
-  function getGridHeight() {
-      return window.innerHeight - 160; 
-  }
+
+  function getGridHeight() { return window.innerHeight - 160; }
+
   // ─────────────────────────────────────────────
-  // 1. Config & Templates (주제별 내용 정의)
+  // 1. Config
   // ─────────────────────────────────────────────
   var flag = '{{ flag }}';
   var adminBizLevel = '{{ admin_biz_level }}'.trim();
   const isSuperuser = '{{ admin_grade }}' === 'SA';
-  var ADID = '{{ ADID }}'.trim();        
+  var ADID = '{{ ADID }}'.trim();
   var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+  const ALL_ADID_VALUE = (arrADID && arrADID[0]) || '전체';
+  const isAllADID = (val) => (val === '전체' || val === ALL_ADID_VALUE);
+
   var DATA_URL   = "{% url 'mngMsg_mail_data' %}";
   var SEND_URL   = "{% url 'mngMsg_mail_send' %}";
   var UPLOAD_URL = "{% url 'mngMsg_mail_upload' %}";
 
-  // 주제별 템플릿 정의 (ASP 코드의 로직을 JS 데이터로 변환)
-var mailTemplates = {
-    'pay': {
-        title: '급여신고 안내',
-        subject: '[공지] 급여신고 관련 안내 말씀드립니다.',
-        body: '안녕하세요 {회사명}입니다.<br><br>이번 달 급여 변동 사항이나 일용직 근로자가 있으시면 내역을 보내주시기 바랍니다.<br>감사합니다.'
+  // ✅ 운영 기본값(여기만 바꾸면 전체 템플릿에 반영)
+  // ⚠️ "전체" 모드에서는 프리뷰에 담당자/연락처를 절대 넣지 않는다(메일에 박히는 문제 방지)
+  var GLOBAL_DEFAULTS = {
+    담당자: '{{ admin_name|default_if_none:"" }}',
+    연락처: '{{ admin_tel_no|default_if_none:"" }}',
+    제출방법: '① 회신메일 첨부 또는 ② 자료업로드 버튼 이용',
+    CTA_URL: 'https://daeseungtax.co.kr',
+    CTA_TEXT: '자료 제출하기'
+  };
+
+  // ─────────────────────────────────────────────
+  // 2. helpers / buildMailShell
+  // ─────────────────────────────────────────────
+  function buildCTAButton(text, url) {
+    // NOTE: 여기서는 placeholder 형태로 유지 → 최종 replaceAllPlaceholders에서 치환됨
+    if (!text || !url) return '';
+    return [
+      '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 4px;">',
+      '  <tr>',
+      '    <td align="left">',
+      '      <a href="{CTA_URL}" style="display:inline-block;background:#255398;color:#fff;text-decoration:none;',
+      '         padding:12px 16px;border-radius:10px;font-weight:800;font-size:14px;">',
+      '        {CTA_TEXT}',
+      '      </a>',
+      '    </td>',
+      '  </tr>',
+      '</table>'
+    ].join('\n');
+  }
+
+  function buildMailShell(opts, vars) {
+    opts = opts || {};
+    vars = vars || {};
+
+    const title = opts.title || '';
+    const bodyContent = opts.bodyContent || '';
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function replacePlaceholders(html, map) {
+      let out = String(html ?? '');
+      Object.keys(map || {}).forEach((k) => {
+        const v = map[k] == null ? '' : String(map[k]);
+        const re = new RegExp('\\{' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\}', 'g');
+        out = out.replace(re, v);
+      });
+      return out;
+    }
+
+    const corpName = vars['회사명'] ?? vars['{회사명}'] ?? '';
+
+    // ✅ 프리뷰에서 사용할 mergedMap (HTML escape 적용)
+    const mergedMap = {
+      '회사명': escapeHtml(corpName),
+      '제출기한': escapeHtml(vars['제출기한'] ?? ''),
+      '제출방법': escapeHtml(vars['제출방법'] ?? ''),
+      '담당자': escapeHtml(vars['담당자'] ?? ''),
+      '연락처': escapeHtml(vars['연락처'] ?? ''),
+      'CTA_TEXT': escapeHtml(vars['CTA_TEXT'] ?? ''),
+      'CTA_URL': (vars['CTA_URL'] ?? '').toString(),
+    };
+
+    // ✅ bodyContent 내부 placeholder 치환
+    const mergedBody = replacePlaceholders(bodyContent, {
+      ...mergedMap,
+      'CTA_URL': (vars['CTA_URL'] ?? '').toString(),
+      'CTA_TEXT': (vars['CTA_TEXT'] ?? '').toString(),
+    });
+
+    const headerLeft = corpName ? `${escapeHtml(corpName)}` : `세무법인대승`;
+
+    // ✅ "전체 모드" 프리뷰에서는 담당자/연락처 박스/푸터를 숨김
+    // (담당자/연락처 값이 비어있으면 자동으로 안 나옴)
+    const hasContact = !!(mergedMap['담당자'] || mergedMap['연락처']);
+
+    let footerContactInfo = '';
+    if (hasContact) {
+      const parts = [];
+      if (mergedMap['담당자']) parts.push(`담당자: <span style="color:#475569; font-weight:500;">${mergedMap['담당자']}</span>`);
+      if (mergedMap['연락처']) parts.push(`연락처: <span style="color:#475569; font-weight:500;">${mergedMap['연락처']}</span>`);
+      footerContactInfo = `
+        <div style="font-size:12px; color:#64748b; margin-bottom:4px;">
+          ${parts.join(' &nbsp;·&nbsp; ')}
+        </div>`;
+    }
+
+    return [
+      '<!DOCTYPE html>',
+      '<html lang="ko">',
+      '<head>',
+      '  <meta charset="UTF-8" />',
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+      '  <meta http-equiv="x-ua-compatible" content="ie=edge" />',
+      `  <title>${escapeHtml(title || ' 안내')}</title>`,
+      '  <style>',
+      '    @media only screen and (max-width: 600px) {',
+      '      .main-table { width: 100% !important; max-width: 680px !important; }',
+      '      .header-title { font-size: 16px !important; }',
+      '    }',
+      '  </style>',
+      '</head>',
+      '<body style="margin:0; padding:0; background:#f5f7fb;">',
+
+      '  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f5f7fb;">',
+      '    <tr>',
+      '      <td align="center" style="padding:24px 12px;">',
+
+      '        <table class="main-table" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:680px; width:100%; border-collapse:separate; border-spacing:0; margin:0 auto;">',
+
+      '          <tr>',
+      '            <td style="padding:0;">',
+      '              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate; border-spacing:0;">',
+      '                <tr>',
+      '                  <td style="border-radius:14px 14px 0 0; overflow:hidden;">',
+      '                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"',
+      '                           style="background:#1f6f5a; background:linear-gradient(90deg,#1f6f5a 0%, #1f6f5a 55%, #0f5c80 100%);">',
+      '                      <tr>',
+      '                        <td style="padding:18px 22px;">',
+
+      '                          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">',
+      '                            <tr>',
+      '                              <td align="left" valign="middle" style="padding:0;">',
+      '                                <div class="header-title" style="font-family:Pretendard, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, Arial, sans-serif;',
+      '                                                  font-size:16px; line-height:1.2; font-weight:800; color:#ffffff; letter-spacing:-0.3px;">',
+      `                                  ${headerLeft}`,
+      '                                </div>',
+      '                              </td>',
+
+      '                              <td align="right" valign="middle" style="padding:0; white-space:nowrap;">',
+      '                                <div style="font-family:Roboto, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, Arial, sans-serif;',
+      '                                                  font-size:14px; line-height:1.2; font-weight:700; color:rgba(255,255,255,0.92); letter-spacing:-0.2px;">',
+      '                                  세무법인 대승',
+      '                                </div>',
+      '                              </td>',
+      '                            </tr>',
+      '                          </table>',
+
+      '                        </td>',
+      '                      </tr>',
+      '                    </table>',
+      '                  </td>',
+      '                </tr>',
+      '              </table>',
+      '            </td>',
+      '          </tr>',
+
+      '          <tr>',
+      '            <td style="background:#ffffff; border-radius:0 0 14px 14px; padding:22px 22px 18px 22px;',
+      '                        box-shadow:0 10px 30px rgba(15, 23, 42, 0.08);">',
+
+      (title
+        ? `              <div style="font-family:Pretendard, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, Arial, sans-serif;
+                          font-size:20px; font-weight:900; color:#0f172a; letter-spacing:-0.4px; margin-bottom:10px;">
+                    ${escapeHtml(title)}
+                  </div>`
+        : ''),
+
+      `              ${mergedBody}`,
+
+
+      '            </td>',
+      '          </tr>',
+
+      '          <tr>',
+      '            <td style="padding:20px 22px 18px 22px;">',
+      '              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-top:1px solid #e5e7eb;">',
+      '                <tr>',
+      '                  <td style="padding-top:16px;">',
+      '                    <div style="font-family:Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, Arial, sans-serif;',
+      '                                 text-align:center; line-height:1.8;">',
+      '                      <div style="font-size:15px; font-weight:700; color:#1f6f5a; margin-bottom:6px;">',
+      '                        세무법인 대승',
+      '                      </div>',
+      // ✅ 푸터 연락처도 실제 값 있을 때만 출력
+      (hasContact ? footerContactInfo : ''),
+      '                      <div style="font-size:11px; color:#94a3b8; margin-top:6px;">',
+      '                        업무를 처리하는 담당자는 귀사의 올바른 경영의사결정을 위해 최선을 다하고 있습니다.',
+      '                      </div>',
+      '                    </div>',
+      '                  </td>',
+      '                </tr>',
+      '              </table>',
+      '            </td>',
+      '          </tr>',
+
+      '        </table>',
+      '      </td>',
+      '    </tr>',
+      '  </table>',
+
+      '</body>',
+      '</html>',
+    ].join('\n');
+  }
+
+  // ✅ 발송 직전 치환 (placeholder 확장)
+  function replaceAllPlaceholders(html, map) {
+    let out = String(html || '');
+    Object.keys(map || {}).forEach((k) => {
+      const v = map[k] == null ? '' : String(map[k]);
+      const re = new RegExp('\\{' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\}', 'g');
+      out = out.replace(re, v);
+    });
+    return out;
+  }
+
+  // ─────────────────────────────────────────────
+  // 3. 템플릿 정의
+  // ─────────────────────────────────────────────
+  const today = new Date();
+  const year = today.getFullYear();
+
+  const CONTACT_PLACEHOLDERS = { 담당자: '{담당자}', 연락처: '{연락처}' };
+
+  function currentContactVarsForPreview() {
+    // ✅ 전체 모드에서는 프리뷰에 연락처를 안 보여줘야 함
+    if (window.__MNGMSG_MAIL_ALL_MODE__) return { ...CONTACT_PLACEHOLDERS };
+    return { 담당자: GLOBAL_DEFAULTS.담당자, 연락처: GLOBAL_DEFAULTS.연락처 };
+  }
+
+  var mailTemplates = {
+    custom: {
+      title: '직접 입력',
+      subject: '',
+      defaults: {},
+      body: function(){
+        return buildMailShell({
+          title: '안내',
+          bodyContent: `<div style="font-size:14px;line-height:1.75;">(내용을 입력하세요)</div>`
+        }, currentContactVarsForPreview());
+      }
     },
-    'vat': {
-        title: '부가세 신고 안내',
-        subject: '[안내] 부가가치세 신고 납부 기간입니다.',
-        body: '안녕하세요 {회사명}입니다.<br><br>이번 달 25일까지 부가세 신고 납부 기간입니다.<br>매출/매입 자료가 준비되시면 신속히 전달 부탁드립니다.<br><br>감사합니다.'
+    yearend: {
+      title: '종무식 안내',
+      subject: '[세무법인 대승] '+year+'년 12월 31일 종무 및 신년 인사',
+      defaults: { 
+        제출기한: '', 
+        제출방법: '',
+        CTA_TEXT: '', 
+        CTA_URL: '' 
+      },
+      body: function(){
+        // ✅ 함수 실행 시점의 최신 GLOBAL_DEFAULTS 참조
+        var currentDefaults = {
+          담당자: GLOBAL_DEFAULTS.담당자,
+          연락처: GLOBAL_DEFAULTS.연락처
+        };
+        return buildMailShell({
+          title: '',
+          bodyContent: `
+  
+            <div style="font-size:15px; color:#111; line-height:1.85; text-align:center; margin-top:24px;">
+              <div style="font-weight:900; font-size:18px; margin-bottom:16px;">안녕하세요 세무법인 대승입니다.</div>
+              
+              <div style="margin-bottom:14px;">
+                숨 가쁘게 달려온 ${year}년 한 해, 정말 고생 많으셨습니다.
+              </div>
+              
+              <div style="margin-bottom:14px;">
+                올해는 글로벌 관세 이슈와 내수 부진 등 대내외적으로 많은 도전이 있었던 해였습니다. 
+                하지만 위기 속에서도 새로운 돌파구를 찾으려는 귀사의 열정이 있었기에, 우리는 한 걸음 더 나아갈 수 있었습니다.<br>
+              </div>
+              
+              <div style="margin-bottom:14px;">
+                이제 붉은 말의 해, 역동적인 ${year+1}년이 우리를 기다리고 있습니다.
+              </div>
+              
+              <div style="margin:24px 0; padding:16px; background:#f8f9fa; border-radius:10px;">
+                <div style="font-weight:800; color:#1f6f5a; margin-bottom:8px;">
+                  다가오는 ${year+1}년에는,
+                </div>
+                <div>
+                  더 많은 고객들이 문을 두드리고, 매출은 더욱 신장되며, <br/>
+                  지금보다 훨씬 더 안정된 내일을 맞이하시길 진심으로 바랍니다.                  <br/>
+                </div>
+              </div>
+              
+              <div style="margin-bottom:14px;">
+                변화무쌍한 시기에도 항상 곁에 있어 주셔서 고맙습니다.<br/>
+                저희 대승도 여러분의 든든한 파트너로서 새해를 함께 열겠습니다.
+              </div>
+              
+              <div style="margin-top:24px; font-weight:900; font-size:17px; color:#1f6f5a;">
+                새해 복 많이 받으십시오.
+              </div>
+              
+              <div style="margin-top:32px; padding-top:20px; border-top:1px solid #e9ecef; font-size:13px; color:#666;">
+                <div style="margin-bottom:4px;">- 12월 31일 업무 단축 안내 -</div>
+                <div style="line-height:1.6;">
+                  저희 사무실은 ${year}년 12월 31일에는 종무식 관계로 오후에는 전화 및 온라인<br/>
+                  업무가 중단되오니, 연말 못한 내용은 이메일이나 문자 남겨주시면 빠짐없이 처리<br/>
+                  드리겠습니다. 감사합니다.
+                </div>
+              </div>
+            </div>
+          `
+        }, currentDefaults);
+      }
+    },        
+    pay: {
+      title: '인건비 안내',
+      subject: '[급여/인건비] 자료 제출 요청드립니다',
+      defaults: { 제출기한: '매월 7일(영업일 기준)까지', CTA_TEXT: '급여자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/pay' },
+      body: function(){
+        return buildMailShell({
+          title: '인건비/급여 자료 제출 안내',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              급여신고를 위해 아래 자료 제출을 부탁드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">제출 항목</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>정규직 급여 변동(입/퇴사, 급여 변경, 수당/공제)</li>
+                <li>사업/기타소득 지급내역(해당 시)</li>
+                <li>일용직 지급내역(해당 시)</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton(true, true)}
+          `
+        }, currentContactVarsForPreview());
+      }
     },
-    'yearend': {
-        title: '연말정산 안내',
-        subject: '[중요] 연말정산 자료 제출 안내',
-        body: '안녕하세요 {회사명}입니다.<br><br>연말정산 기간이 도래하였습니다.<br>요청드린 자료를 기한 내에 회신 주시면 감사하겠습니다.'
+    younmal: {
+      title: '연말정산 안내',
+      subject: '[연말정산] 자료 제출 및 일정 안내드립니다',
+      defaults: { 제출기한: '1월 15일(영업일 기준)까지', CTA_TEXT: '연말정산 자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/younmal' },
+      body: function(){
+        var currentDefaults = {
+          담당자: GLOBAL_DEFAULTS.담당자,
+          연락처: GLOBAL_DEFAULTS.연락처
+        };
+        return buildMailShell({
+          title: '연말정산 자료 제출 안내',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              연말정산 진행을 위해 아래 자료를 기한 내 제출 부탁드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">주요 제출 항목</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>근로자 인적사항/부양가족 변동</li>
+                <li>간소화 자료(PDF) 또는 증빙 일괄</li>
+                <li>기타 공제 증빙(월세/기부금/교육비 등)</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton()}
+          `
+        }, currentDefaults);
+      }
     },
-    'holiday': {
-        title: '명절 인사',
-        subject: '풍성한 한가위 되세요.',
-        body: '안녕하세요 {회사명}입니다.<br><br>가족과 함께 따뜻하고 풍성한 명절 보내시길 바랍니다.<br>항상 건강하세요.'
+    ilyoung: {
+      title: '일용직 안내',
+      subject: '[일용직] 지급내역 제출 요청드립니다',
+      defaults: { 제출기한: '매월 5일(영업일 기준)까지', CTA_TEXT: '일용직 자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/ilyoung' },
+      body: function(){
+        var currentDefaults = {
+          담당자: GLOBAL_DEFAULTS.담당자,
+          연락처: GLOBAL_DEFAULTS.연락처
+        };
+        return buildMailShell({
+          title: '일용직 지급내역 제출 안내',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              일용직 신고를 위해 지급내역을 요청드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">제출 항목</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>성명/주민번호(또는 생년월일)/근무일수</li>
+                <li>지급액/공제액/실지급액</li>
+                <li>계좌이체 내역(해당 시)</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton()}
+          `
+        }, currentDefaults);
+      }
     },
-    'custom': {
-        title: '직접 입력',
-        subject: '',
-        body: ''
+    vat: {
+      title: '부가세(과세) 안내',
+      subject: '[부가세] 신고/납부 기간 안내 및 자료 요청',
+      defaults: { 제출기한: '신고기한 7일 전까지', CTA_TEXT: '부가세 자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/vat' },
+      body: function(){
+        return buildMailShell({
+          title: '부가가치세 신고 안내(과세)',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              부가세 신고 기간입니다. 아래 자료를 기한 내 전달 부탁드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">필수 자료</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>세금계산서(매출/매입) 누락분</li>
+                <li>카드/현금영수증 누락분</li>
+                <li>기타 증빙(영세율/고정자산 취득 등)</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton(true, true)}
+          `
+        }, currentContactVarsForPreview());
+      }
+    },
+    nonvat: {
+      title: '면세 안내',
+      subject: '[면세] 자료 제출 안내드립니다',
+      defaults: { 제출기한: '매월 10일(영업일 기준)까지', CTA_TEXT: '면세자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/nonvat' },
+      body: function(){
+        var currentDefaults = {
+          담당자: GLOBAL_DEFAULTS.담당자,
+          연락처: GLOBAL_DEFAULTS.연락처
+        };
+        return buildMailShell({
+          title: '면세사업자 자료 제출 안내',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              면세 매출/비용 정리를 위해 아래 자료 제출 부탁드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">주요 자료</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>면세 매출 정산자료(플랫폼/정산서/입금내역)</li>
+                <li>비용 증빙(카드/계좌이체/현금영수증)</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton()}
+          `
+        }, currentDefaults);
+      }
+    },
+    corptax: {
+      title: '법인 안내',
+      subject: '[법인세] 결산/신고 준비 자료 요청',
+      defaults: { 제출기한: '결산월 익월 10일까지', CTA_TEXT: '법인세 자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/corptax' },
+      body: function(){
+        var currentDefaults = {
+          담당자: GLOBAL_DEFAULTS.담당자,
+          연락처: GLOBAL_DEFAULTS.연락처
+        };
+        return buildMailShell({
+          title: '법인세 신고 준비 안내',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              법인세 신고 준비를 위해 결산 관련 자료 제출을 요청드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">필수 체크</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>매출/매입 누락 점검</li>
+                <li>가지급금/가수금 등 계정 정리</li>
+                <li>자산 취득/처분 및 감가상각 내역</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton()}
+          `
+        }, currentDefaults);
+      }
+    },
+    incometax: {
+      title: '개인 안내',
+      subject: '[종합소득세] 신고 준비 자료 요청드립니다',
+      defaults: { 제출기한: '5월 10일까지(권장)', CTA_TEXT: '종소세 자료 업로드', CTA_URL: GLOBAL_DEFAULTS.CTA_URL + '/incometax' },
+      body: function(){
+        var currentDefaults = {
+          담당자: GLOBAL_DEFAULTS.담당자,
+          연락처: GLOBAL_DEFAULTS.연락처
+        };
+        return buildMailShell({
+          title: '종합소득세 신고 준비 안내',
+          bodyContent: `
+            <div style="font-size:14px;color:#111;line-height:1.75;">
+              안녕하세요 <b>{회사명}</b> 담당 세무법인 대승입니다.<br/>
+              종합소득세 신고를 위해 아래 자료 제출 부탁드립니다.
+            </div>
+
+            <div style="margin-top:14px;padding:14px;border:1px solid #eef1f5;border-radius:12px;background:#fafbfc;">
+              <div style="font-weight:900;color:#111;margin-bottom:6px;">필수 자료</div>
+              <ul style="margin:0;padding-left:18px;color:#111;line-height:1.7;">
+                <li>매출자료(플랫폼/정산서/현금매출 포함)</li>
+                <li>비용증빙(카드/계좌이체/현금영수증)</li>
+                <li>인건비/임차료/이자비용 등 누락분</li>
+              </ul>
+            </div>
+
+            <div style="margin-top:14px;font-size:14px;color:#111;line-height:1.75;">
+              <b>제출기한</b>: {제출기한}<br/>
+              <b>제출방법</b>: {제출방법}
+            </div>
+
+            ${buildCTAButton()}
+          `
+        }, currentDefaults);
+      }
     }
   };
 
-  // 템플릿 적용 함수
-  function applyTemplateToForm(key) {
-      var tpl = mailTemplates[key];
-      if (!tpl) return;
-      var subjCmp = Ext.getCmp('mngMsgMail_subject');
-      var bodyCmp = Ext.getCmp('mngMsgMail_body');
-      if (subjCmp) subjCmp.setValue(tpl.subject || '');
-      if (bodyCmp) bodyCmp.setValue(tpl.body || '');
+  // ─────────────────────────────────────────────
+  // 4. 템플릿 적용 / 메뉴
+  // ─────────────────────────────────────────────
+  var currentTemplateKey = 'custom';
+
+  function updateAllModeHintVisibility() {
+    if (typeof formPanel === 'undefined' || !formPanel) return;
+    var hint = formPanel.down('#allModeHint');
+    if (!hint) return;
+
+    if (typeof hint.setHidden === 'function') {
+      hint.setHidden(!window.__MNGMSG_MAIL_ALL_MODE__);
+      return;
+    }
+    if (typeof hint.setVisible === 'function') {
+      hint.setVisible(window.__MNGMSG_MAIL_ALL_MODE__);
+      return;
+    }
+    if (typeof hint.show === 'function' && typeof hint.hide === 'function') {
+      window.__MNGMSG_MAIL_ALL_MODE__ ? hint.show() : hint.hide();
+    }
   }
 
-  // 템플릿 선택용 스크롤 메뉴
+  function applyTemplateToForm(key) {
+    currentTemplateKey = key;
+    var tpl = mailTemplates[key];
+    if (!tpl) return;
+
+    Ext.getCmp('mngMsgMail_subject')?.setValue(tpl.subject || '');
+
+    var previewHtml = tpl.body();
+    Ext.getCmp('mngMsgMail_body')?.setValue(previewHtml);
+
+    if (typeof formPanel !== 'undefined' && formPanel) {
+      var btn = formPanel.down('#tb_template');
+      if (btn) btn.setText(tpl.title || key);
+
+      // ✅ 전체 모드 안내 문구(메일 본문에 박지 말고 UI에만)
+      updateAllModeHintVisibility();
+    }
+
+    if (store && store.getProxy()) {
+      store.getProxy().setExtraParam('mailFlag', currentTemplateKey);
+      store.load();
+    }
+  }
+
   var templateMenu = Ext.create('Ext.menu.Menu', {
-      height: 400,
-      scrollable: { x: false, y: true },
-      items: Object.keys(mailTemplates).map(function(k) {
-          return {
-              text: mailTemplates[k].title || k,
-              handler: function(){ applyTemplateToForm(k); }
-          };
-      })
+    height: 400,
+    scrollable: { x: false, y: true },
+    items: Object.keys(mailTemplates).map(function(k) {
+      return {
+        text: mailTemplates[k].title || k,
+        handler: function(){
+          applyTemplateToForm(k);
+        }
+      };
+    })
   });
 
-  // 콤보박스용 데이터 스토어 변환
-  var templateStoreData = [];
-  for (var key in mailTemplates) {
-      templateStoreData.push([key, mailTemplates[key].title]);
-  }
-
-  // 업로드 상태 변수
+  // ─────────────────────────────────────────────
+  // 5. 업로드 상태
+  // ─────────────────────────────────────────────
   var uploadFileName = "";
   var fileCount = 0;
 
   // ─────────────────────────────────────────────
-  // 2. Data Store
+  // 6. Data Store (좌측)
   // ─────────────────────────────────────────────
   var store = Ext.create('Ext.data.Store', {
-    fields: ['groupManager','seq_no', 'biz_name', 'email', 'mail_date'],
+    fields: [
+      'groupManager',
+      'admin_name',
+      'admin_tel_no',
+      'seq_no',
+      'biz_name',
+      'email',
+      'mail_date',
+      'mail_send_result'
+    ],
     proxy: {
       type: 'ajax',
       url: DATA_URL,
       reader: { type: 'json', root: 'rows', totalProperty: 'total' },
       extraParams: { flag: 'mail', ADID: ADID }
     },
-    autoLoad: true,
-    ... (ADID === "전체" ? { groupField: 'groupManager' } : {}) // ✅ ADID가 "전체"일 때만 groupField 추가
-  });
-  var comboDataStore = Ext.create('Ext.data.Store', {
-      fields: ['id', 'name'],
-      data: [] // 초기 데이터는 비워둠
-  });
-  var sm = Ext.create('Ext.selection.CheckboxModel', {
-      checkOnly: false, // 행 클릭시에도 체크되도록 변경 (UX 향상)
-      mode: 'SIMPLE',   // Ctrl 키 없이도 다중 선택 가능
-      listeners: {
-          selectionchange: function(model, selected) {
-              // 선택된 인원 수 업데이트
-              var count = selected.length;
-              var display = Ext.getCmp('selected-count-display');
-              if(display) display.setValue(count > 0 ? '<b style="color:blue">' + count + '명</b> 선택됨' : '선택 없음');
-          }
-      }
+    autoLoad: true
   });
 
-function onItemClickHandler(item) {
-      ADID = item;
-      updateScrollMenuText(item);
-      // 선택한 ADID로 스토어 재조회
-      if (store && store.getProxy()) {
-          store.getProxy().setExtraParam('ADID', ADID);
-          store.load();
-      }
-  }    
-  if (isSuperuser){
-      Ext.Ajax.request({
-          url: '{% url "kijang_admin_combolist" %}', // 동적으로 데이터를 가져올 API URL
-          method: 'GET',
-          success: function (response) {
-              const data = Ext.decode(response.responseText); // 응답 데이터를 파싱
-              comboDataStore.loadData(data); // store에 데이터 로드
-          },
-          failure: function () {
-              Ext.Msg.alert('오류', '데이터를 불러오는 데 실패했습니다.');
-          }
-      });
+  if (isAllADID(ADID) && store.group) {
+    store.group('groupManager');
   }
-  // Docked Items Config 생성
-  const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);    
 
-  // [좌측] 수신자 리스트 그리드
+  var sm = Ext.create('Ext.selection.CheckboxModel', {
+    checkOnly: false,
+    mode: 'SIMPLE'
+  });
+
+  function refreshEditorPreviewOnly(){
+    if (!currentTemplateKey) return;
+    var tpl = mailTemplates[currentTemplateKey] || mailTemplates.custom;
+    var previewHtml = tpl.body();
+
+    var editor = Ext.getCmp('mngMsgMail_body');
+    if (editor) editor.setValue(previewHtml);
+
+    updateAllModeHintVisibility();
+  }
+
+  // ─────────────────────────────────────────────
+  // 7. 관리자 정보 갱신: "전체"는 프리뷰에 넣지 않음(핵심)
+  // ─────────────────────────────────────────────
+  function updateAdminInfo(adid) {
+    const reqSeq = ++window.__adminInfoReqSeq;
+    const selectedAtRequest = adid;
+
+    // ✅ 전체 선택: 프리뷰에는 담당자/연락처 표시 금지
+    if (!adid || isAllADID(adid)) {
+      window.__MNGMSG_MAIL_ALL_MODE__ = true;
+      GLOBAL_DEFAULTS.담당자 = CONTACT_PLACEHOLDERS.담당자;
+      GLOBAL_DEFAULTS.연락처 = CONTACT_PLACEHOLDERS.연락처;
+      refreshEditorPreviewOnly();
+      return;
+    }
+
+    window.__MNGMSG_MAIL_ALL_MODE__ = false;
+
+    Ext.Ajax.request({
+      url: DATA_URL,
+      method: 'GET',
+      params: { adminflag: 'get_admin_info', admin_id: adid },
+      success: function(response) {
+        if (reqSeq !== window.__adminInfoReqSeq) return;
+        if (window.__MNGMSG_MAIL_SELECTED_ADID__ !== selectedAtRequest) return;
+
+        var res = Ext.decode(response.responseText);
+        GLOBAL_DEFAULTS.담당자 = (res && res.admin_name) ? res.admin_name : "";
+        GLOBAL_DEFAULTS.연락처 = (res && res.admin_tel_no) ? res.admin_tel_no : "";
+
+        refreshEditorPreviewOnly();
+      },
+      failure: function() {
+        if (reqSeq !== window.__adminInfoReqSeq) return;
+        if (window.__MNGMSG_MAIL_SELECTED_ADID__ !== selectedAtRequest) return;
+
+        GLOBAL_DEFAULTS.담당자 = "";
+        GLOBAL_DEFAULTS.연락처 = "";
+        refreshEditorPreviewOnly();
+      }
+    });
+  }
+
+  function onItemClickHandler(item) {
+    ADID = item;
+    window.__MNGMSG_MAIL_SELECTED_ADID__ = ADID;
+
+    // (선택) 외부 함수 사용 중이면 유지
+    if (typeof updateScrollMenuText === 'function') updateScrollMenuText(item);
+
+    // ✅ store 먼저 로드 → 그 다음 adminInfo 갱신
+    if (store && store.getProxy()) {
+      store.getProxy().setExtraParam('ADID', ADID);
+
+      if (isAllADID(ADID) && store.group) {
+        store.group('groupManager');
+      } else if (store.clearGrouping) {
+        store.clearGrouping();
+      }
+
+      store.load({
+        callback: function() {
+          updateAdminInfo(item);
+        }
+      });
+    } else {
+      updateAdminInfo(item);
+    }
+  }
+
+  // 외부 공통 헬퍼 그대로 사용
+  const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+
+  // ─────────────────────────────────────────────
+  // 8. 좌측 그리드
+  // ─────────────────────────────────────────────
+  function sendMailAction(){ /* 아래에서 정의 */ }
+
   var mainGrid = Ext.create('Ext.grid.Panel', {
-    region: 'west', // Border Layout: 왼쪽
+    region: 'west',
     width: '50%',
-    split: true,    // 크기 조절 가능바 생성
+    split: true,
     collapsible: false,
     title: '발송 대상자 목록',
     store: store,
     selModel: sm,
     columnLines: true,
-    ... (ADID === "전체" ? { 
-          features: [{
-              id: 'groupManager',
-              ftype: 'groupingsummary',
-              startCollapsed: false,
-              groupHeaderTpl: '{name}',
-              hideGroupedHeader: false,
-              enableGroupingMenu: true
-          }]
-      } : {}),      
+    features: [{
+      id: 'groupManager',
+      ftype: 'groupingsummary',
+      startCollapsed: false,
+      groupHeaderTpl: '{name}',
+      hideGroupedHeader: false,
+      enableGroupingMenu: true
+    }],
     columns: [
       { xtype: 'rownumberer', width: 40 },
-      { dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0},  
+      { dataIndex: 'groupManager', header: '<center>관리자</center>', width: 0 },
       { text: '회사명', dataIndex: 'biz_name', width: 140, style: 'text-align:center' },
       { text: '이메일', dataIndex: 'email', flex: 1, style: 'text-align:center' },
-      { 
-        text: '상태', 
-        dataIndex: 'mail_date', 
-        width: 60, 
+      {
+        text: '상태',
+        dataIndex: 'mail_send_result',
+        width: 60,
         align: 'center',
         renderer: function(v) {
-            if(v === '성공') return '<span style="color:green; font-weight:bold;">V</span>';
-            if(v === '실패') return '<span style="color:red;">X</span>';
-            return '-';
+          if(v === '성공') return '<span style="color:green; font-weight:bold;">V</span>';
+          if(v === '실패') return '<span style="color:red;">X</span>';
+          return '-';
         }
-      }
+      },
+      { text: '발송일', dataIndex: 'mail_date', width: 120, align: 'center' }
     ],
-    dockedItems: [
-      {
-        dock: 'top',
-        xtype: 'toolbar',
-        style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
-        items: dockedItemsConfig.concat([
-          '->',
-          {
-            text: '메일보내기',
-            iconCls: 'fa fa-paper-plane',
-            handler: sendMailAction
-          }
-        ])
-      }
-    ]
+    dockedItems: [{
+      dock: 'top',
+      xtype: 'toolbar',
+      style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+      items: dockedItemsConfig.concat([
+        '->',
+        { text: '메일보내기', iconCls: 'fa fa-paper-plane', handler: function(){ sendMailAction(); } }
+      ])
+    }]
   });
 
-  // [우측] 메일 작성 폼
+  // ─────────────────────────────────────────────
+  // 9. 우측 폼
+  // ─────────────────────────────────────────────
   var formPanel = Ext.create('Ext.form.Panel', {
-    region: 'center', // Border Layout: 가운데(나머지 전체)
+    region: 'center',
     title: '메일 작성 및 전송',
-    bodyPadding: 15,
-    autoScroll: true,
-    defaults: { anchor: '100%', labelAlign: 'top' },
-    layout: 'anchor',
+    bodyPadding: '15px',
+    layout: { type: 'vbox', align: 'stretch' },
     items: [
       {
-        xtype: 'fieldset',
-        title: '1. 내용 작성',
-        layout: 'anchor',
-        defaults: { anchor: '100%' },
-        items: [
-            {
-                xtype: 'textfield',
-                fieldLabel: '제목',
-                id: 'mngMsgMail_subject',
-                allowBlank: false,
-                emptyText: '메일 제목을 입력하세요'
-            },
-            {
-                xtype: 'fieldcontainer',
-                fieldLabel: '첨부파일',
-                layout: 'hbox',
-                items: [
-                  {
-                    xtype: 'filefield',
-                    buttonText: '파일 선택',
-                    flex: 1,
-                    listeners: {
-                      change: function(obj){
-                        var fileDom = obj.fileInputEl.dom;
-                        if (!fileDom.files[0]) return;
-                        
-                        var fd = new FormData();
-                        fd.append('file', fileDom.files[0]);
-                        
-                        // 파일명 표시용 임시 업데이트
-                        Ext.getCmp('mngMsgMail_fileName').setValue('업로드 중...');
-
-                        fetch(UPLOAD_URL, {
-                          method: 'POST',
-                          headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] },
-                          body: fd
-                        })
-                        .then(r => r.json())
-                        .then(json => {
-                          if (!json.ok) throw new Error(json.msg);
-                          uploadFileName = json.uploaded_name;
-                          fileCount = 1;
-                          Ext.getCmp('mngMsgMail_fileName').setValue(uploadFileName);
-                          Ext.Msg.alert('성공', '파일이 업로드 되었습니다.');
-                        })
-                        .catch(err => {
-                          Ext.getCmp('mngMsgMail_fileName').setValue('');
-                          Ext.Msg.alert('실패', '업로드 실패: ' + err.message);
-                        });
-                      }
-                    }
-                  },
-                  { xtype: 'displayfield', width: 10 },
-                  {
-                    xtype: 'textfield',
-                    id: 'mngMsgMail_fileName',
-                    readOnly: true,
-                    flex: 1,
-                    emptyText: '선택된 파일 없음'
-                  }
-                ]
-            },
-            {
-                xtype: 'htmleditor',
-                fieldLabel: '내용',
-                id: 'mngMsgMail_body',
-                height: 350,
-                enableColors: true,
-                enableAlignments: true
-            }
-        ]
-      }
-    ],
-    dockedItems: [
+        xtype: 'textfield',
+        fieldLabel: '제목',
+        labelAlign: 'top',
+        id: 'mngMsgMail_subject',
+        allowBlank: false,
+        emptyText: '메일 제목을 입력하세요',
+        margin: '0 0 10 0'
+      },
       {
-        dock: 'top',
-        xtype: 'toolbar',
-        style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+        xtype: 'fieldcontainer',
+        fieldLabel: '첨부파일',
+        labelAlign: 'top',
+        layout: 'hbox',
+        margin: '0 0 10 0',
         items: [
           {
-            text: '템플릿 선택',
-            itemId: 'tb_template',
-            iconCls: 'x-fa fa-bars',
-            menu: templateMenu
+            xtype: 'filefield',
+            buttonText: '파일 찾기',
+            buttonOnly: true,
+            listeners: {
+              change: function(obj){
+                var fileDom = obj.fileInputEl.dom;
+                if (!fileDom.files[0]) return;
+
+                var fd = new FormData();
+                fd.append('file', fileDom.files[0]);
+
+                Ext.getCmp('mngMsgMail_fileName').setValue('업로드 중...');
+
+                fetch(UPLOAD_URL, {
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] },
+                  body: fd
+                })
+                .then(r => r.json())
+                .then(json => {
+                  if (!json.ok) throw new Error(json.msg);
+                  uploadFileName = json.uploaded_name;
+                  fileCount = 1;
+                  Ext.getCmp('mngMsgMail_fileName').setValue(uploadFileName);
+                  Ext.Msg.alert('성공', '파일이 업로드 되었습니다.');
+                })
+                .catch(err => {
+                  Ext.getCmp('mngMsgMail_fileName').setValue('');
+                  Ext.Msg.alert('실패', '업로드 실패: ' + err.message);
+                });
+              }
+            }
+          },
+          { xtype: 'displayfield', width: 10 },
+          {
+            xtype: 'textfield',
+            id: 'mngMsgMail_fileName',
+            readOnly: true,
+            flex: 1,
+            emptyText: '선택된 파일 없음'
           }
         ]
+      },
+      {
+        xtype: 'htmleditor',
+        fieldLabel: '내용',
+        labelAlign: 'top',
+        id: 'mngMsgMail_body',
+        flex: 1,
+        minHeight: 250,
+        enableColors: true,
+        enableAlignments: true
       }
-    ]
+    ],
+    dockedItems: [{
+      dock: 'top',
+      xtype: 'toolbar',
+      style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+      items: [
+        {
+          text: '템플릿 선택',
+          itemId: 'tb_template',
+          iconCls: 'fa fa-bars',
+          menu: templateMenu,
+          scale: 'medium',
+          margin: '0 8 0 0'
+        },
+        {
+          xtype: 'displayfield',
+          itemId: 'allModeHint',
+          hidden: true,
+          value: '<span style="color:#64748b;">※ 전체 선택 시 발송 시점에 <b>업체별 담당자/연락처</b>가 자동 반영됩니다. (프리뷰엔 표시되지 않습니다)</span>'
+        }
+      ]
+    }]
   });
 
   // ─────────────────────────────────────────────
-  // 4. Main Layout & Logic
+  // 10. 발송: 전체(ADID=전체)인 경우 업체별 담당자/연락처 동적 매핑
   // ─────────────────────────────────────────────
+  var adminInfoCache = {};
 
-  // 메일 전송 로직 분리
-  function sendMailAction() {
-      var records = sm.getSelection();
-      if (!records.length) {
-          Ext.Msg.alert('알림', '좌측 리스트에서 발송 대상을 선택해주세요.');
-          return;
+  function getAdminInfoForManager(admin_id) {
+    return new Promise(function(resolve) {
+      if (!admin_id) return resolve({ 담당자: '', 연락처: '' });
+
+      if (adminInfoCache[admin_id]) {
+        resolve(adminInfoCache[admin_id]);
+        return;
       }
 
-      var subject = Ext.getCmp('mngMsgMail_subject').getValue();
-      var body = Ext.getCmp('mngMsgMail_body').getValue();
-
-      if (!subject) {
-          Ext.Msg.alert('알림', '제목을 입력해주세요.');
-          return;
-      }
-
-      Ext.MessageBox.confirm('발송 확인', 
-          '총 <b>' + records.length + '명</b>에게 메일을 발송하시겠습니까?', 
-          function(btn){
-              if(btn === 'yes') {
-                  doSend(records, subject, body);
-              }
-          }
-      );
+      Ext.Ajax.request({
+        url: DATA_URL,
+        method: 'GET',
+        params: { adminflag: 'get_admin_info', admin_id: admin_id },
+        success: function(response) {
+          var res = Ext.decode(response.responseText);
+          var info = {
+            담당자: (res && res.admin_name) ? res.admin_name : "",
+            연락처: (res && res.admin_tel_no) ? res.admin_tel_no : ""
+          };
+          adminInfoCache[admin_id] = info;
+          resolve(info);
+        },
+        failure: function() {
+          var info = { 담당자: "", 연락처: "" };
+          adminInfoCache[admin_id] = info;
+          resolve(info);
+        }
+      });
+    });
   }
 
-  function doSend(records, subject, body) {
-      Ext.getBody().mask('메일 전송 중입니다... (0/' + records.length + ')');
-      
-      var total = records.length;
-      var completed = 0;
+  function getVarsForSend(tpl, rec) {
+    const defaults = (tpl && tpl.defaults) ? tpl.defaults : {};
+    const recAdminName = rec.get('admin_name') || '';
+    const recAdminTel = rec.get('admin_tel_no') || '';
+    const base = {
+      ...GLOBAL_DEFAULTS,
+      ...defaults,
+      회사명: rec.get('biz_name') || ''
+    };
+    const mergedWithRecContact = {
+      ...base,
+      담당자: recAdminName || base.담당자,
+      연락처: recAdminTel || base.연락처,
+    };
 
-      // Promise.all로 병렬 처리
-      var promises = records.map(function(rec) {
-          var personalizedBody = body.replace(/\{회사명\}/g, rec.get('biz_name'));
-          
-          return fetch(SEND_URL, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1]
-              },
-              body: JSON.stringify({
-                  seq_no: rec.get('seq_no'),
-                  email: rec.get('email'),
-                  biz_name: rec.get('biz_name'),
-                  title: subject,
-                  content: personalizedBody,
-                  uploaded_name: uploadFileName,
-                  fileCount: fileCount
-              })
+    // ✅ 전체 모드면 레코드별 관리자(admin_id)로 override
+    if (isAllADID(ADID)) {
+      // 서버에서 담당자 정보를 바로 내려주면 그대로 사용
+      if (recAdminName || recAdminTel) {
+        return Promise.resolve(mergedWithRecContact);
+      }
+
+      var managerAdminId = rec.get('groupManager') || ''; // 서버에서 admin_id로 내려줘야 함
+      return getAdminInfoForManager(managerAdminId).then(function(info) {
+        const contactName = info.담당자 || mergedWithRecContact.담당자;
+        const contactTel = info.연락처 || mergedWithRecContact.연락처;
+        return {
+          ...mergedWithRecContact,
+          담당자: contactName,
+          연락처: contactTel
+        };
+      });
+    }
+
+    // 개별 지정 관리자 선택이면 GLOBAL_DEFAULTS/레코드 정보 그대로 활용
+    return Promise.resolve(mergedWithRecContact);
+  }
+  sendMailAction = function() {
+    var records = sm.getSelection();
+    if (!records.length) {
+      Ext.Msg.alert('알림', '좌측 리스트에서 발송 대상을 선택해주세요.');
+      return;
+    }
+
+    var subject = Ext.getCmp('mngMsgMail_subject').getValue();
+    var body = Ext.getCmp('mngMsgMail_body').getValue();
+    if (!subject) { Ext.Msg.alert('알림', '제목을 입력해주세요.'); return; }
+
+    Ext.MessageBox.confirm(
+      '발송 확인',
+      '총 <b>' + records.length + '명</b>에게 메일을 발송하시겠습니까?',
+      function(btn){ if(btn === 'yes') doSend(records, subject, body); }
+    );
+  };
+
+  function doSend(records, subject, bodyHtmlFromEditor) {
+    Ext.getBody().mask('메일 발송중... (0/' + records.length + ')');
+
+    var total = records.length;
+    var completed = 0;
+    var tpl = mailTemplates[currentTemplateKey] || mailTemplates.custom;
+
+    var promises = records.map(function(rec) {
+      if (!rec.get('email')) {
+        completed++;
+        Ext.getBody().mask('메일 발송중... (' + completed + '/' + total + ')');
+        return Promise.resolve({
+          rec: rec,
+          success: false,
+          error: '메일 발송 실패'
+        });
+      }
+
+      return getVarsForSend(tpl, rec).then(function(vars) {
+        var finalSubject = replaceAllPlaceholders(subject, vars);
+        var finalBody = replaceAllPlaceholders(bodyHtmlFromEditor, vars);
+
+        return fetch(SEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+          },
+          body: JSON.stringify({
+            seq_no: rec.get('seq_no'),
+            email: rec.get('email'),
+            biz_name: rec.get('biz_name'),
+            title: finalSubject,
+            content: finalBody,
+            uploaded_name: uploadFileName,
+            fileCount: fileCount,
+            mailFlag: currentTemplateKey
           })
-          .then(r => r.json())
-          .then(json => {
-              completed++;
-              Ext.getBody().mask('메일 전송 중입니다... (' + completed + '/' + total + ')');
-              return { rec: rec, success: json.ok };
-          });
+        })
+        .then(function(r) {
+          return r
+            .json()
+            .catch(function() { return { ok: false, msg: '메일 발송 성공' }; })
+            .then(function(json) { return { status: r.status, ok: json.ok, msg: json.msg }; });
+        })
+        .then(function(result) {
+          completed++;
+          Ext.getBody().mask('메일 발송중... (' + completed + '/' + total + ')');
+          var ok = result.ok === true && result.status >= 200 && result.status < 300;
+          return { rec: rec, success: ok, error: result.msg };
+        })
+        .catch(function(err) {
+          completed++;
+          Ext.getBody().mask('메일 발송중... (' + completed + '/' + total + ')');
+          return { rec: rec, success: false, error: (err && err.message) ? err.message : String(err) };
+        });
+      });
+    });
+
+    Promise.all(promises).then(function(results) {
+      var successCnt = 0;
+      var failItems = [];
+
+      results.forEach(function(res) {
+        if (res.success) {
+          successCnt++;
+          res.rec.set('mail_send_result', '??');
+          res.rec.set('mail_date', Ext.Date.format(new Date(), 'Y-m-d H:i'));
+        } else {
+          failItems.push(res);
+          res.rec.set('mail_send_result', '??');
+          res.rec.set('mail_date', '');
+        }
+        res.rec.commit();
       });
 
-      Promise.all(promises).then(function(results) {
-          results.forEach(function(res) {
-              res.rec.set('mail_date', res.success ? '성공' : '실패');
-              if (res.success) {
-                  res.rec.set('mail_date', Ext.Date.format(new Date(), 'Y-m-d H:i'));
-              }
-              res.rec.commit(); // 변경사항 확정 (Red mark 제거)
-          });
-          
-          // 전송 후 초기화
-          uploadFileName = ""; 
-          fileCount = 0;
-          Ext.getCmp('mngMsgMail_fileName').setValue('');
-          
-          Ext.getBody().unmask();
-          Ext.Msg.alert('완료', '전송 작업이 완료되었습니다.');
-      });
+      uploadFileName = "";
+      fileCount = 0;
+      Ext.getCmp('mngMsgMail_fileName').setValue('');
+
+      Ext.getBody().unmask();
+      if (failItems.length) {
+        var firstErr = failItems[0].error || '알 수 없는 오류';
+        Ext.Msg.alert('실패', '성공 ' + successCnt + '건, 실패 ' + failItems.length + '건\\n첫 실패 사유: ' + firstErr);
+      } else {
+        Ext.Msg.alert('알림', '모든 메일을 성공적으로 전송했습니다.');
+      }
+    }).catch(function(err) {
+      Ext.getBody().unmask();
+      Ext.Msg.alert('알림', '메일발송 실패: ' + ((err && err.message) ? err.message : String(err)));
+    });
   }
 
-  // 전체 레이아웃 렌더링 (Border Layout)
+  // 11. Main Layout
+  // ─────────────────────────────────────────────
   var mainPanel = Ext.create('Ext.panel.Panel', {
     renderTo: renderTarget,
     layout: 'border',
     width: '100%',
-    height: getGridHeight(),      
+    height: getGridHeight(),
     items: [mainGrid, formPanel]
   });
-  // 2) 리사이즈 이벤트 수정
-  // jQuery의 $(window).resize 대신 ExtJS 내장 리사이즈를 사용하는 것이 성능상 더 좋습니다 (자동 디바운싱 지원).
+
   Ext.EventManager.onWindowResize(function() {
-      if (mainPanel && !mainPanel.isDestroyed) {
-          // 부모 패널의 높이만 조절하면 내부의 grid와 formPanel은 border 레이아웃에 의해 자동 조절됨
-          mainPanel.setHeight(getGridHeight());
-          // mainPanel.doLayout(); // ExtJS 4.x 이상에서는 setHeight시 자동 레이아웃 되므로 생략 가능 (필요시 주석 해제)
-      }
+    if (mainPanel && !mainPanel.isDestroyed) mainPanel.setHeight(getGridHeight());
   });
+
+  // ✅ 초기 상태
+  window.__MNGMSG_MAIL_ALL_MODE__ = isAllADID(ADID);
+  applyTemplateToForm('custom');
+  updateAdminInfo(ADID);
 
 })();
 </script>

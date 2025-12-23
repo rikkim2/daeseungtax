@@ -1,4 +1,5 @@
 import json
+import mimetypes
 from django.core.paginator import Paginator
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -9,6 +10,9 @@ from django.db.models import Q
 from app.models import MemUser
 from app.models import MemAdmin  
 from django.http import Http404
+from django.conf import settings
+from pathlib import Path
+from django.core.files.storage import FileSystemStorage
 
 @require_GET
 def mngMsg(request):
@@ -17,6 +21,18 @@ def mngMsg(request):
   ADID = (request.session.get("ADID") or request.user.username or "").strip()
   if not ADID:
       ADID = arr_adid[0] if arr_adid else ""
+
+  admin_name = ""
+  admin_tel_no = ""
+  if ADID:
+      contact = (
+          MemAdmin.objects.filter(admin_id=ADID)
+          .values("admin_name", "admin_tel_no")
+          .first()
+      )
+      if contact:
+          admin_name = contact.get("admin_name") or ""
+          admin_tel_no = contact.get("admin_tel_no") or ""
 
   flag = (request.GET.get("flag") or "sms").lower()
   print(f"[mngMsg] flag:{flag},ADID:{ADID}")
@@ -31,6 +47,8 @@ def mngMsg(request):
       "admin_biz_level": admin_biz_level,
       "ADID": ADID,
       "arr_ADID": json.dumps(arr_adid, ensure_ascii=False),
+      "admin_name": admin_name,
+      "admin_tel_no": admin_tel_no,
       "flag":flag
   }
   return render(request,returnUrl, context)
@@ -166,56 +184,102 @@ def sms_send(request):
 # ─────────────────────────────────────────────────────────
 @require_GET
 def mngMsg_mail_data(request):
-    ADID = request.GET.get('ADID')
-    if not ADID:ADID = request.session.get('ADID')#전체 선택시 ADID=""상태가 된다
-    request.session['ADID'] = ADID  
+    ADID = (request.GET.get("ADID") or "").strip()
+    # '전체' 선택 시 ADID가 빈 값으로 넘어오는 경우가 있어 세션값으로 보정
+    if not ADID:
+        ADID = (request.session.get("ADID") or "").strip()
+    request.session["ADID"] = ADID
 
-    mailFlag = (request.GET.get("mailFlag") or "").strip()
-    print(f"[mngMsg_mail_data] mailFlag={mailFlag}")
+    adminflag = (request.GET.get("adminflag") or "").strip().lower()
+    if adminflag == "get_admin_info":
+        admin_id = (request.GET.get("admin_id") or "").strip()
+        if not admin_id or admin_id == "전체":
+            return JsonResponse({"ok": True, "admin_name": "", "admin_tel_no": ""})
 
-    # 검색조건(회사명/이메일)
+        contact = (
+            MemAdmin.objects.filter(admin_id=ADID)
+            .values("admin_name", "admin_tel_no")
+            .first()
+        )
+        print(f"[관리자] ADID={ADID} mailFlag={adminflag} ")
+        return JsonResponse({
+            "ok": True,
+            "admin_name": (contact.get("admin_name") if contact else "") or "",
+            "admin_tel_no": (contact.get("admin_tel_no") if contact else "") or "",
+        })
+        
+
+    mailFlag = (request.GET.get("mailFlag") or "").strip().lower()
+    print(f"[mngMsg_mail_data] ADID={ADID} mailFlag={mailFlag}")
+
+    # 공통 조건
     where_parts = [
         "a.Del_YN <> 'Y'",
         "b.keeping_YN = 'Y'",
         "a.duzon_ID <> ''",
-        #"ISNULL(a.email,'') <> ''",# 이메일 없는 업체
+        # "ISNULL(a.email,'') <> ''",  # 이메일 없는 업체도 보이게 하려면 주석 유지
     ]
+    params = []
+
+    # 템플릿(=mailFlag)별 추가 조건
+    # - yearend(프론트) / younmal(기존 표기) 둘 다 허용
+    template_where_map = {
+        "pay": "(b.goyoung_jungkyu = 'Y' OR b.goyoung_sayoup = 'Y' OR b.goyoung_ilyoung = 'Y')",
+        "yearend": "",
+        "younmal": "(b.goyoung_jungkyu = 'Y')",
+        "ilyoung": "(b.goyoung_ilyoung = 'Y')",
+        "vat": "(a.Biz_Type IN ('1','4'))",
+        "nonvat": "(a.Biz_Type IN ('2','6'))",
+        "corptax": "(a.Biz_Type BETWEEN '1' AND '3')",
+        "incometax": "(a.Biz_Type BETWEEN '4' AND '7')",
+    }
+    extra_where = template_where_map.get(mailFlag)
+    if extra_where:
+        where_parts.append(extra_where)
+
+    # 담당자(ADID) 필터
+    if ADID and ADID != "전체":
+        where_parts.append("b.biz_manager = %s")
+        params.append(ADID)
+
     where_sql = " AND ".join(where_parts)
-    flag_sql=""
+
+    # 상태표시용: 해당 템플릿(mailFlag)을 mail_class로 보고 마지막 발송일을 가져온다.
+    maillog_where = ["year(d.mail_date) = year(getdate())"]
+    maillog_params = []
     if mailFlag:
-      flag_sql = f" mail_subject LIKE '%{mailFlag}%' "
-   
-    s_sql = ""
-    if ADID!="전체":
-      s_sql = f" AND b.biz_manager = '{ADID}'"
+        maillog_where.append("d.mail_class = %s")
+        maillog_params.append(mailFlag)
+    maillog_where_sql = " AND ".join(maillog_where)
+
     sql_page = f"""
         SELECT
             b.biz_manager as groupManager,
+            c.admin_name,
+            c.admin_tel_no,
             a.seq_no,
             a.biz_name,
             ISNULL(a.email,'') AS email,
             ISNULL(CONVERT(varchar(16), d.mail_date, 120), '') AS mail_date
         FROM mem_user a
         JOIN mem_deal b ON a.seq_no = b.seq_no
+        left join mem_admin c on b.biz_manager=c.admin_id
         LEFT JOIN (
-            SELECT seq_no, MAX(mail_date) as mail_date
+            SELECT d.seq_no, MAX(d.mail_date) as mail_date
             FROM Tbl_MAIL d
-            WHERE year(mail_date) = year(getdate())
-            {flag_sql}
+            WHERE {maillog_where_sql}
             GROUP BY d.seq_no
-        ) d ON a.seq_no = d.seq_no        
-        WHERE {where_sql}  {s_sql}
+        ) d ON a.seq_no = d.seq_no
+        WHERE {where_sql}
         order by a.biz_name
     """
-    print(sql_page)
-    with connection.cursor() as cur:
-        cur.execute(sql_page)
 
+    with connection.cursor() as cur:
+        cur.execute(sql_page, maillog_params + params)
         cols = [c[0] for c in cur.description]
         rows = [dict(zip(cols, r)) for r in cur.fetchall()]
 
-    return JsonResponse({"rows": rows})
-
+    return JsonResponse({"ok": True, "rows": rows, "total": len(rows)})
 
 @require_GET
 def mngMsg_mail_view(request):
@@ -306,13 +370,18 @@ def mngMsg_mail_upload(request):
     첨부파일을 임시 업로드하고 저장된 파일명을 반환
     { ok: true, uploaded_name: "xxx.pdf" }
     """
-    f = request.FILES.get("file")
-    if not f:
+    uploaded_file = request.FILES.get("file") or request.FILES.get("uploadFile")
+    if not uploaded_file:
         return JsonResponse({"ok": False, "msg": "file is required"})
 
-    # TODO: 저장 경로/보안 정책(확장자 제한, 용량 제한 등)
-    # saved_name = ...
-    saved_name = f.name
+    upload_root = Path(getattr(settings, "MEDIA_ROOT", Path("."))) / "mail_uploads"
+    upload_root.mkdir(parents=True, exist_ok=True)
+
+    try:
+        storage = FileSystemStorage(location=str(upload_root))
+        saved_name = storage.save(uploaded_file.name, uploaded_file)
+    except Exception as e:
+        return JsonResponse({"ok": False, "msg": str(e)}, status=500)
 
     return JsonResponse({"ok": True, "uploaded_name": saved_name})
 
@@ -331,17 +400,48 @@ def mngMsg_mail_send(request):
     email = payload.get("email")
     title = payload.get("title") or ""
     content = payload.get("content") or ""
-    print(f"[mngMsg_mail_send] seq_no={seq_no} email={email} title_len={len(title)} content_len={len(content)}")
+    uploaded_name = payload.get("uploaded_name") or ""
+    print(f"[mngMsg_mail_send] seq_no={seq_no} email={email} title_len={len(title)} content_len={len(content)} uploaded_name={uploaded_name}")
 
     if not seq_no or not email or not title:
         return JsonResponse({"ok": False, "msg": "seq_no/email/title required"})
 
-    # TODO:
-    # 1) 메일 발송(사내 SMTP or 외부 API)
-    # 2) 발송 로그 저장(테이블: Tbl_Mail / Log_Mail 등)
-    # 3) uploaded_name 첨부 처리(저장경로에서 attach)
-    # 4) 성공 시 sent_at 내려주기
+    from django.core.mail import EmailMultiAlternatives
+    from django.utils.html import strip_tags
+    from django.utils import timezone
 
-    sent_at = None  # "2025-12-19 12:34"
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or getattr(settings, "EMAIL_HOST_USER", None)
+    if not from_email:
+        return JsonResponse({"ok": False, "msg": "메일 발신 계정이 설정되지 않았습니다."}, status=500)
 
-    return JsonResponse({"ok": True, "sent_at": sent_at})
+    attachment_path = None
+    if uploaded_name:
+        safe_name = Path(str(uploaded_name)).name
+        candidate = Path(getattr(settings, "MEDIA_ROOT", Path("."))) / "mail_uploads" / safe_name
+        if candidate.exists() and candidate.is_file():
+            attachment_path = candidate
+        else:
+            return JsonResponse({"ok": False, "msg": "첨부파일을 찾을 수 없습니다. 다시 업로드해주세요."}, status=400)
+
+    try:
+        msg = EmailMultiAlternatives(
+            subject=title,
+            body=strip_tags(content),
+            from_email=from_email,
+            to=[email],
+        )
+        msg.attach_alternative(content, "text/html")
+        if attachment_path:
+            # 한메일(Daum) 등 일부 클라이언트에서 첨부파일 누락 방지를 위해 MIME 타입 명시 및 직접 첨부
+            ctype, _ = mimetypes.guess_type(attachment_path)
+            if ctype is None:
+                ctype = 'application/octet-stream'
+            with open(attachment_path, 'rb') as f:
+                msg.attach(attachment_path.name, f.read(), ctype)
+        msg.send()
+        sent_at = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+        return JsonResponse({"ok": True, "sent_at": sent_at})
+    except Exception as e:
+        # SMTP 오류 등을 프론트에서 처리할 수 있도록 200으로 내려준다.
+        print(f"[mngMsg_mail_send][error] {e}")
+        return JsonResponse({"ok": False, "msg": str(e)}, status=200)
