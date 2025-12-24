@@ -644,65 +644,65 @@ def api_kani_sa_il_list(request):
             like = f"%{search_text}%"
             params += [like, like]
 
-        # 2023 이하 / 2024 이상 분기 (원본 유지)
-        if input_workyear <= 2023:
-            cond_sum = f"""
-                (
-                  (select SUM(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 과세연월='{yyyymm}')>0
-                  or
-                  (select SUM(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 과세연월='{yyyymm}')>0
-                )
-            """
-            a03_expr = f"(select sum(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a30_expr = f"(select sum(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a40_expr = f"(select sum(a40) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-        else:
-            cond_sum = f"""
-                (
-                  (select SUM(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')>0
-                  or
-                  (select SUM(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')>0
-                  or
-                  (select SUM(a40) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')>0
-                )
-            """
-            a03_expr = f"(select sum(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a30_expr = f"(select sum(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a40_expr = f"(select sum(a40) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-
-        # ✅ 프론트 dataIndex에 맞춰 alias를 통일 (wh_Kunro / YN_9 / isBanki 등)
+        # UNION ALL 구조: 일반 신고 + 반기 신고
+        # 첫 번째 SELECT: 실제 원천세 신고 데이터
         sql_main = f"""
             SELECT
                 b.biz_manager as groupManager,
                 a.seq_no      as seq_no,
                 a.biz_name    as biz_name,
                 a.biz_no      as biz_no,
+                a.biz_type    as biz_type,
 
-                ISNULL({a03_expr}, 0) as wh_Kunro,
-                ISNULL({a30_expr}, 0) as wh_sayoup,
-                ISNULL({a40_expr}, 0) as wh_kita,
+                (SELECT SUM(a03) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') as wh_Kunro,
+                (SELECT SUM(a30) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') as wh_sayoup,
+                (SELECT SUM(a40) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') as wh_kita,
 
                 '' as isBanki,
-                ISNULL((select bigo from tbl_mng_jaroe j
-                        where j.seq_no=a.seq_no and j.work_yy={input_workyear} and j.work_mm={work_mm}), '') as isIlyoung,
-
+                ISNULL((SELECT bigo FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm}), '') as isIlyoung,
                 ISNULL(d.txt_bigo,'') as YN_9
             FROM mem_user a
             JOIN mem_deal b ON a.seq_no=b.seq_no
-            LEFT JOIN tbl_kani d
-              ON b.seq_no=d.seq_no
-             AND d.work_yy=%s
-             AND d.work_banki=%s
+            LEFT JOIN tbl_kani d ON b.seq_no=d.seq_no AND d.work_yy=%s AND d.work_banki=%s
             WHERE a.duzon_ID <> ''
-              AND {cond_sum}
+              AND (
+                  (SELECT SUM(a03) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') > 0
+                  OR (SELECT SUM(a30) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') > 0
+                  OR (SELECT SUM(a40) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') > 0
+              )
               {where_admin}
               {where_search}
-            ORDER BY a.biz_name ASC
+
+            UNION ALL
+
+            SELECT
+                b.biz_manager as groupManager,
+                a.seq_no      as seq_no,
+                a.biz_name    as biz_name,
+                a.biz_no      as biz_no,
+                a.biz_type    as biz_type,
+
+                (SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_13=1) as wh_Kunro,
+                (SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1) as wh_sayoup,
+                (SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1) as wh_kita,
+
+                '1' as isBanki,
+                ISNULL((SELECT bigo FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm}), '') as isIlyoung,
+                ISNULL(d.txt_bigo,'') as YN_9
+            FROM mem_user a
+            JOIN mem_deal b ON a.seq_no=b.seq_no
+            LEFT JOIN tbl_kani d ON b.seq_no=d.seq_no AND d.work_yy=%s AND d.work_banki=%s
+            WHERE a.duzon_ID <> ''
+              AND b.goyoung_banki='Y'
+              AND b.keeping_YN='Y'
+              {where_admin}
+              {where_search}
+
+            ORDER BY biz_type, biz_name ASC
         """
 
-        # ⚠️ 이전에 work_banki가 int 컬럼인데 'Jan' 같은 값이 들어가 변환 에러 났던 이슈가 있었음
-        # 지금은 work_mm을 문자열로 넘겨 해결했으니 유지
-        params_main = [input_workyear, str(work_mm)] + params
+        # UNION ALL이므로 params를 2번 전달
+        params_main = [input_workyear, str(work_mm)] + params + [input_workyear, str(work_mm)] + params
 
         rows = []
         biz_no_list = []
