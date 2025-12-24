@@ -244,20 +244,13 @@
     }
 
     /* 모달 스타일 개선 */
-    /* 모달 스크롤 설정 */
+    /* 모달 스크롤 설정 - modal-dialog-scrollable 사용 시 Bootstrap이 자동 처리 */
     #adminModal .modal-dialog {
-        margin: 1.75rem auto;
         max-width: 800px;
-    }
-
-    #adminModal .modal-content {
-        max-height: calc(100vh - 3.5rem);
     }
 
     #adminModal .modal-body {
         padding: 20px 25px;
-        max-height: calc(100vh - 210px);
-        overflow-y: auto;
     }
 
     #adminModal .modal-header {
@@ -290,24 +283,8 @@
 
     /* 모바일 최적화 */
     @media (max-width: 576px) {
-        #adminModal .modal-dialog {
-            margin: 0.5rem;
-            max-width: calc(100% - 1rem);
-        }
-
-        #adminModal .modal-content {
-            max-height: calc(100vh - 1rem);
-        }
-
         #adminModal .modal-body {
             padding: 15px;
-            max-height: calc(100vh - 120px);
-        }
-    }
-
-    @media (max-width: 768px) {
-        #adminModal .modal-body {
-            max-height: calc(100vh - 180px);
         }
     }
 </style>
