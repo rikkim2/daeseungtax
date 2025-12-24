@@ -1,5 +1,6 @@
 import datetime
 import calendar
+import os
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render,redirect,get_object_or_404
 from decimal import Decimal, ROUND_DOWN
@@ -15,6 +16,8 @@ from pdf2image import convert_from_path
 from django.db.models import Q
 from django.db.models import Sum, F
 from admins.utils import send_kakao_notification
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 
 @login_required(login_url="/login/")
 def index(request):
@@ -658,7 +661,7 @@ def admin_create(request):
       manage_YN = request.POST.get('manage_YN')
       grade = request.POST.get('grade')
       htx_id = request.POST.get('htx_id')
-      
+
       # 새로운 Admin 객체 생성
       try:
         if User.objects.filter(username=admin_id).exists():
@@ -684,6 +687,28 @@ def admin_create(request):
             user_id=user.id
         )
         new_admin.save()  # 데이터베이스에 저장
+
+        # 프로필 이미지 처리
+        if 'avatar_image' in request.FILES:
+            avatar_file = request.FILES['avatar_image']
+            # static/assets/images/faces/ 경로에 저장
+            faces_path = os.path.join(settings.BASE_DIR, 'static', 'assets', 'images', 'faces')
+
+            # 디렉토리가 없으면 생성
+            if not os.path.exists(faces_path):
+                os.makedirs(faces_path)
+
+            # 파일 확장자 추출
+            file_extension = os.path.splitext(avatar_file.name)[1]
+            # admin_name으로 파일명 설정
+            filename = f"{admin_name}.png"
+            file_path = os.path.join(faces_path, filename)
+
+            # 파일 저장
+            with open(file_path, 'wb+') as destination:
+                for chunk in avatar_file.chunks():
+                    destination.write(chunk)
+
         return redirect('staffList')  # 성공적으로 저장된 후 리디렉션
       except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -728,6 +753,25 @@ def admin_update(request):
 
           # Save changes to the database
           admin.save()
+
+          # 프로필 이미지 처리
+          if 'avatar_image' in request.FILES:
+            avatar_file = request.FILES['avatar_image']
+            # static/assets/images/faces/ 경로에 저장
+            faces_path = os.path.join(settings.BASE_DIR, 'static', 'assets', 'images', 'faces')
+
+            # 디렉토리가 없으면 생성
+            if not os.path.exists(faces_path):
+              os.makedirs(faces_path)
+
+            # admin_name으로 파일명 설정
+            filename = f"{admin.admin_name}.png"
+            file_path = os.path.join(faces_path, filename)
+
+            # 파일 저장
+            with open(file_path, 'wb+') as destination:
+              for chunk in avatar_file.chunks():
+                destination.write(chunk)
 
           # AJAX 요청인 경우 JSON 반환
           if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
