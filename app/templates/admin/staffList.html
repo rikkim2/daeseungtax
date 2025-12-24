@@ -242,6 +242,32 @@
             grid-template-columns: 1fr;
         }
     }
+
+    /* 모달 스타일 개선 */
+    #adminModal .modal-body {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    #adminModal .form-label.fw-semibold {
+        font-size: 13px;
+        color: #495057;
+        margin-bottom: 6px;
+    }
+
+    #adminModal .border-bottom {
+        border-color: #dee2e6 !important;
+    }
+
+    #adminModal h6.text-primary {
+        color: #667eea !important;
+        font-weight: 600;
+    }
+
+    #adminModal .avatar-container:hover {
+        opacity: 0.9;
+        transition: opacity 0.2s;
+    }
 </style>
 
 <div class="admin-list-scroll-container">
@@ -432,7 +458,7 @@
 
 <!-- 관리자 추가/수정 모달 -->
 <div class="modal fade" id="adminModal" tabindex="-1" aria-labelledby="adminModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="adminModalLabel">관리자 정보</h5>
@@ -444,14 +470,14 @@
                     <input type="hidden" id="formMode" value="create">
 
                     <!-- 프로필 이미지 업로드 -->
-                    <div class="row g-3 mb-3">
+                    <div class="row g-3 mb-4">
                         <div class="col-12 text-center">
-                            <div class="avatar-container position-relative d-inline-block">
+                            <div class="avatar-container position-relative d-inline-block" style="cursor: pointer;" id="avatarContainer">
                                 <img id="adminAvatarPreview"
                                      src="{% static 'assets/images/faces/blank.jpg' %}"
                                      alt="Profile"
                                      class="rounded-circle"
-                                     style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #e9ecef;">
+                                     style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #e9ecef;">
                                 <input type="file"
                                        id="adminAvatarInput"
                                        name="avatar_image"
@@ -459,69 +485,98 @@
                                        style="display: none;">
                                 <span class="position-absolute badge bg-primary rounded-circle"
                                       id="uploadAvatarBtn"
-                                      style="bottom: 5px; right: 5px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fe fe-camera"></i>
+                                      style="bottom: 10px; right: 10px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fe fe-camera fs-5"></i>
                                 </span>
                             </div>
                             <div class="mt-2">
-                                <small class="text-muted">클릭하여 프로필 사진 업로드</small>
+                                <small class="text-muted">프로필 사진을 클릭하여 업로드</small>
                             </div>
                         </div>
                     </div>
 
-                    <div class="row g-3">
+                    <!-- 기본 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-user me-2"></i>기본 정보
+                    </h6>
+                    <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label">이름 *</label>
+                            <label class="form-label fw-semibold">이름 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="admin_name" id="admin_name" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">아이디 *</label>
+                            <label class="form-label fw-semibold">아이디 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="admin_id" id="admin_id" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">비밀번호 *</label>
-                            <input type="password" class="form-control" name="admin_pwd" id="admin_pwd" required>
+                            <label class="form-label fw-semibold">비밀번호 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="admin_pwd" id="admin_pwd" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fe fe-eye" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">전화번호</label>
-                            <input type="text" class="form-control" name="admin_tel_no" id="admin_tel_no">
+                            <label class="form-label fw-semibold">입사일</label>
+                            <input type="date" class="form-control" name="reg_date" id="reg_date">
+                        </div>
+                    </div>
+
+                    <!-- 연락처 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-phone me-2"></i>연락처 정보
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">전화번호</label>
+                            <input type="text" class="form-control" name="admin_tel_no" id="admin_tel_no" placeholder="010-0000-0000">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">이메일</label>
-                            <input type="email" class="form-control" name="admin_email" id="admin_email">
+                            <label class="form-label fw-semibold">이메일</label>
+                            <input type="email" class="form-control" name="admin_email" id="admin_email" placeholder="example@email.com">
+                        </div>
+                    </div>
+
+                    <!-- 조직 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-briefcase me-2"></i>조직 정보
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">소속 팀 (묶음)</label>
+                            <input type="text" class="form-control" name="admin_biz_area" id="admin_biz_area" placeholder="예: A팀, B팀">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">소속 팀 (묶음)</label>
-                            <input type="text" class="form-control" name="admin_biz_area" id="admin_biz_area"
-                                   placeholder="예: A팀, B팀">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">직책 *</label>
-                            <select class="form-control" name="biz_level" id="biz_level" required>
+                            <label class="form-label fw-semibold">직책 <span class="text-danger">*</span></label>
+                            <select class="form-select" name="biz_level" id="biz_level" required>
                                 <option value="직원">직원</option>
                                 <option value="관리자">관리자</option>
                                 <option value="세무사">세무사</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">등급</label>
-                            <select class="form-control" name="grade" id="grade">
+                            <label class="form-label fw-semibold">등급</label>
+                            <select class="form-select" name="grade" id="grade">
                                 <option value="MEM">MEM</option>
                                 <option value="SALE">SALE</option>
                                 <option value="SA">SA</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">관리권한</label>
+                            <label class="form-label fw-semibold">관리권한</label>
                             <input type="text" class="form-control" name="manage_YN" id="manage_YN" placeholder="Y/N">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Htx ID</label>
+                    </div>
+
+                    <!-- 시스템 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-settings me-2"></i>시스템 정보
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Htx ID</label>
                             <input type="text" class="form-control" name="htx_id" id="htx_id">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">입사일</label>
-                            <input type="date" class="form-control" name="reg_date" id="reg_date">
                         </div>
                     </div>
                 </div>
@@ -537,13 +592,15 @@
 <script>
 (function() {
 
-    // 아바타 업로드 버튼 클릭
-    $('#uploadAvatarBtn').on('click', function() {
-        $('#adminAvatarInput').click();
+    // 아바타 업로드 버튼 및 컨테이너 클릭 (중복 방지)
+    $('#uploadAvatarBtn, #avatarContainer').off('click').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $('#adminAvatarInput').trigger('click');
     });
 
-    // 아바타 파일 선택 시 미리보기
-    $('#adminAvatarInput').on('change', function(e) {
+    // 아바타 파일 선택 시 미리보기 (중복 방지)
+    $('#adminAvatarInput').off('change').on('change', function(e) {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
@@ -551,6 +608,20 @@
                 $('#adminAvatarPreview').attr('src', e.target.result);
             };
             reader.readAsDataURL(file);
+        }
+    });
+
+    // 비밀번호 표시/숨김 토글
+    $('#togglePassword').off('click').on('click', function() {
+        const passwordInput = $('#admin_pwd');
+        const icon = $('#togglePasswordIcon');
+
+        if (passwordInput.attr('type') === 'password') {
+            passwordInput.attr('type', 'text');
+            icon.removeClass('fe-eye').addClass('fe-eye-off');
+        } else {
+            passwordInput.attr('type', 'password');
+            icon.removeClass('fe-eye-off').addClass('fe-eye');
         }
     });
 
@@ -564,6 +635,10 @@
 
         // 아바타 미리보기 초기화
         $('#adminAvatarPreview').attr('src', "{% static 'assets/images/faces/blank.jpg' %}");
+
+        // 비밀번호 필드 마스크 상태로 초기화
+        $('#admin_pwd').attr('type', 'password');
+        $('#togglePasswordIcon').removeClass('fe-eye-off').addClass('fe-eye');
     });
 
     // 모달 초기화 (수정)
@@ -607,6 +682,10 @@
                         .on('error', function() {
                             $(this).attr('src', "{% static 'assets/images/faces/blank.jpg' %}");
                         });
+
+                    // 비밀번호 필드 마스크 상태로 초기화
+                    $('#admin_pwd').attr('type', 'password');
+                    $('#togglePasswordIcon').removeClass('fe-eye-off').addClass('fe-eye');
                 } else {
                     alert('관리자 정보를 불러올 수 없습니다: ' + response.error);
                 }
