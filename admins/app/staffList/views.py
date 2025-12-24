@@ -66,10 +66,18 @@ def index(request):
     # 관리자 및 기타
     other_admins = all_admins.filter(biz_level='관리자')
 
+    # 고유한 admin_biz_area 목록 추출 (빈 값 제외, 정렬)
+    biz_areas = MemAdmin.objects.filter(
+      admin_biz_area__isnull=False
+    ).exclude(
+      admin_biz_area=''
+    ).values_list('admin_biz_area', flat=True).distinct().order_by('admin_biz_area')
+
     context['teams'] = teams
     context['unassigned_admins'] = unassigned_admins
     context['other_admins'] = other_admins
     context['adminList'] = all_admins  # 기존 호환성 유지
+    context['biz_areas'] = list(biz_areas)  # 소속팀 목록
     templateMenu = 'admin/staffList.html'; gridTitle="관리자리스트"
   elif flag == "Pro":
     context['adminList'] =  MemAdmin.objects.filter(biz_level='세무사', grade='MEM').order_by('admin_name')

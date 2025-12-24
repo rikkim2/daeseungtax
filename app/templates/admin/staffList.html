@@ -244,9 +244,29 @@
     }
 
     /* 모달 스타일 개선 */
+    #adminModal .modal-dialog {
+        max-height: 90vh;
+        margin: 1.75rem auto;
+    }
+
+    #adminModal .modal-content {
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+    }
+
     #adminModal .modal-body {
-        max-height: calc(100vh - 200px);
         overflow-y: auto;
+        flex: 1;
+        padding: 20px 25px;
+    }
+
+    #adminModal .modal-header {
+        flex-shrink: 0;
+    }
+
+    #adminModal .modal-footer {
+        flex-shrink: 0;
     }
 
     #adminModal .form-label.fw-semibold {
@@ -267,6 +287,19 @@
     #adminModal .avatar-container:hover {
         opacity: 0.9;
         transition: opacity 0.2s;
+    }
+
+    /* 모바일 최적화 */
+    @media (max-width: 576px) {
+        #adminModal .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+            max-height: calc(100vh - 1rem);
+        }
+
+        #adminModal .modal-content {
+            max-height: calc(100vh - 1rem);
+        }
     }
 </style>
 
@@ -545,7 +578,17 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">소속 팀 (묶음)</label>
-                            <input type="text" class="form-control" name="admin_biz_area" id="admin_biz_area" placeholder="예: A팀, B팀">
+                            <div class="input-group">
+                                <select class="form-select" name="admin_biz_area" id="admin_biz_area">
+                                    <option value="">선택 안함</option>
+                                    {% for area in biz_areas %}
+                                    <option value="{{ area }}">{{ area }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-outline-secondary" type="button" id="addNewAreaBtn" title="새 팀 추가">
+                                    <i class="fe fe-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">직책 <span class="text-danger">*</span></label>
@@ -622,6 +665,46 @@
         } else {
             passwordInput.attr('type', 'password');
             icon.removeClass('fe-eye-off').addClass('fe-eye');
+        }
+    });
+
+    // 새 팀 추가 버튼
+    $('#addNewAreaBtn').off('click').on('click', function() {
+        const newArea = prompt('새로운 팀 이름을 입력하세요:');
+        if (newArea && newArea.trim()) {
+            const trimmedArea = newArea.trim();
+
+            // 이미 존재하는지 확인
+            const exists = $('#admin_biz_area option').filter(function() {
+                return $(this).val() === trimmedArea;
+            }).length > 0;
+
+            if (exists) {
+                alert('이미 존재하는 팀 이름입니다.');
+                $('#admin_biz_area').val(trimmedArea);
+            } else {
+                // 새 옵션 추가 (정렬하여 삽입)
+                const $newOption = $('<option>', {
+                    value: trimmedArea,
+                    text: trimmedArea
+                });
+
+                // 정렬된 위치에 삽입
+                let inserted = false;
+                $('#admin_biz_area option').each(function() {
+                    if ($(this).val() && $(this).val() > trimmedArea) {
+                        $newOption.insertBefore($(this));
+                        inserted = true;
+                        return false; // break
+                    }
+                });
+
+                if (!inserted) {
+                    $('#admin_biz_area').append($newOption);
+                }
+
+                $('#admin_biz_area').val(trimmedArea);
+            }
         }
     });
 
