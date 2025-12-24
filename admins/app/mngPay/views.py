@@ -654,9 +654,9 @@ def api_kani_sa_il_list(request):
                 a.biz_no      as biz_no,
                 a.biz_type    as biz_type,
 
-                (SELECT SUM(a03) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') as wh_Kunro,
-                (SELECT SUM(a30) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') as wh_sayoup,
-                (SELECT SUM(a40) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') as wh_kita,
+                ISNULL((SELECT SUM(a03) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}'), 0) as wh_Kunro,
+                ISNULL((SELECT SUM(a30) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}'), 0) as wh_sayoup,
+                ISNULL((SELECT SUM(a40) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}'), 0) as wh_kita,
 
                 '' as isBanki,
                 ISNULL((SELECT bigo FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm}), '') as isIlyoung,
@@ -682,9 +682,9 @@ def api_kani_sa_il_list(request):
                 a.biz_no      as biz_no,
                 a.biz_type    as biz_type,
 
-                (SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_13=1) as wh_Kunro,
-                (SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1) as wh_sayoup,
-                (SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1) as wh_kita,
+                ISNULL((SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_13=1), 0) as wh_Kunro,
+                ISNULL((SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1), 0) as wh_sayoup,
+                ISNULL((SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1), 0) as wh_kita,
 
                 '1' as isBanki,
                 ISNULL((SELECT bigo FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm}), '') as isIlyoung,
@@ -788,6 +788,9 @@ def api_kani_sa_il_list(request):
             # ASP: (제출금액합) != (a03+a30+a40) 이면 skeleton
             hasSkeleton = (kunAmt + saAmt + kiAmt) != (wh_k + wh_s + wh_i)
 
+            # isBanki: SQL에서 '' 또는 '1'로 반환됨
+            is_banki = str(r.get("isBanki", "")).strip() == "1"
+
             out.append({
                 "YN_0": idx,
 
@@ -796,7 +799,7 @@ def api_kani_sa_il_list(request):
                 "biz_name": r.get("biz_name", "") or "",
                 "biz_no": biz_no,
 
-                "isBanki": True if str(r.get("banki", "")).strip() == "1" else False,
+                "isBanki": is_banki,
 
                 "wh_Kunro": wh_k,
                 "wh_sayoup": wh_s,
