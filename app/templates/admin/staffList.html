@@ -245,28 +245,35 @@
 
     /* 모달 스타일 개선 */
     #adminModal .modal-dialog {
-        max-height: 90vh;
+        max-height: calc(100vh - 3.5rem);
         margin: 1.75rem auto;
+        display: flex;
+        align-items: center;
     }
 
     #adminModal .modal-content {
-        max-height: 90vh;
+        max-height: calc(100vh - 3.5rem);
         display: flex;
         flex-direction: column;
-    }
-
-    #adminModal .modal-body {
-        overflow-y: auto;
-        flex: 1;
-        padding: 20px 25px;
+        overflow: hidden;
     }
 
     #adminModal .modal-header {
         flex-shrink: 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    #adminModal .modal-body {
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1 1 auto;
+        padding: 20px 25px;
+        min-height: 0;
     }
 
     #adminModal .modal-footer {
         flex-shrink: 0;
+        border-top: 1px solid #dee2e6;
     }
 
     #adminModal .form-label.fw-semibold {
@@ -299,6 +306,10 @@
 
         #adminModal .modal-content {
             max-height: calc(100vh - 1rem);
+        }
+
+        #adminModal .modal-body {
+            padding: 15px;
         }
     }
 </style>
@@ -491,7 +502,7 @@
 
 <!-- 관리자 추가/수정 모달 -->
 <div class="modal fade" id="adminModal" tabindex="-1" aria-labelledby="adminModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="adminModalLabel">관리자 정보</h5>
