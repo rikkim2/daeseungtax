@@ -587,10 +587,18 @@
                 if (response.success) {
                     $('#adminModal').modal('hide');
 
-                    // DOM 업데이트
-                    updateAdminInDOM(originalAdminId, response.data);
+                    // 팀 재배치가 필요한지 확인
+                    const needsReorganization = checkNeedsReorganization(originalAdminId, response.data);
 
-                    // 성공 메시지 (선택적)
+                    if (needsReorganization) {
+                        // 팀 구조 변경이 필요한 경우 해당 영역만 다시 로드
+                        reloadTeamsSection();
+                    } else {
+                        // 단순 정보 업데이트만 필요한 경우 DOM 직접 업데이트
+                        updateAdminInDOM(originalAdminId, response.data);
+                    }
+
+                    // 성공 메시지
                     showToast('저장되었습니다.');
                 } else {
                     alert('저장 실패: ' + response.error);
@@ -602,18 +610,106 @@
         });
     });
 
-    // DOM 업데이트 함수
+    // 팀 재배치 필요 여부 확인
+    function checkNeedsReorganization(adminId, newData) {
+        const $editBtn = $(`.edit-leader-btn[data-admin-id="${adminId}"], .edit-member-btn[data-admin-id="${adminId}"]`);
+
+        if ($editBtn.length === 0) {
+            console.log('버튼을 찾을 수 없음, 재구성 필요');
+            return true;
+        }
+
+        const isLeader = $editBtn.hasClass('edit-leader-btn');
+
+        // 직책(biz_level) 변경 체크
+        if (isLeader && newData.biz_level !== '세무사') {
+            return true; // 세무사가 다른 직책으로 변경
+        }
+        if (!isLeader && newData.biz_level === '세무사') {
+            return true; // 직원/관리자가 세무사로 승진
+        }
+
+        // 팀 이동 체크 (admin_biz_area 변경)
+        if (!isLeader) {
+            const $memberItem = $editBtn.closest('.member-item');
+            const $teamCard = $memberItem.closest('.team-card');
+
+            if ($teamCard.length > 0) {
+                const currentTeamArea = $teamCard.find('.team-header .leader-details p').first().text();
+                if (newData.admin_biz_area && !currentTeamArea.includes(newData.admin_biz_area)) {
+                    return true; // 다른 팀으로 이동
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // 팀 섹션만 다시 로드
+    function reloadTeamsSection() {
+        $.ajax({
+            url: window.location.href,
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(html) {
+                // 전체 HTML에서 필요한 부분만 추출
+                const $newContent = $(html);
+
+                // 팀 그리드 교체
+                const $newTeamsGrid = $newContent.find('.teams-grid');
+                if ($newTeamsGrid.length > 0) {
+                    $('.teams-grid').replaceWith($newTeamsGrid);
+                }
+
+                // 미배정 직원 섹션 교체
+                const $oldUnassigned = $('.unassigned-section').first();
+                const $newUnassigned = $newContent.find('.unassigned-section').first();
+                if ($newUnassigned.length > 0) {
+                    $oldUnassigned.replaceWith($newUnassigned);
+                } else {
+                    $oldUnassigned.remove();
+                }
+
+                // 관리자 섹션 교체
+                const $oldOthers = $('.unassigned-section').last();
+                const $newOthers = $newContent.find('.unassigned-section').last();
+                if ($newOthers.length > 0 && $newOthers[0] !== $newUnassigned[0]) {
+                    $oldOthers.replaceWith($newOthers);
+                }
+
+                showToast('화면이 업데이트되었습니다.');
+            },
+            error: function() {
+                console.error('섹션 새로고침 실패');
+                location.reload(); // 실패시 전체 새로고침
+            }
+        });
+    }
+
+    // DOM 업데이트 함수 (개선된 버전)
     function updateAdminInDOM(adminId, data) {
+        console.log('updateAdminInDOM 호출:', adminId, data);
+
         // 모든 수정 버튼에서 해당 admin_id를 가진 요소 찾기
         const $editBtn = $(`.edit-leader-btn[data-admin-id="${adminId}"], .edit-member-btn[data-admin-id="${adminId}"]`);
 
-        if ($editBtn.length === 0) return;
+        console.log('찾은 버튼 수:', $editBtn.length);
+
+        if ($editBtn.length === 0) {
+            console.warn('수정 버튼을 찾을 수 없음, 전체 섹션 새로고침');
+            reloadTeamsSection();
+            return;
+        }
 
         const isLeader = $editBtn.hasClass('edit-leader-btn');
+        console.log('리더 여부:', isLeader);
 
         if (isLeader) {
             // 팀장(세무사) 정보 업데이트
             const $teamHeader = $editBtn.closest('.team-header');
+            console.log('팀 헤더 찾음:', $teamHeader.length);
 
             // 이름 업데이트
             $teamHeader.find('.leader-details h4').text(data.admin_name);
@@ -633,9 +729,12 @@
             const emailInfo = '<i class="fe fe-mail me-1"></i>' + (data.admin_email || '이메일 없음');
             $teamHeader.find('.leader-details p').eq(1).html(emailInfo);
 
+            console.log('팀장 정보 업데이트 완료');
+
         } else {
             // 팀 멤버 정보 업데이트
             const $memberItem = $editBtn.closest('.member-item');
+            console.log('멤버 아이템 찾음:', $memberItem.length);
 
             // 이름 업데이트
             $memberItem.find('.member-details h5').text(data.admin_name);
@@ -650,6 +749,8 @@
                 memberInfo += ' · ' + data.admin_tel_no;
             }
             $memberItem.find('.member-details p').text(memberInfo);
+
+            console.log('멤버 정보 업데이트 완료');
         }
     }
 
