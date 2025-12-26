@@ -18,8 +18,10 @@ from app.models import (
     일용직전자신고
 )
 import datetime
+import os
 from datetime import date, timedelta
 from django.utils import timezone
+from django.conf import settings
 
 
 @login_required(login_url="/login/")
@@ -666,6 +668,733 @@ def get_staff_list(request):
         return JsonResponse({
             'success': True,
             'data': staff_list
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# ==================== ASP 업무 섹션 API ====================
+
+@login_required(login_url="/login/")
+def get_bizbank_data(request):
+    """
+    1. 사업용계좌 미신고 업체 조회
+    """
+    try:
+        담당자 = request.GET.get('staff', None)
+        admin_id = request.user.username
+
+        sql = """
+            SELECT a.seq_no AS sqno, a.biz_name, b.biz_manager
+            FROM mem_user a
+            LEFT OUTER JOIN mem_deal b ON a.seq_no = b.seq_no
+            LEFT OUTER JOIN mem_admin c ON b.biz_manager = c.admin_id
+            LEFT OUTER JOIN 사업용계좌신고현황 d ON d.seq_no = a.seq_no
+            WHERE a.seq_no = b.seq_no
+                AND a.Del_YN <> 'Y'
+                AND b.biz_manager = c.admin_id
+                AND b.manage_YN = 'Y'
+                AND a.duzon_ID <> ''
+                AND b.keeping_YN = 'Y'
+                AND b.kijang_YN = 'Y'
+                AND a.biz_type > 3
+                AND d.seq_no IS NULL
+        """
+
+        if admin_id != 'AAAAA':
+            sql += " AND c.admin_name = %s"
+            params = [admin_id]
+        else:
+            params = []
+
+        if 담당자:
+            sql += " AND b.biz_manager = %s"
+            params.append(담당자)
+
+        sql += " AND b.biz_manager NOT IN ('환급1','종소세','종소세1','종소세2','종소세3') ORDER BY b.biz_manager"
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            result.append([row[0], row[2], row[1]])  # [sqno, biz_manager, biz_name]
+
+        return JsonResponse({
+            'success': True,
+            'data': result,
+            'count': len(result)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required(login_url="/login/")
+def get_cash_data(request):
+    """
+    2. 현금영수증 가맹점 가입의무 현황
+    """
+    try:
+        담당자 = request.GET.get('staff', None)
+        year = request.GET.get('year', datetime.datetime.now().year)
+        admin_id = request.user.username
+
+        sql = """
+            SELECT
+                a.seq_no AS sqno,
+                a.biz_name,
+                b.biz_manager,
+                d.가입기한,
+                REPLACE(d.가맹일자, '1900-01-01', '') AS 가맹일자,
+                e.가산세사유,
+                e.거래일자,
+                e.대상금액
+            FROM mem_user a
+            LEFT OUTER JOIN mem_deal b ON a.seq_no = b.seq_no
+            LEFT OUTER JOIN mem_admin c ON b.biz_manager = c.admin_id
+            LEFT OUTER JOIN 현금영수증가맹점가입의무현황 d ON d.seq_no = a.seq_no
+            LEFT OUTER JOIN 가산세내역 e ON e.seq_no = a.seq_no
+            WHERE a.seq_no = b.seq_no
+                AND a.Del_YN <> 'Y'
+                AND b.biz_manager = c.admin_id
+                AND a.duzon_ID <> ''
+                AND b.keeping_YN = 'Y'
+                AND b.kijang_YN = 'Y'
+                AND a.biz_type > 3
+                AND b.manage_YN = 'Y'
+                AND d.가입의무대상 = '대상'
+                AND d.기준연도 = %s
+                AND (d.가맹일자 = '1900-01-01' OR YEAR(d.가맹일자) = %s OR e.가산세사유 IS NOT NULL)
+        """
+
+        params = [year, year]
+
+        if admin_id != 'AAAAA':
+            sql += " AND c.admin_name = %s"
+            params.append(admin_id)
+
+        if 담당자:
+            sql += " AND b.biz_manager = %s"
+            params.append(담당자)
+
+        sql += " AND b.biz_manager NOT IN ('환급1','종소세','종소세1','종소세2','종소세3') ORDER BY b.biz_manager"
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+        result = []
+        for row in rows:
+            미가맹사유 = row[5] if row[5] else ''
+            if not 미가맹사유 and row[3] and row[4] and row[3] < row[4]:
+                미가맹사유 = '미가맹'
+
+            result.append([
+                row[0],  # sqno
+                row[2],  # biz_manager
+                row[1],  # biz_name
+                row[3] if row[3] else '',  # 가입기한
+                row[4] if row[4] else '',  # 가맹일자
+                미가맹사유,  # 사유
+                row[6] if row[6] else '',  # 거래일자
+                row[7] if row[7] else 0   # 대상금액
+            ])
+
+        return JsonResponse({
+            'success': True,
+            'data': result,
+            'count': len(result)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required(login_url="/login/")
+def get_vat_data(request):
+    """
+    3. 부가가치세 신고 현황 (상세)
+    """
+    try:
+        담당자 = request.GET.get('staff', None)
+        year = int(request.GET.get('year', datetime.datetime.now().year))
+        admin_id = request.user.username
+
+        today = datetime.date.today()
+        current_month = today.month
+
+        # 현재 작업해야 할 분기/기수 판단
+        work_vat = False
+        work_qt = 0
+
+        # 부가세 신고 기간 체크 (15일~28일)
+        if (current_month in [1, 4, 7, 10] and 15 <= today.day <= 28):
+            work_vat = True
+            if current_month == 1:
+                work_qt = 4
+            elif current_month == 4:
+                work_qt = 1
+            elif current_month == 7:
+                work_qt = 2
+            elif current_month == 10:
+                work_qt = 3
+
+        if not work_vat:
+            return JsonResponse({
+                'success': True,
+                'data': [],
+                'count': 0,
+                'message': '현재는 부가세 신고 기간이 아닙니다.'
+            })
+
+        # 과세기간 및 신고구분 설정
+        if work_qt == 1:
+            kwasekikan = f'{year}년 1기'
+            ks2 = '예정(정기)'
+            SKGB = 'C17'
+        elif work_qt == 2:
+            kwasekikan = f'{year}년 1기'
+            ks2 = '확정(정기)'
+            SKGB = 'C07'
+        elif work_qt == 3:
+            kwasekikan = f'{year}년 2기'
+            ks2 = '예정(정기)'
+            SKGB = 'C17'
+        else:  # work_qt == 4
+            kwasekikan = f'{year}년 2기'
+            ks2 = '확정(정기)'
+            SKGB = 'C07'
+
+        # 업체 유형별 조건
+        if work_qt in [1, 3]:
+            biz_type_condition = "a.biz_type = '1'"
+        elif work_qt == 2:
+            biz_type_condition = "a.biz_type < '5'"
+        else:  # work_qt == 4
+            biz_type_condition = "a.biz_type < '6'"
+
+        sql = f"""
+            SELECT
+                a.biz_name,
+                a.seq_no AS sqno,
+                a.ceo_name,
+                a.biz_tel,
+                a.biz_no,
+                b.biz_manager,
+                a.biz_type,
+                ISNULL(E.차감납부할세액, 0) AS YN_18,
+                ISNULL(E.신고시각, '') AS YN_19,
+                ISNULL(E.제출자, '') AS submitter
+            FROM mem_user a
+            LEFT OUTER JOIN mem_deal b ON a.seq_no = b.seq_no
+            LEFT OUTER JOIN mem_admin c ON b.biz_manager = c.admin_id
+            LEFT OUTER JOIN 부가가치세전자신고3 E ON E.사업자등록번호 = A.BIZ_NO
+                AND E.과세기간 = '{kwasekikan}'
+                AND E.과세유형 = '{SKGB}'
+            WHERE a.seq_no = b.seq_no
+                AND a.duzon_ID <> ''
+                AND b.keeping_YN = 'Y'
+                AND {biz_type_condition}
+                AND a.Del_YN <> 'Y'
+                AND b.biz_manager = c.admin_id
+        """
+
+        params = []
+
+        if admin_id != 'AAAAA':
+            sql += " AND c.admin_name = %s"
+            params.append(admin_id)
+
+        if 담당자:
+            sql += " AND b.biz_manager = %s"
+            params.append(담당자)
+
+        sql += " AND b.biz_manager NOT IN ('환급1','종소세','종소세1','종소세2','종소세3') ORDER BY b.biz_manager"
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+        result = []
+        idx = 0
+        for row in rows:
+            # 메일/카톡 이미지 처리 (실제로는 별도 쿼리 필요)
+            mailGrade = ''  # TODO: 메일/카톡 조회 추가
+
+            # 신고시각 확인
+            isIssue = '✓' if row[8] else ''
+
+            result.append([
+                idx,
+                row[1],  # sqno
+                row[5],  # biz_manager
+                row[0],  # biz_name
+                row[6],  # biz_type
+                mailGrade,  # 메일/카톡
+                '✓' if row[8] else '',  # 통합조회 (신고시각 있으면)
+                '',  # YN_15 (TODO)
+                int(row[7]) if row[7] else 0,  # 납부세액
+                '',  # YN_10 (결재) (TODO)
+                '',  # YN_13 (TODO)
+                isIssue,  # 신고완료 여부
+                '',  # inspect_issue (TODO)
+                '',  # inspect_elec (TODO)
+                ''   # inspect_issue_Txt (TODO)
+            ])
+            idx += 1
+
+        return JsonResponse({
+            'success': True,
+            'data': result,
+            'count': len(result),
+            'period': kwasekikan,
+            'type': ks2
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required(login_url="/login/")
+def get_report_data(request):
+    """
+    4. 기장보고서 작성 현황 (분기별)
+    """
+    try:
+        담당자 = request.GET.get('staff', None)
+        admin_id = request.user.username
+
+        today = datetime.date.today()
+        current_year = today.year
+        current_month = today.month
+        current_quarter = (current_month - 1) // 3 + 1
+
+        result = []
+        idx = 0
+
+        # 이전 4개 분기 체크
+        for i in range(1, 5):
+            quarter = current_quarter - i
+            year = current_year
+
+            if quarter <= 0:
+                quarter += 4
+                year -= 1
+
+            # 1, 3분기는 법인만 체크
+            if quarter in [1, 3]:
+                biz_type_condition = "a.biz_type IN ('1', '2', '3')"
+            else:
+                biz_type_condition = "1=1"
+
+            sql = f"""
+                SELECT
+                    a.seq_no AS sqno,
+                    b.biz_manager,
+                    a.biz_name,
+                    a.biz_type
+                FROM mem_user a
+                LEFT OUTER JOIN mem_deal b ON a.seq_no = b.seq_no
+                LEFT OUTER JOIN mem_admin c ON b.biz_manager = c.admin_id
+                WHERE a.seq_no = b.seq_no
+                    AND b.biz_manager = c.admin_id
+                    AND c.manage_YN = 'Y'
+                    AND a.duzon_ID <> ''
+                    AND b.keeping_YN = 'Y'
+                    AND {biz_type_condition}
+                    AND a.Del_YN <> 'Y'
+                    AND b.manage_YN = 'Y'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM Tbl_OFST_KAKAO_SMS
+                        WHERE seq_user = a.seq_no
+                            AND send_result = 'Y'
+                            AND LEFT(send_dt, 4) = '{year}'
+                            AND contents LIKE '%{year}년 {quarter}분기 재무제표 및 예상세액 등에 대한 기장현황보고서%'
+                    )
+            """
+
+            params = []
+
+            if admin_id != 'AAAAA':
+                sql += " AND c.admin_name = %s"
+                params.append(admin_id)
+
+            if 담당자:
+                sql += " AND b.biz_manager = %s"
+                params.append(담당자)
+
+            sql += " ORDER BY b.biz_manager"
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, params)
+                rows = cursor.fetchall()
+
+            for row in rows:
+                # 마감일 계산
+                due_day = 25 if row[3] and int(row[3]) <= 3 else 15
+
+                if quarter == 1:
+                    due_date = f"{year}년 6월 {due_day}일"
+                elif quarter == 2:
+                    due_date = f"{year}년 8월 {due_day}일"
+                elif quarter == 3:
+                    due_date = f"{year}년 11월 {due_day}일"
+                else:  # quarter == 4
+                    due_date = f"{year + 1}년 2월 {due_day}일"
+
+                # 파일 존재 여부 확인 (TODO: 실제 파일 시스템 체크)
+                # 현재는 카카오 발송 여부로만 체크
+
+                result.append([
+                    idx,
+                    row[1],  # biz_manager
+                    row[2],  # biz_name
+                    str(year),
+                    f'{quarter}분기',
+                    due_date,
+                    '',  # isXlsExist (파일 존재 여부)
+                    i  # priority (1이 가장 급함)
+                ])
+                idx += 1
+
+        return JsonResponse({
+            'success': True,
+            'data': result,
+            'count': len(result)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required(login_url="/login/")
+def get_kani_mm_data(request):
+    """
+    5. 간이지급명세서(매월) - 사업/일용소득
+    """
+    try:
+        담당자 = request.GET.get('staff', None)
+        admin_id = request.user.username
+
+        # 최근 6개월 데이터 조회
+        today = datetime.date.today()
+        start_month = today - timedelta(days=150)  # 약 5개월
+
+        sql = """
+            SELECT
+                AA.작업연도,
+                (SELECT a.seq_no FROM mem_user a, mem_deal b
+                 WHERE a.biz_no = AA.사업자등록번호 AND a.seq_no = b.seq_no) AS sqno,
+                (SELECT biz_manager FROM mem_user a, mem_deal b
+                 WHERE a.biz_no = AA.사업자등록번호 AND a.seq_no = b.seq_no) AS biz_manager,
+                (SELECT biz_name FROM mem_user a, mem_deal b
+                 WHERE a.biz_no = AA.사업자등록번호 AND a.seq_no = b.seq_no) AS biz_name,
+                SUM(AA.원천사업) AS 원천사업,
+                SUM(AA.간이사업) AS 간이사업,
+                SUM(AA.원천일용) AS 원천일용,
+                SUM(AA.간이일용) AS 간이일용,
+                AA.사유
+            FROM (
+                -- 사업소득 누락분
+                SELECT
+                    RTRIM(a.지급연월) AS 작업연도,
+                    a.사업자등록번호,
+                    A.A30 AS 원천사업,
+                    ISNULL(B.제출금액, 0) AS 간이사업,
+                    0 AS 원천일용,
+                    0 AS 간이일용,
+                    ISNULL((SELECT TXT_BIGO FROM tbl_kani_v e
+                            WHERE e.SEQ_NO IN (SELECT SEQ_NO FROM mem_user WHERE biz_no = a.사업자등록번호)
+                              AND e.work_yy >= '2024'
+                              AND e.work_yy = LEFT(a.과세연월, 4)
+                              AND e.work_banki = RIGHT(a.지급연월, 2)), '') AS 사유
+                FROM 원천세전자신고 a WITH (NOLOCK)
+                LEFT OUTER JOIN 지급조서간이소득 b WITH (NOLOCK)
+                    ON a.사업자등록번호 = b.사업자번호
+                    AND b.신고서종류 = '간이지급명세서(거주자의 사업소득)'
+                    AND RTRIM(a.지급연월) = RTRIM(REPLACE(b.과세년도, '-', ''))
+                WHERE a.과세연월 BETWEEN FORMAT(DATEADD(MONTH, -5, GETDATE()), 'yyyyMM')
+                      AND FORMAT(GETDATE(), 'yyyyMM')
+                    AND ISNULL(b.사업자번호, '') = ''
+                    AND A30 <> 0
+
+                UNION ALL
+
+                -- 사업소득 금액차이분
+                SELECT
+                    RTRIM(a.지급연월) AS 작업연도,
+                    a.사업자등록번호,
+                    A.A30 AS 원천사업,
+                    ISNULL(B.제출금액, 0) AS 간이사업,
+                    0 AS 원천일용,
+                    0 AS 간이일용,
+                    ISNULL((SELECT TXT_BIGO FROM tbl_kani_v e
+                            WHERE e.SEQ_NO IN (SELECT SEQ_NO FROM mem_user WHERE biz_no = a.사업자등록번호)
+                              AND e.work_yy >= '2024'
+                              AND e.work_yy = LEFT(a.과세연월, 4)
+                              AND e.work_banki = RIGHT(a.지급연월, 2)), '') AS 사유
+                FROM 원천세전자신고 a WITH (NOLOCK),
+                     지급조서간이소득 b WITH (NOLOCK),
+                     MEM_DEAL C WITH (NOLOCK),
+                     MEM_USER d WITH (NOLOCK)
+                WHERE a.과세연월 BETWEEN FORMAT(DATEADD(MONTH, -5, GETDATE()), 'yyyyMM')
+                      AND FORMAT(GETDATE(), 'yyyyMM')
+                    AND A30 <> 0
+                    AND a.사업자등록번호 = b.사업자번호
+                    AND b.신고서종류 = '간이지급명세서(거주자의 사업소득)'
+                    AND RTRIM(a.지급연월) = RTRIM(REPLACE(b.과세년도, '-', ''))
+                    AND A.A30 <> ISNULL(B.제출금액, 0)
+                    AND A.사업자등록번호 = d.BIZ_NO
+                    AND d.seq_no = c.seq_no
+                    AND c.GOYOUNG_BANKI <> 'Y'
+
+                UNION ALL
+
+                -- 일용직 누락분
+                SELECT
+                    RTRIM(a.지급연월) AS 작업연도,
+                    a.사업자등록번호,
+                    0 AS 원천사업,
+                    0 AS 간이사업,
+                    A.A03 AS 원천일용,
+                    ISNULL(B.제출금액, 0) AS 간이일용,
+                    ISNULL((SELECT TXT_BIGO FROM tbl_kani_v e
+                            WHERE e.SEQ_NO IN (SELECT SEQ_NO FROM mem_user WHERE biz_no = a.사업자등록번호)
+                              AND e.work_yy >= '2024'
+                              AND e.work_yy = LEFT(a.과세연월, 4)
+                              AND e.work_banki = RIGHT(a.지급연월, 2)), '') AS 사유
+                FROM 원천세전자신고 a WITH (NOLOCK)
+                LEFT OUTER JOIN 지급조서간이소득 b WITH (NOLOCK)
+                    ON a.사업자등록번호 = b.사업자번호
+                    AND b.신고서종류 = '일용근로소득 지급명세서'
+                    AND RTRIM(a.지급연월) = RTRIM(REPLACE(b.과세년도, '-', ''))
+                WHERE a.과세연월 BETWEEN FORMAT(DATEADD(MONTH, -5, GETDATE()), 'yyyyMM')
+                      AND FORMAT(GETDATE(), 'yyyyMM')
+                    AND ISNULL(b.사업자번호, '') = ''
+                    AND A03 <> 0
+
+                UNION ALL
+
+                -- 일용직 금액차이분
+                SELECT
+                    RTRIM(a.지급연월) AS 작업연도,
+                    a.사업자등록번호,
+                    0 AS 원천사업,
+                    0 AS 간이사업,
+                    A.A03 AS 원천일용,
+                    ISNULL(B.제출금액, 0) AS 간이일용,
+                    ISNULL((SELECT TXT_BIGO FROM tbl_kani_v e
+                            WHERE e.SEQ_NO IN (SELECT SEQ_NO FROM mem_user WHERE biz_no = a.사업자등록번호)
+                              AND e.work_yy >= '2024'
+                              AND e.work_yy = LEFT(a.과세연월, 4)
+                              AND e.work_banki = RIGHT(a.지급연월, 2)), '') AS 사유
+                FROM 원천세전자신고 a WITH (NOLOCK),
+                     지급조서간이소득 b WITH (NOLOCK),
+                     MEM_DEAL C WITH (NOLOCK),
+                     MEM_USER d WITH (NOLOCK)
+                WHERE a.과세연월 BETWEEN FORMAT(DATEADD(MONTH, -5, GETDATE()), 'yyyyMM')
+                      AND FORMAT(GETDATE(), 'yyyyMM')
+                    AND A03 <> 0
+                    AND a.사업자등록번호 = b.사업자번호
+                    AND b.신고서종류 = '일용근로소득 지급명세서'
+                    AND RTRIM(a.지급연월) = RTRIM(REPLACE(b.과세년도, '-', ''))
+                    AND A.A03 <> ISNULL(B.제출금액, 0)
+                    AND A.사업자등록번호 = d.BIZ_NO
+                    AND d.seq_no = c.seq_no
+                    AND c.GOYOUNG_BANKI <> 'Y'
+            ) AA
+        """
+
+        params = []
+
+        if admin_id != 'AAAAA':
+            sql += """
+                WHERE (SELECT biz_manager FROM mem_user a, mem_deal b
+                       WHERE a.biz_no = AA.사업자등록번호 AND a.seq_no = b.seq_no)
+                IN (SELECT Admin_id FROM mem_admin
+                    WHERE admin_name = %s AND admin_id <> %s)
+            """
+            params.extend([admin_id, admin_id])
+
+        sql += " GROUP BY AA.작업연도, AA.사업자등록번호, AA.사유 ORDER BY 1, 2"
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+        result = []
+        idx = 0
+        for row in rows:
+            if row[1] and row[2] and row[3]:  # sqno, biz_manager, biz_name이 있는 경우만
+                작업연월 = row[0]
+                년도 = 작업연월[:4]
+                월 = 작업연월[4:6]
+
+                result.append([
+                    idx,
+                    row[1],  # sqno
+                    row[2],  # biz_manager
+                    row[3],  # biz_name
+                    년도,
+                    월,
+                    int(row[6]) if row[6] else 0,  # 원천일용
+                    int(row[7]) if row[7] else 0,  # 간이일용
+                    int(row[4]) if row[4] else 0,  # 원천사업
+                    int(row[5]) if row[5] else 0,  # 간이사업
+                    row[8] if row[8] else ''  # 사유
+                ])
+                idx += 1
+
+        return JsonResponse({
+            'success': True,
+            'data': result,
+            'count': len(result)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required(login_url="/login/")
+def get_kani_banki_data(request):
+    """
+    6. 간이지급명세서(반기) - 근로소득
+    """
+    try:
+        담당자 = request.GET.get('staff', None)
+        admin_id = request.user.username
+
+        sql = """
+            SELECT A.담당, A.사업자번호, MAX(A.상호) AS 상호, A.년도, A.구분,
+                   SUM(A.지급총액) AS 지급총액, SUM(A.지급조서) AS 지급조서,
+                   SUM(A.지급총액) - SUM(A.지급조서) AS 차이금액, MAX(A.사유) AS 사유
+            FROM (
+                -- 지급총액(상반기)
+                SELECT C.biz_manager AS 담당, B.biz_no AS 사업자번호, B.Biz_Name AS 상호,
+                       A.work_yy AS 년도, '상반기' AS 구분,
+                       SUM(A.지급총액 - A.식대 - A.자가운전보조금 - A.육아수당 - A.연구개발수당 - A.기타수당1) AS 지급총액,
+                       0 AS 지급조서, '' AS 사유
+                FROM 급여지급현황 A
+                JOIN mem_user B ON A.seq_no = B.seq_no
+                JOIN mem_deal C ON B.seq_no = C.seq_no
+                WHERE A.work_yy >= '2024' AND A.work_mm <= 6
+                GROUP BY C.biz_manager, B.biz_no, B.Biz_Name, A.work_yy
+
+                UNION ALL
+
+                -- 지급총액(하반기)
+                SELECT C.biz_manager, B.biz_no, B.Biz_Name, A.work_yy, '하반기',
+                       SUM(A.지급총액 - A.식대 - A.자가운전보조금 - A.육아수당 - A.연구개발수당 - A.기타수당1),
+                       0, ''
+                FROM 급여지급현황 A
+                JOIN mem_user B ON A.seq_no = B.seq_no
+                JOIN mem_deal C ON B.seq_no = C.seq_no
+                WHERE A.work_yy >= '2024' AND A.work_mm > 6
+                GROUP BY C.biz_manager, B.biz_no, B.Biz_Name, A.work_yy
+
+                UNION ALL
+
+                -- 지급조서(상반기)
+                SELECT C.biz_manager, A.사업자번호, A.상호, LEFT(A.과세년도, 4), '상반기', 0,
+                       SUM(제출금액),
+                       ISNULL((SELECT TOP 1 TXT_BIGO FROM tbl_kani E
+                               WHERE E.SEQ_NO IN (SELECT seq_no FROM mem_user WHERE biz_no = A.사업자번호)
+                                 AND E.work_yy = LEFT(A.과세년도, 4) AND E.work_banki = 'Jan'), '')
+                FROM 지급조서간이소득 A
+                JOIN mem_user B ON A.사업자번호 = B.biz_no
+                JOIN mem_deal C ON B.seq_no = C.seq_no
+                WHERE A.신고서종류 = '간이지급명세서(근로소득)'
+                  AND LEFT(A.과세년도, 4) IN ('2024', '2025', '2026')
+                GROUP BY A.사업자번호, A.상호, LEFT(A.과세년도, 4), C.biz_manager
+
+                UNION ALL
+
+                -- 지급조서(하반기)
+                SELECT C.biz_manager, A.사업자번호, A.상호, LEFT(A.과세년도, 4), '하반기', 0,
+                       SUM(제출금액),
+                       ISNULL((SELECT TOP 1 TXT_BIGO FROM tbl_kani E
+                               WHERE E.SEQ_NO IN (SELECT seq_no FROM mem_user WHERE biz_no = A.사업자번호)
+                                 AND E.work_yy = LEFT(A.과세년도, 4) AND E.work_banki = 'Jan'), '')
+                FROM 지급조서간이소득 A
+                JOIN mem_user B ON A.사업자번호 = B.biz_no
+                JOIN mem_deal C ON B.seq_no = C.seq_no
+                WHERE A.신고서종류 = '간이지급명세서(근로소득)'
+                  AND LEFT(A.과세년도, 4) IN ('2024', '2025', '2026')
+                GROUP BY A.사업자번호, A.상호, LEFT(A.과세년도, 4), C.biz_manager
+            ) A
+        """
+
+        params = []
+
+        if admin_id != 'AAAAA':
+            sql += """
+                WHERE EXISTS (SELECT 1 FROM mem_user E
+                              JOIN mem_deal F ON E.seq_no = F.seq_no
+                              WHERE E.biz_no = A.사업자번호
+                                AND F.biz_manager IN (SELECT admin_id FROM mem_admin
+                                                      WHERE admin_name = %s AND admin_id <> %s))
+            """
+            params.extend([admin_id, admin_id])
+
+        sql += """
+            GROUP BY A.담당, A.사업자번호, A.년도, A.구분
+            HAVING SUM(A.지급총액) - SUM(A.지급조서) <> 0
+            ORDER BY A.년도, A.담당, A.사업자번호, A.구분
+        """
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+        result = []
+        idx = 0
+        today = datetime.date.today()
+        current_month = today.month
+
+        for row in rows:
+            # 현재 월에 따라 표시할 데이터 필터링
+            if current_month >= 7 and current_month <= 12:
+                if row[4] != '상반기':  # 하반기는 제외
+                    continue
+
+            result.append([
+                idx,
+                row[0],  # 담당
+                row[2],  # 상호
+                row[3],  # 년도
+                row[4],  # 구분
+                int(row[5]) if row[5] else 0,  # 지급총액
+                int(row[6]) if row[6] else 0,  # 지급조서
+                int(row[7]) if row[7] else 0,  # 차이금액
+                row[8] if row[8] else ''  # 사유
+            ])
+            idx += 1
+
+        return JsonResponse({
+            'success': True,
+            'data': result,
+            'count': len(result)
         })
 
     except Exception as e:

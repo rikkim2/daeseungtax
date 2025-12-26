@@ -537,16 +537,24 @@
         loadBizBank: function() {
             const filter = this.getFilterParams();
 
-            // TODO: 실제 API 엔드포인트 연결 필요
-            // 임시 데이터로 테스트
-            setTimeout(() => {
-                const testData = [
-                    ['1001', '김철수', '(주)테스트회사'],
-                    ['1002', '이영희', '개인사업자A']
-                ];
-                this.renderBizBank(testData);
-                this.updateStats('bizbank', testData.length);
-            }, 500);
+            $.ajax({
+                url: '/admin/dsboard/api/bizbank/' + filter,
+                method: 'GET',
+                success: (response) => {
+                    if (response.success) {
+                        this.renderBizBank(response.data);
+                        this.updateStats('bizbank', response.count);
+                    }
+                },
+                error: (xhr) => {
+                    $('#bizbankContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fe fe-alert-triangle me-2"></i>
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
         },
 
         renderBizBank: function(data) {
@@ -603,11 +611,24 @@
         loadCash: function() {
             const filter = this.getFilterParams();
 
-            setTimeout(() => {
-                const testData = [];
-                this.renderCash(testData);
-                this.updateStats('cash', testData.length);
-            }, 500);
+            $.ajax({
+                url: '/admin/dsboard/api/cash/' + filter,
+                method: 'GET',
+                success: (response) => {
+                    if (response.success) {
+                        this.renderCash(response.data);
+                        this.updateStats('cash', response.count);
+                    }
+                },
+                error: (xhr) => {
+                    $('#cashContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fe fe-alert-triangle me-2"></i>
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
         },
 
         renderCash: function(data) {
@@ -668,11 +689,40 @@
         loadVAT: function() {
             const filter = this.getFilterParams();
 
-            setTimeout(() => {
-                const testData = [];
-                this.renderVAT(testData);
-                this.updateStats('vat', testData.length);
-            }, 500);
+            $.ajax({
+                url: '/admin/dsboard/api/vat/' + filter,
+                method: 'GET',
+                success: (response) => {
+                    if (response.success) {
+                        this.renderVAT(response.data);
+                        this.updateStats('vat', response.count);
+
+                        // 부가세 기간 정보 표시
+                        if (response.period && response.type) {
+                            $('#vatContent').prepend(`
+                                <div class="alert alert-info mb-3">
+                                    <strong>현재 신고 기간:</strong> ${response.period} ${response.type}
+                                </div>
+                            `);
+                        }
+                    } else if (response.message) {
+                        $('#vatContent').html(`
+                            <div class="alert alert-warning">
+                                <i class="fe fe-info me-2"></i>${response.message}
+                            </div>
+                        `);
+                        this.updateStats('vat', 0);
+                    }
+                },
+                error: (xhr) => {
+                    $('#vatContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fe fe-alert-triangle me-2"></i>
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
         },
 
         renderVAT: function(data) {
@@ -736,11 +786,24 @@
         loadReport: function() {
             const filter = this.getFilterParams();
 
-            setTimeout(() => {
-                const testData = [];
-                this.renderReport(testData);
-                this.updateStats('report', testData.length);
-            }, 500);
+            $.ajax({
+                url: '/admin/dsboard/api/report/' + filter,
+                method: 'GET',
+                success: (response) => {
+                    if (response.success) {
+                        this.renderReport(response.data);
+                        this.updateStats('report', response.count);
+                    }
+                },
+                error: (xhr) => {
+                    $('#reportContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fe fe-alert-triangle me-2"></i>
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
         },
 
         renderReport: function(data) {
@@ -808,11 +871,24 @@
         loadKaniMM: function() {
             const filter = this.getFilterParams();
 
-            setTimeout(() => {
-                const testData = [];
-                this.renderKaniMM(testData);
-                this.updateStats('kaniMM', testData.length);
-            }, 500);
+            $.ajax({
+                url: '/admin/dsboard/api/kani-mm/' + filter,
+                method: 'GET',
+                success: (response) => {
+                    if (response.success) {
+                        this.renderKaniMM(response.data);
+                        this.updateStats('kaniMM', response.count);
+                    }
+                },
+                error: (xhr) => {
+                    $('#kaniMMContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fe fe-alert-triangle me-2"></i>
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
         },
 
         renderKaniMM: function(data) {
@@ -880,11 +956,24 @@
         loadKaniBanki: function() {
             const filter = this.getFilterParams();
 
-            setTimeout(() => {
-                const testData = [];
-                this.renderKaniBanki(testData);
-                this.updateStats('kaniBanki', testData.length);
-            }, 500);
+            $.ajax({
+                url: '/admin/dsboard/api/kani-banki/' + filter,
+                method: 'GET',
+                success: (response) => {
+                    if (response.success) {
+                        this.renderKaniBanki(response.data);
+                        this.updateStats('kaniBanki', response.count);
+                    }
+                },
+                error: (xhr) => {
+                    $('#kaniBankiContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fe fe-alert-triangle me-2"></i>
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
         },
 
         renderKaniBanki: function(data) {
