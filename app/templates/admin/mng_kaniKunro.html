@@ -282,7 +282,7 @@
             { header: '<center>근로<br>지급금액</center>',dataIndex: 'isKunAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000' }
           ]
         },
-        { header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   flex: 1, editor: { allowBlank: false }	},
+        { header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   flex: 1, editor: { allowBlank: true }	},
         { header:'오류', dataIndex:'isSkele', width:50, renderer: renderSkeletonEmoji },
         { header:'<center>제출<br>ID</center>', dataIndex:'issuedID', width:50 }
       ],
@@ -313,8 +313,10 @@
                 items: Array.from({ length: 5 }, (_, i) => ({
                   text: `${currentYear - i}년`,
                   pressed: currentYear - i === parseInt(work_YY, 10),
-                  handler: function () {
+                  handler: function (btn) {
                     work_YY = parseInt(this.text.replace('년', ''), 10);
+                    // 명시적으로 pressed 상태 업데이트
+                    this.toggle(true);
                     syncParamsAndReload();
                   }
                 }))
@@ -347,6 +349,8 @@
                   pressed: work_banki === 'Jan',
                   handler: function () {
                     work_banki = 'Jan';
+                    // 명시적으로 pressed 상태 업데이트
+                    this.toggle(true);
                     syncParamsAndReload();
                   }
                 },
@@ -355,6 +359,8 @@
                   pressed: work_banki === 'Jul',
                   handler: function () {
                     work_banki = 'Jul';
+                    // 명시적으로 pressed 상태 업데이트
+                    this.toggle(true);
                     syncParamsAndReload();
                   }
                 }
