@@ -13,7 +13,7 @@
 
     .stat-box {
         text-align: center;
-        padding: 20px;
+        padding: 20px 10px;
         border-right: 1px solid rgba(255, 255, 255, 0.2);
     }
 
@@ -22,7 +22,7 @@
     }
 
     .stat-box h3 {
-        font-size: 2.5rem;
+        font-size: 2rem;
         margin: 0;
         font-weight: bold;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -31,7 +31,7 @@
     .stat-box p {
         margin: 8px 0 0 0;
         opacity: 0.95;
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 500;
     }
 
@@ -69,6 +69,17 @@
         box-shadow: 0 2px 4px rgba(86, 171, 47, 0.3);
     }
 
+    /* 금액 차이 표시 */
+    .amount-diff {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-block;
+    }
+
     /* 테이블 스타일 */
     .table-responsive {
         max-height: 650px;
@@ -81,6 +92,12 @@
         background-color: #f8f9fa;
         z-index: 10;
         box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+        font-size: 0.85rem;
+    }
+
+    .table tbody td {
+        font-size: 0.85rem;
+        vertical-align: middle;
     }
 
     /* 빈 상태 스타일 */
@@ -121,6 +138,8 @@
         font-weight: 500;
         color: #495057;
         transition: all 0.3s ease;
+        font-size: 0.9rem;
+        padding: 8px 12px !important;
     }
 
     .tabs-menu4 .nav-link:hover {
@@ -135,16 +154,16 @@
     }
 
     .tabs-menu4 .nav-link .badge {
-        font-size: 0.75rem;
-        padding: 3px 6px;
-        margin-left: 6px;
+        font-size: 0.7rem;
+        padding: 2px 5px;
+        margin-left: 4px;
     }
 
     /* 필터 카드 스타일 */
     .filter-section {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         border-radius: 8px;
-        padding: 24px;
+        padding: 20px;
         margin-bottom: 24px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
@@ -153,6 +172,7 @@
         font-weight: 600;
         color: #495057;
         margin-bottom: 8px;
+        font-size: 0.9rem;
     }
 
     /* 카드 개선 */
@@ -170,21 +190,34 @@
 
     .card-header h3 {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         font-weight: 600;
         color: #495057;
     }
 
     /* 뱃지 개선 */
     .badge {
-        padding: 5px 10px;
+        padding: 4px 8px;
         font-weight: 600;
+        font-size: 0.75rem;
     }
 
     /* 테이블 행 호버 효과 */
     .table-hover tbody tr:hover {
         background-color: rgba(102, 126, 234, 0.05);
         transition: background-color 0.2s ease;
+    }
+
+    /* 금액 스타일 */
+    .amount-text {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .amount-danger {
+        color: #dc3545;
+        font-weight: 700;
     }
 </style>
 {% endblock %}
@@ -210,12 +243,22 @@
         <!-- 필터 섹션 -->
         <div class="filter-section">
             <div class="row align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label for="staffFilter" class="form-label">
                         <i class="fe fe-user me-2"></i>담당자 필터
                     </label>
                     <select id="staffFilter" class="form-control form-select">
                         <option value="">전체 담당자</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="yearFilter" class="form-label">
+                        <i class="fe fe-calendar me-2"></i>작업연도
+                    </label>
+                    <select id="yearFilter" class="form-control form-select">
+                        <option value="2024">2024년</option>
+                        <option value="2025" selected>2025년</option>
+                        <option value="2026">2026년</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -231,28 +274,40 @@
             <!-- 통계 섹션 -->
             <div class="card-body project-main-stats">
                 <div class="row">
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-2 col-sm-4 col-6">
                         <div class="stat-box">
-                            <h3 id="pendingCount">0</h3>
-                            <p>미신고 업체</p>
+                            <h3 id="bizbankCount">0</h3>
+                            <p>사업용계좌</p>
                         </div>
                     </div>
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-2 col-sm-4 col-6">
                         <div class="stat-box">
-                            <h3 id="receivableCount">0</h3>
-                            <p>미수금 업체</p>
+                            <h3 id="cashCount">0</h3>
+                            <p>현금영수증</p>
                         </div>
                     </div>
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-2 col-sm-4 col-6">
                         <div class="stat-box">
-                            <h3 id="renewalCount">0</h3>
-                            <p>임원등기 연임</p>
+                            <h3 id="vatCount">0</h3>
+                            <p>부가세</p>
                         </div>
                     </div>
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-2 col-sm-4 col-6">
                         <div class="stat-box">
-                            <h3 id="newCompanyCount">0</h3>
-                            <p>신규업체 (30일)</p>
+                            <h3 id="reportCount">0</h3>
+                            <p>기장보고서</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="stat-box">
+                            <h3 id="kaniMMCount">0</h3>
+                            <p>간이명세(월)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="stat-box">
+                            <h3 id="kaniBankiCount">0</h3>
+                            <p>간이명세(반기)</p>
                         </div>
                     </div>
                 </div>
@@ -260,27 +315,37 @@
 
             <!-- Tabs 메뉴 -->
             <div class="card-footer p-0">
-                <div class="tabs-menu4 py-5 project-menu">
-                    <nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
-                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1 active"
-                           data-bs-toggle="tab" href="#tab_pending">
-                            <i class="fe fe-alert-triangle me-2"></i>담당자별 할일
-                            <span class="badge bg-danger" id="pendingBadge">0</span>
+                <div class="tabs-menu4 py-4 project-menu">
+                    <nav class="nav border-bottom px-3 d-block d-lg-flex flex-2">
+                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 active"
+                           data-bs-toggle="tab" href="#tab_bizbank">
+                            <i class="fe fe-briefcase me-1"></i>사업용계좌
+                            <span class="badge bg-danger" id="bizbankBadge">0</span>
                         </a>
-                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1"
-                           data-bs-toggle="tab" href="#tab_receivable">
-                            <i class="fe fe-dollar-sign me-2"></i>미수금 현황
-                            <span class="badge bg-warning text-dark" id="receivableBadge">0</span>
+                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1"
+                           data-bs-toggle="tab" href="#tab_cash">
+                            <i class="fe fe-credit-card me-1"></i>현금영수증
+                            <span class="badge bg-warning text-dark" id="cashBadge">0</span>
                         </a>
-                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1"
-                           data-bs-toggle="tab" href="#tab_renewal">
-                            <i class="fe fe-briefcase me-2"></i>임원등기 연임안내
-                            <span class="badge bg-info" id="renewalBadge">0</span>
+                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1"
+                           data-bs-toggle="tab" href="#tab_vat">
+                            <i class="fe fe-file-text me-1"></i>부가세
+                            <span class="badge bg-primary" id="vatBadge">0</span>
                         </a>
-                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1"
-                           data-bs-toggle="tab" href="#tab_newcompany">
-                            <i class="fe fe-plus-circle me-2"></i>신규업체 관리
-                            <span class="badge bg-success" id="newCompanyBadge">0</span>
+                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1"
+                           data-bs-toggle="tab" href="#tab_report">
+                            <i class="fe fe-book me-1"></i>기장보고서
+                            <span class="badge bg-info" id="reportBadge">0</span>
+                        </a>
+                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1"
+                           data-bs-toggle="tab" href="#tab_kaniMM">
+                            <i class="fe fe-calendar me-1"></i>간이명세(월)
+                            <span class="badge bg-success" id="kaniMMBadge">0</span>
+                        </a>
+                        <a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1"
+                           data-bs-toggle="tab" href="#tab_kaniBanki">
+                            <i class="fe fe-layers me-1"></i>간이명세(반기)
+                            <span class="badge bg-secondary" id="kaniBankiBadge">0</span>
                         </a>
                     </nav>
                 </div><!-- /Tabs -->
@@ -291,15 +356,15 @@
     <!-- Tab 콘텐츠 -->
     <div class="col-md-12">
         <div class="tab-content">
-            <!-- 담당자별 할일 -->
-            <div class="tab-pane active" id="tab_pending">
+            <!-- 사업용계좌 -->
+            <div class="tab-pane active" id="tab_bizbank">
                 <div class="card">
                     <div class="card-header border-bottom">
                         <h3 class="card-title">
-                            <i class="fe fe-list me-2"></i>신고기한 임박 업체 목록
+                            <i class="fe fe-briefcase me-2"></i>사업용계좌 미신고 업체
                         </h3>
                     </div>
-                    <div class="card-body" id="pendingFilingsContent">
+                    <div class="card-body" id="bizbankContent">
                         <div class="loading">
                             <i class="fa fa-spinner fa-spin"></i>
                             <p>데이터를 불러오는 중입니다...</p>
@@ -308,15 +373,15 @@
                 </div>
             </div>
 
-            <!-- 미수금 현황 -->
-            <div class="tab-pane" id="tab_receivable">
+            <!-- 현금영수증 -->
+            <div class="tab-pane" id="tab_cash">
                 <div class="card">
                     <div class="card-header border-bottom">
                         <h3 class="card-title">
-                            <i class="fe fe-credit-card me-2"></i>미수금 현황
+                            <i class="fe fe-credit-card me-2"></i>현금영수증 가맹점 가입의무 현황
                         </h3>
                     </div>
-                    <div class="card-body" id="receivablesContent">
+                    <div class="card-body" id="cashContent">
                         <div class="loading">
                             <i class="fa fa-spinner fa-spin"></i>
                             <p>데이터를 불러오는 중입니다...</p>
@@ -325,15 +390,15 @@
                 </div>
             </div>
 
-            <!-- 임원등기 연임안내 -->
-            <div class="tab-pane" id="tab_renewal">
+            <!-- 부가세 -->
+            <div class="tab-pane" id="tab_vat">
                 <div class="card">
                     <div class="card-header border-bottom">
                         <h3 class="card-title">
-                            <i class="fe fe-users me-2"></i>임원등기 연임 예정 법인
+                            <i class="fe fe-file-text me-2"></i>부가가치세 신고 현황
                         </h3>
                     </div>
-                    <div class="card-body" id="renewalsContent">
+                    <div class="card-body" id="vatContent">
                         <div class="loading">
                             <i class="fa fa-spinner fa-spin"></i>
                             <p>데이터를 불러오는 중입니다...</p>
@@ -342,15 +407,49 @@
                 </div>
             </div>
 
-            <!-- 신규업체 관리 -->
-            <div class="tab-pane" id="tab_newcompany">
+            <!-- 기장보고서 -->
+            <div class="tab-pane" id="tab_report">
                 <div class="card">
                     <div class="card-header border-bottom">
                         <h3 class="card-title">
-                            <i class="fe fe-star me-2"></i>최근 신규 등록 업체
+                            <i class="fe fe-book me-2"></i>기장보고서 미작성 현황
                         </h3>
                     </div>
-                    <div class="card-body" id="newCompaniesContent">
+                    <div class="card-body" id="reportContent">
+                        <div class="loading">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            <p>데이터를 불러오는 중입니다...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 간이지급명세서(매월) -->
+            <div class="tab-pane" id="tab_kaniMM">
+                <div class="card">
+                    <div class="card-header border-bottom">
+                        <h3 class="card-title">
+                            <i class="fe fe-calendar me-2"></i>간이지급명세서(매월) - 사업/일용소득
+                        </h3>
+                    </div>
+                    <div class="card-body" id="kaniMMContent">
+                        <div class="loading">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            <p>데이터를 불러오는 중입니다...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 간이지급명세서(반기) -->
+            <div class="tab-pane" id="tab_kaniBanki">
+                <div class="card">
+                    <div class="card-header border-bottom">
+                        <h3 class="card-title">
+                            <i class="fe fe-layers me-2"></i>간이지급명세서(반기) - 근로소득
+                        </h3>
+                    </div>
+                    <div class="card-body" id="kaniBankiContent">
                         <div class="loading">
                             <i class="fa fa-spinner fa-spin"></i>
                             <p>데이터를 불러오는 중입니다...</p>
@@ -384,15 +483,19 @@
 
         // 이벤트 바인딩
         bindEvents: function() {
-            $('#staffFilter').on('change', () => {
+            $('#staffFilter, #yearFilter').on('change', () => {
                 this.loadAllData();
             });
         },
 
-        // 담당자 필터 값 가져오기
-        getStaffFilter: function() {
+        // 필터 파라미터 생성
+        getFilterParams: function() {
             const staff = $('#staffFilter').val();
-            return staff ? `?staff=${encodeURIComponent(staff)}` : '';
+            const year = $('#yearFilter').val();
+            const params = [];
+            if (staff) params.push(`staff=${encodeURIComponent(staff)}`);
+            if (year) params.push(`year=${year}`);
+            return params.length > 0 ? '?' + params.join('&') : '';
         },
 
         // 담당자 목록 로드
@@ -416,10 +519,12 @@
 
         // 모든 데이터 로드
         loadAllData: function() {
-            this.loadPendingFilings();
-            this.loadReceivables();
-            this.loadRenewals();
-            this.loadNewCompanies();
+            this.loadBizBank();
+            this.loadCash();
+            this.loadVAT();
+            this.loadReport();
+            this.loadKaniMM();
+            this.loadKaniBanki();
         },
 
         // 통계 업데이트
@@ -428,38 +533,29 @@
             $(`#${type}Badge`).text(count);
         },
 
-        // 미신고 업체 로드
-        loadPendingFilings: function() {
-            const filter = this.getStaffFilter();
+        // 1. 사업용계좌 로드
+        loadBizBank: function() {
+            const filter = this.getFilterParams();
 
-            $.ajax({
-                url: '/admin/dsboard/api/pending-filings/' + filter,
-                method: 'GET',
-                success: (response) => {
-                    if (response.success) {
-                        this.renderPendingFilings(response.data);
-                        this.updateStats('pending', response.count);
-                    }
-                },
-                error: (xhr) => {
-                    $('#pendingFilingsContent').html(`
-                        <div class="alert alert-danger">
-                            <i class="fe fe-alert-triangle me-2"></i>
-                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
-                        </div>
-                    `);
-                }
-            });
+            // TODO: 실제 API 엔드포인트 연결 필요
+            // 임시 데이터로 테스트
+            setTimeout(() => {
+                const testData = [
+                    ['1001', '김철수', '(주)테스트회사'],
+                    ['1002', '이영희', '개인사업자A']
+                ];
+                this.renderBizBank(testData);
+                this.updateStats('bizbank', testData.length);
+            }, 500);
         },
 
-        // 미신고 업체 렌더링
-        renderPendingFilings: function(data) {
+        renderBizBank: function(data) {
             if (data.length === 0) {
-                $('#pendingFilingsContent').html(`
+                $('#bizbankContent').html(`
                     <div class="empty-state">
                         <i class="fe fe-check-circle"></i>
-                        <h4>신고기한이 임박한 업체가 없습니다</h4>
-                        <p class="text-muted">모든 업체가 정상적으로 신고를 완료했습니다.</p>
+                        <h4>사업용계좌 미신고 업체가 없습니다</h4>
+                        <p class="text-muted">모든 업체가 사업용계좌를 신고했습니다.</p>
                     </div>
                 `);
                 return;
@@ -470,48 +566,91 @@
                     <table class="table table-bordered table-hover text-nowrap mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="text-center" width="80">D-Day</th>
-                                <th width="120">신고유형</th>
+                                <th width="80">번호</th>
+                                <th width="120">담당자</th>
+                                <th>업체명</th>
+                                <th width="120">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach((item, idx) => {
+                html += `
+                    <tr>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>${item[1]}</td>
+                        <td><strong>${item[2]}</strong></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-primary" onclick="dashboardModule.handleBizBank('${item[0]}')">
+                                <i class="fe fe-edit"></i> 신고
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#bizbankContent').html(html);
+        },
+
+        // 2. 현금영수증 로드
+        loadCash: function() {
+            const filter = this.getFilterParams();
+
+            setTimeout(() => {
+                const testData = [];
+                this.renderCash(testData);
+                this.updateStats('cash', testData.length);
+            }, 500);
+        },
+
+        renderCash: function(data) {
+            if (data.length === 0) {
+                $('#cashContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-check-circle"></i>
+                        <h4>현금영수증 미가맹 업체가 없습니다</h4>
+                        <p class="text-muted">모든 업체가 가맹점에 가입했습니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover text-nowrap mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="80">번호</th>
+                                <th width="120">담당자</th>
                                 <th width="200">업체명</th>
-                                <th width="120">사업자번호</th>
-                                <th width="100">담당자</th>
-                                <th width="150">과세기간</th>
-                                <th width="120">신고마감일</th>
-                                <th width="100">대표자</th>
-                                <th width="130">연락처</th>
-                                <th>비고</th>
+                                <th width="120">가입기한</th>
+                                <th width="120">가맹일자</th>
+                                <th width="120">사유</th>
+                                <th width="120">거래일자</th>
+                                <th width="120">대상금액</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
 
-            data.forEach(item => {
-                let dDayClass, dDayText;
-                if (item.D_day <= 0) {
-                    dDayClass = 'd-day-urgent';
-                    dDayText = `D+${Math.abs(item.D_day)}`;
-                } else if (item.D_day <= 3) {
-                    dDayClass = 'd-day-warning';
-                    dDayText = `D-${item.D_day}`;
-                } else {
-                    dDayClass = 'd-day-normal';
-                    dDayText = `D-${item.D_day}`;
-                }
-
-                const 비고 = item.비고 || '-';
-
+            data.forEach((item, idx) => {
                 html += `
                     <tr>
-                        <td class="text-center"><span class="${dDayClass}">${dDayText}</span></td>
-                        <td><span class="badge bg-primary">${item.신고유형}</span></td>
-                        <td><strong>${item.업체명}</strong></td>
-                        <td>${item.사업자번호}</td>
-                        <td>${item.담당자}</td>
-                        <td>${item.과세기간}</td>
-                        <td>${item.신고마감일}</td>
-                        <td>${item.대표자}</td>
-                        <td>${item.연락처}</td>
-                        <td><small class="text-muted">${비고}</small></td>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>${item[1]}</td>
+                        <td><strong>${item[2]}</strong></td>
+                        <td>${item[3]}</td>
+                        <td>${item[4] || '-'}</td>
+                        <td>${item[5] ? `<span class="badge bg-danger">${item[5]}</span>` : '-'}</td>
+                        <td>${item[6] || '-'}</td>
+                        <td class="text-end amount-text">${Number(item[7] || 0).toLocaleString()}</td>
                     </tr>
                 `;
             });
@@ -522,90 +661,27 @@
                 </div>
             `;
 
-            $('#pendingFilingsContent').html(html);
+            $('#cashContent').html(html);
         },
 
-        // 미수금 현황 로드
-        loadReceivables: function() {
-            const filter = this.getStaffFilter();
+        // 3. 부가세 로드
+        loadVAT: function() {
+            const filter = this.getFilterParams();
 
-            $.ajax({
-                url: '/admin/dsboard/api/receivables/' + filter,
-                method: 'GET',
-                success: (response) => {
-                    if (response.success) {
-                        this.renderReceivables(response.data, response.message);
-                        this.updateStats('receivable', response.count);
-                    }
-                },
-                error: (xhr) => {
-                    $('#receivablesContent').html(`
-                        <div class="alert alert-danger">
-                            <i class="fe fe-alert-triangle me-2"></i>
-                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
-                        </div>
-                    `);
-                }
-            });
+            setTimeout(() => {
+                const testData = [];
+                this.renderVAT(testData);
+                this.updateStats('vat', testData.length);
+            }, 500);
         },
 
-        // 미수금 현황 렌더링
-        renderReceivables: function(data, message) {
-            if (message) {
-                $('#receivablesContent').html(`
-                    <div class="alert alert-info">
-                        <i class="fe fe-info me-2"></i>${message}
-                    </div>
-                `);
-                return;
-            }
-
+        renderVAT: function(data) {
             if (data.length === 0) {
-                $('#receivablesContent').html(`
+                $('#vatContent').html(`
                     <div class="empty-state">
                         <i class="fe fe-check-circle"></i>
-                        <h4>미수금이 있는 업체가 없습니다</h4>
-                        <p class="text-muted">모든 업체의 수임료가 정상 입금되었습니다.</p>
-                    </div>
-                `);
-                return;
-            }
-
-            // TODO: 실제 미수금 데이터 렌더링 로직
-        },
-
-        // 임원등기 연임 로드
-        loadRenewals: function() {
-            const filter = this.getStaffFilter();
-
-            $.ajax({
-                url: '/admin/dsboard/api/executive-renewals/' + filter,
-                method: 'GET',
-                success: (response) => {
-                    if (response.success) {
-                        this.renderRenewals(response.data);
-                        this.updateStats('renewal', response.count);
-                    }
-                },
-                error: (xhr) => {
-                    $('#renewalsContent').html(`
-                        <div class="alert alert-danger">
-                            <i class="fe fe-alert-triangle me-2"></i>
-                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
-                        </div>
-                    `);
-                }
-            });
-        },
-
-        // 임원등기 연임 렌더링
-        renderRenewals: function(data) {
-            if (data.length === 0) {
-                $('#renewalsContent').html(`
-                    <div class="empty-state">
-                        <i class="fe fe-check-circle"></i>
-                        <h4>임원등기 연임이 필요한 법인이 없습니다</h4>
-                        <p class="text-muted">6개월 이내 연임 예정인 법인이 없습니다.</p>
+                        <h4>부가세 미신고 업체가 없습니다</h4>
+                        <p class="text-muted">모든 업체가 부가세를 신고했습니다.</p>
                     </div>
                 `);
                 return;
@@ -616,33 +692,33 @@
                     <table class="table table-bordered table-hover text-nowrap mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="text-center" width="100">D-Day</th>
-                                <th width="250">업체명</th>
-                                <th width="130">사업자번호</th>
+                                <th width="80">번호</th>
                                 <th width="100">담당자</th>
-                                <th width="100">대표자</th>
-                                <th width="120">설립일</th>
-                                <th width="120">연임예정일</th>
-                                <th width="130">연락처</th>
+                                <th width="180">업체명</th>
+                                <th width="80">업체유형</th>
+                                <th width="100">메일/카톡</th>
+                                <th width="80">통합조회</th>
+                                <th width="100">납부세액</th>
+                                <th width="80">결재</th>
+                                <th width="80">신고시각</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
 
-            data.forEach(item => {
-                const dDayClass = item.D_day <= 30 ? 'd-day-urgent' :
-                                 item.D_day <= 90 ? 'd-day-warning' : 'd-day-normal';
-
+            data.forEach((item, idx) => {
+                const bizType = ['', '법인', '개인(일반)', '개인(간이)', '개인', '간이'][item[4]] || item[4];
                 html += `
                     <tr>
-                        <td class="text-center"><span class="${dDayClass}">D-${item.D_day}</span></td>
-                        <td><strong>${item.업체명}</strong></td>
-                        <td>${item.사업자번호}</td>
-                        <td>${item.담당자}</td>
-                        <td>${item.대표자}</td>
-                        <td>${item.설립일}</td>
-                        <td>${item.연임예정일}</td>
-                        <td>${item.연락처}</td>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>${item[2]}</td>
+                        <td><strong>${item[3]}</strong></td>
+                        <td><span class="badge bg-info">${bizType}</span></td>
+                        <td>${item[5]}</td>
+                        <td class="text-center">${item[6]}</td>
+                        <td class="text-end amount-text">${Number(item[8] || 0).toLocaleString()}</td>
+                        <td class="text-center">${item[9]}</td>
+                        <td class="text-center">${item[11]}</td>
                     </tr>
                 `;
             });
@@ -653,41 +729,27 @@
                 </div>
             `;
 
-            $('#renewalsContent').html(html);
+            $('#vatContent').html(html);
         },
 
-        // 신규업체 로드
-        loadNewCompanies: function() {
-            const filter = this.getStaffFilter();
+        // 4. 기장보고서 로드
+        loadReport: function() {
+            const filter = this.getFilterParams();
 
-            $.ajax({
-                url: '/admin/dsboard/api/new-companies/' + filter,
-                method: 'GET',
-                success: (response) => {
-                    if (response.success) {
-                        this.renderNewCompanies(response.data);
-                        this.updateStats('newCompany', response.count);
-                    }
-                },
-                error: (xhr) => {
-                    $('#newCompaniesContent').html(`
-                        <div class="alert alert-danger">
-                            <i class="fe fe-alert-triangle me-2"></i>
-                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
-                        </div>
-                    `);
-                }
-            });
+            setTimeout(() => {
+                const testData = [];
+                this.renderReport(testData);
+                this.updateStats('report', testData.length);
+            }, 500);
         },
 
-        // 신규업체 렌더링
-        renderNewCompanies: function(data) {
+        renderReport: function(data) {
             if (data.length === 0) {
-                $('#newCompaniesContent').html(`
+                $('#reportContent').html(`
                     <div class="empty-state">
-                        <i class="fe fe-inbox"></i>
-                        <h4>최근 등록된 업체가 없습니다</h4>
-                        <p class="text-muted">최근 30일 내 신규 등록 업체가 없습니다.</p>
+                        <i class="fe fe-check-circle"></i>
+                        <h4>미작성 기장보고서가 없습니다</h4>
+                        <p class="text-muted">모든 분기 기장보고서가 작성되었습니다.</p>
                     </div>
                 `);
                 return;
@@ -698,32 +760,37 @@
                     <table class="table table-bordered table-hover text-nowrap mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th width="110">등록일</th>
-                                <th width="220">업체명</th>
-                                <th width="120">사업자번호</th>
-                                <th width="100">업체유형</th>
-                                <th width="90">담당자</th>
-                                <th width="90">대표자</th>
-                                <th width="130">연락처</th>
-                                <th width="200">이메일</th>
-                                <th>업태/종목</th>
+                                <th width="80">번호</th>
+                                <th width="120">담당자</th>
+                                <th width="200">업체명</th>
+                                <th width="100">작업연도</th>
+                                <th width="100">분기</th>
+                                <th width="150">마감일</th>
+                                <th width="80">우선순위</th>
+                                <th width="100">작업</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
 
-            data.forEach(item => {
+            data.forEach((item, idx) => {
+                const priority = item[7];
+                const priorityClass = priority == 1 ? 'd-day-urgent' : priority == 2 ? 'd-day-warning' : 'd-day-normal';
+
                 html += `
                     <tr>
-                        <td>${item.등록일}</td>
-                        <td><strong>${item.업체명}</strong></td>
-                        <td>${item.사업자번호}</td>
-                        <td><span class="badge bg-info">${item.업체유형}</span></td>
-                        <td>${item.담당자}</td>
-                        <td>${item.대표자}</td>
-                        <td>${item.연락처}</td>
-                        <td><small>${item.이메일}</small></td>
-                        <td>${item.업태} / ${item.종목}</td>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>${item[1]}</td>
+                        <td><strong>${item[2]}</strong></td>
+                        <td class="text-center">${item[3]}</td>
+                        <td class="text-center">${item[4]}</td>
+                        <td>${item[5]}</td>
+                        <td class="text-center"><span class="${priorityClass}">P${priority}</span></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-success">
+                                <i class="fe fe-upload"></i> 업로드
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
@@ -734,7 +801,155 @@
                 </div>
             `;
 
-            $('#newCompaniesContent').html(html);
+            $('#reportContent').html(html);
+        },
+
+        // 5. 간이지급명세서(매월) 로드
+        loadKaniMM: function() {
+            const filter = this.getFilterParams();
+
+            setTimeout(() => {
+                const testData = [];
+                this.renderKaniMM(testData);
+                this.updateStats('kaniMM', testData.length);
+            }, 500);
+        },
+
+        renderKaniMM: function(data) {
+            if (data.length === 0) {
+                $('#kaniMMContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-check-circle"></i>
+                        <h4>간이지급명세서 누락분이 없습니다</h4>
+                        <p class="text-muted">모든 월별 간이지급명세서가 정상 제출되었습니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover text-nowrap mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="80">번호</th>
+                                <th width="120">담당자</th>
+                                <th width="200">업체명</th>
+                                <th width="80">년도</th>
+                                <th width="80">월</th>
+                                <th width="120">원천일용</th>
+                                <th width="120">간이일용</th>
+                                <th width="120">원천사업</th>
+                                <th width="120">간이사업</th>
+                                <th>사유</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach((item, idx) => {
+                const hasDiff = (item[6] != item[7]) || (item[8] != item[9]);
+                const bigoClass = item[10] ? 'badge bg-success' : 'badge bg-danger';
+
+                html += `
+                    <tr ${hasDiff ? 'class="table-warning"' : ''}>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>${item[2]}</td>
+                        <td><strong>${item[3]}</strong></td>
+                        <td class="text-center">${item[4]}</td>
+                        <td class="text-center">${item[5]}월</td>
+                        <td class="text-end amount-text">${Number(item[6]).toLocaleString()}</td>
+                        <td class="text-end ${item[6] != item[7] ? 'amount-danger' : 'amount-text'}">${Number(item[7]).toLocaleString()}</td>
+                        <td class="text-end amount-text">${Number(item[8]).toLocaleString()}</td>
+                        <td class="text-end ${item[8] != item[9] ? 'amount-danger' : 'amount-text'}">${Number(item[9]).toLocaleString()}</td>
+                        <td>${item[10] ? `<span class="${bigoClass}">${item[10]}</span>` : '<span class="text-danger">미입력</span>'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#kaniMMContent').html(html);
+        },
+
+        // 6. 간이지급명세서(반기) 로드
+        loadKaniBanki: function() {
+            const filter = this.getFilterParams();
+
+            setTimeout(() => {
+                const testData = [];
+                this.renderKaniBanki(testData);
+                this.updateStats('kaniBanki', testData.length);
+            }, 500);
+        },
+
+        renderKaniBanki: function(data) {
+            if (data.length === 0) {
+                $('#kaniBankiContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-check-circle"></i>
+                        <h4>간이지급명세서(반기) 차이분이 없습니다</h4>
+                        <p class="text-muted">모든 반기 근로소득 간이지급명세서가 정상입니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover text-nowrap mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="80">번호</th>
+                                <th width="120">담당자</th>
+                                <th width="200">상호</th>
+                                <th width="80">년도</th>
+                                <th width="100">구분</th>
+                                <th width="130">지급총액</th>
+                                <th width="130">지급조서</th>
+                                <th width="130">차이금액</th>
+                                <th>사유</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach((item, idx) => {
+                const diffAmount = Number(item[7]);
+                const isDiff = diffAmount !== 0;
+
+                html += `
+                    <tr ${isDiff ? 'class="table-danger"' : ''}>
+                        <td class="text-center">${idx + 1}</td>
+                        <td>${item[1]}</td>
+                        <td><strong>${item[2]}</strong></td>
+                        <td class="text-center">${item[3]}</td>
+                        <td class="text-center"><span class="badge ${item[4] === '상반기' ? 'bg-primary' : 'bg-secondary'}">${item[4]}</span></td>
+                        <td class="text-end amount-text">${Number(item[5]).toLocaleString()}</td>
+                        <td class="text-end amount-text">${Number(item[6]).toLocaleString()}</td>
+                        <td class="text-end amount-danger"><strong>${diffAmount.toLocaleString()}</strong></td>
+                        <td>${item[8] ? `<span class="badge bg-success">${item[8]}</span>` : '<span class="text-danger">미입력</span>'}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#kaniBankiContent').html(html);
+        },
+
+        // 사업용계좌 처리
+        handleBizBank: function(seqNo) {
+            alert('사업용계좌 신고 처리: ' + seqNo);
+            // TODO: 실제 처리 로직 구현
         }
     };
 
