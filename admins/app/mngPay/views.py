@@ -5,6 +5,8 @@ import math
 import os
 import natsort
 import traceback
+import logging
+from decimal import Decimal
 
 from datetime import timedelta
 from django.db import connection
@@ -18,6 +20,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
+from django.urls import reverse
 
 from app.models import MemAdmin
 from app.models import MemDeal
@@ -45,6 +48,8 @@ from admins.utils import (
     get_popbill_balance,
     get_sent_sms_list
 )
+
+logger = logging.getLogger(__name__)
 @login_required(login_url="/login/")
 def index(request):
   context = {}
@@ -75,20 +80,29 @@ def index(request):
     ADID = arr_ADID[0] if arr_ADID else ""
 
 
+  # 작업월/년도는 화면별로 기본값이 다르므로 flag별 세션 키를 분리
   work_YY = request.GET.get('work_YY', '')
   work_MM = request.GET.get('work_MM', '')
   today = datetime.datetime.now()
+  session_mm_key = f'workmonthPay_{flag or "default"}'
+  session_yy_key = f'workyearPay_{flag or "default"}'
+
   if not work_MM:
-    work_MM = request.session.get('workmonthPay')
+    work_MM = request.session.get(session_mm_key)
     if not work_MM:
       current_month = today.month
       current_day = today.day
-      if current_day >= 11:  
-        work_MM = current_month
-      else:
+      # 간이지급명세서(kaniSail/kaniKunro)는 항상 "전월"을 기본값으로
+      if flag in ("kaniSail", "kaniKunro"):
         work_MM = current_month - 1 if current_month > 1 else 12
+      else:
+        # 기존 규칙: 11일 이후면 당월, 이전이면 전월
+        if current_day >= 11:
+          work_MM = current_month
+        else:
+          work_MM = current_month - 1 if current_month > 1 else 12
   if not work_YY:
-    work_YY = request.session.get('workyearPay')
+    work_YY = request.session.get(session_yy_key)
     if not work_YY:
       if int(work_MM) <= 1 :
         work_YY = today.year - 1
@@ -96,8 +110,8 @@ def index(request):
         work_YY = today.year
     else:
       work_YY = int(work_YY)
-  request.session['workyearPay'] = work_YY
-  request.session['workmonthPay'] = work_MM
+  request.session[session_yy_key] = work_YY
+  request.session[session_mm_key] = work_MM
 
   corpYears = list(range(work_YY, work_YY - 6, -1))
   context['corpYears'] = corpYears
@@ -547,47 +561,6 @@ def _yyyymm(input_workyear: int, work_mm: int) -> str:
 def _month_eng(work_mm: int) -> str:
     return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][work_mm-1]
 
-@login_required
-def kani_sa_il_page(request):
-    """
-    페이지는 1번만 렌더. grid 데이터는 JS에서 api_kani_sa_il_list로 가져옴.
-    """
-    # ===== 기본값(ASP 동일) =====
-    today = datetime.date.today()
-    input_workyear = request.GET.get("input_workyear")
-    if not input_workyear:
-        input_workyear = today.year - 1 if today.month <= 1 else today.year
-    input_workyear = int(input_workyear)
-
-    work_mm = request.GET.get("work_mm")
-    if not work_mm:
-        work_mm = today.month - 1
-        if work_mm == 0:
-            work_mm = 12
-    work_mm = int(work_mm)
-
-    # 담당자(ASP의 ADID/arrADID 개념) - 여기서는 기존 세션/권한 로직에 맞게 넣으세요.
-    ADID = request.GET.get("ADID") or request.session.get("ADID") or ""
-    # 예시: arrADID는 버튼 생성용
-    with connection.cursor() as cur:
-        cur.execute("""
-            select distinct c.admin_id
-            from mem_deal b
-            join mem_admin c on b.biz_manager = c.admin_id
-            where isnull(c.admin_id,'') <> ''
-            order by c.admin_id
-        """)
-        arrADID = [r[0] for r in cur.fetchall()]
-
-    ctx = {
-        "input_workyear": input_workyear,
-        "work_mm": work_mm,
-        "selected_adid": ADID,
-        "arrADID": arrADID,
-    }
-    return render(request, "admin/mng_kani_sa_il.html", ctx)
-
-
 @require_GET
 @login_required
 def api_kani_sa_il_list(request):
@@ -615,10 +588,16 @@ def api_kani_sa_il_list(request):
         work_mm = int(work_mm)
 
         ADID = (request.GET.get("ADID") or "").strip()
-        search_text = (request.GET.get("search_text") or "").strip()
 
         text_mm = f"{work_mm:02d}"
         yyyymm = _yyyymm(input_workyear, work_mm)
+
+        DBG("REQUEST PARAMS", {
+            "input_workyear": input_workyear,
+            "work_mm": work_mm,
+            "ADID": ADID,
+            "yyyymm": yyyymm
+        })
 
         # -------------------------
         # 1) MAIN rows
@@ -631,71 +610,67 @@ def api_kani_sa_il_list(request):
             where_admin = " AND b.biz_manager = %s "
             params.append(ADID)
 
-        where_search = ""
-        if search_text:
-            where_search = " AND (a.biz_name like %s OR a.biz_no like %s) "
-            like = f"%{search_text}%"
-            params += [like, like]
-
-        # 2023 이하 / 2024 이상 분기 (원본 유지)
-        if input_workyear <= 2023:
-            cond_sum = f"""
-                (
-                  (select SUM(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 과세연월='{yyyymm}')>0
-                  or
-                  (select SUM(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 과세연월='{yyyymm}')>0
-                )
-            """
-            a03_expr = f"(select sum(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a30_expr = f"(select sum(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a40_expr = f"(select sum(a40) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-        else:
-            cond_sum = f"""
-                (
-                  (select SUM(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')>0
-                  or
-                  (select SUM(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')>0
-                  or
-                  (select SUM(a40) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')>0
-                )
-            """
-            a03_expr = f"(select sum(a03) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a30_expr = f"(select sum(a30) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-            a40_expr = f"(select sum(a40) from 원천세전자신고 d where a.biz_no=d.사업자등록번호 and 지급연월='{yyyymm}')"
-
-        # ✅ 프론트 dataIndex에 맞춰 alias를 통일 (wh_Kunro / YN_9 / isBanki 등)
+        # UNION ALL 구조: 일반 신고 + 반기 신고
+        # 첫 번째 SELECT: 실제 원천세 신고 데이터
         sql_main = f"""
             SELECT
                 b.biz_manager as groupManager,
                 a.seq_no      as seq_no,
                 a.biz_name    as biz_name,
                 a.biz_no      as biz_no,
-
-                ISNULL({a03_expr}, 0) as wh_Kunro,
-                ISNULL({a30_expr}, 0) as wh_sayoup,
-                ISNULL({a40_expr}, 0) as wh_kita,
-
+                a.biz_type    as biz_type,
+                ISNULL((SELECT SUM(a03) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}'), 0) as wh_Kunro,
+                ISNULL((SELECT SUM(a30) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}'), 0) as wh_sayoup,
+                ISNULL((SELECT SUM(a40) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}'), 0) as wh_kita,
                 '' as isBanki,
-                ISNULL((select bigo from tbl_mng_jaroe j
-                        where j.seq_no=a.seq_no and j.work_yy={input_workyear} and j.work_mm={work_mm}), '') as isIlyoung,
-
+                ISNULL((SELECT bigo FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm}), '') as isIlyoung,
                 ISNULL(d.txt_bigo,'') as YN_9
             FROM mem_user a
             JOIN mem_deal b ON a.seq_no=b.seq_no
-            LEFT JOIN tbl_kani d
-              ON b.seq_no=d.seq_no
-             AND d.work_yy=%s
-             AND d.work_banki=%s
+            LEFT JOIN tbl_kani d ON b.seq_no=d.seq_no AND d.work_yy=%s AND d.work_banki=%s
             WHERE a.duzon_ID <> ''
-              AND {cond_sum}
+              AND (
+                  (SELECT SUM(a03) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') > 0
+                  OR (SELECT SUM(a30) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') > 0
+                  OR (SELECT SUM(a40) FROM 원천세전자신고 d WHERE a.biz_no=d.사업자등록번호 AND d.지급연월='{yyyymm}') > 0
+              )
               {where_admin}
-              {where_search}
-            ORDER BY a.biz_name ASC
+
+            UNION ALL
+
+            SELECT
+                b.biz_manager as groupManager,
+                a.seq_no      as seq_no,
+                a.biz_name    as biz_name,
+                a.biz_no      as biz_no,
+                a.biz_type    as biz_type,
+
+                ISNULL((SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_13=1), 0) as wh_Kunro,
+                ISNULL((SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1), 0) as wh_sayoup,
+                ISNULL((SELECT '111111111' FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm} AND yn_12=1), 0) as wh_kita,
+
+                '1' as isBanki,
+                ISNULL((SELECT bigo FROM tbl_mng_jaroe WHERE seq_no=a.seq_no AND work_yy={input_workyear} AND work_mm={work_mm}), '') as isIlyoung,
+                ISNULL(d.txt_bigo,'') as YN_9
+            FROM mem_user a
+            JOIN mem_deal b ON a.seq_no=b.seq_no
+            LEFT JOIN tbl_kani d ON b.seq_no=d.seq_no AND d.work_yy=%s AND d.work_banki=%s
+            WHERE a.duzon_ID <> ''
+              AND b.goyoung_banki='Y'
+              AND b.keeping_YN='Y'
+              {where_admin}
+
+            ORDER BY groupManager, biz_name ASC
         """
 
-        # ⚠️ 이전에 work_banki가 int 컬럼인데 'Jan' 같은 값이 들어가 변환 에러 났던 이슈가 있었음
-        # 지금은 work_mm을 문자열로 넘겨 해결했으니 유지
-        params_main = [input_workyear, str(work_mm)] + params
+        # UNION ALL이므로 params를 2번 전달
+        params_main = [input_workyear, str(work_mm)] + params + [input_workyear, str(work_mm)] + params
+
+        def _norm_biz_no(x):
+            """사업자번호 비교를 위한 숫자만 키."""
+            if x is None:
+                return ""
+            return "".join(ch for ch in str(x) if ch.isdigit())
 
         rows = []
         biz_no_list = []
@@ -709,7 +684,8 @@ def api_kani_sa_il_list(request):
             for r in cur.fetchall():
                 item = dict(zip(cols, r))
                 rows.append(item)
-                biz_no_list.append(item["biz_no"])
+                biz_no_list.append(_norm_biz_no(item["biz_no"]))
+            DBG(f"MAIN QUERY - Found {len(rows)} rows")
 
         # -------------------------
         # 2) 지급조서간이소득 1번에 조회 → biz_no별로 누적
@@ -732,7 +708,7 @@ def api_kani_sa_il_list(request):
                     ISNULL(제출금액,0) as amt
                 FROM 지급조서간이소득
                 WHERE CAST(과세년도 as varchar(20)) IN (%s, %s)
-                  AND 사업자번호 IN ({placeholders})
+                  AND REPLACE(사업자번호, '-', '') IN ({placeholders})
             """
             params_income = [kwase_key1, kwase_key2] + biz_no_list
 
@@ -741,40 +717,59 @@ def api_kani_sa_il_list(request):
                 DBG("INCOME PARAMS(head)", params_income[:12])
                 cur.execute(sql_income, params_income)
 
-                for biz_no, kind, amt in cur.fetchall():
+                income_rows = cur.fetchall()
+                DBG(f"INCOME QUERY - Found {len(income_rows)} rows")
+
+                for biz_no, kind, amt in income_rows:
+                    key = _norm_biz_no(biz_no)
                     amt = int(amt or 0)
                     if kind == "일용근로소득지급명세서":
-                        income_map[biz_no]["kun"] += amt
-                        income_map[biz_no]["hasKun"] = True
+                        income_map[key]["kun"] += amt
+                        income_map[key]["hasKun"] = True
                     elif kind == "간이지급명세서(거주자의사업소득)":
-                        income_map[biz_no]["sa"] += amt
-                        income_map[biz_no]["hasSa"] = True
+                        income_map[key]["sa"] += amt
+                        income_map[key]["hasSa"] = True
                     elif kind == "간이지급명세서(거주자의기타소득)":
-                        income_map[biz_no]["ki"] += amt
-                        income_map[biz_no]["hasKi"] = True
+                        income_map[key]["ki"] += amt
+                        income_map[key]["hasKi"] = True
 
         # -------------------------
         # 3) ASP처럼 rows에 합치기 + skeleton 판정
         # -------------------------
         def _to_int(x):
+            """
+            문자열/숫자/Decimal을 int로 안전 변환.
+            소수점이 있으면 float로 바꾼 뒤 int 캐스팅.
+            """
+            if x is None:
+                return 0
+            if isinstance(x, (int,)):
+                return x
+            if isinstance(x, (float, Decimal)):
+                return int(x)
             try:
-                return int(str(x).replace(",", "").strip() or 0)
-            except:
+                s = str(x).replace(",", "").strip()
+                return int(float(s))
+            except Exception:
                 return 0
 
         out = []
         for idx, r in enumerate(rows):
-            biz_no = r.get("biz_no") or ""
+            biz_no_raw = (r.get("biz_no") or "").strip()
+            biz_no_key = _norm_biz_no(biz_no_raw)
             wh_k = _to_int(r.get("wh_Kunro"))
             wh_s = _to_int(r.get("wh_sayoup"))
             wh_i = _to_int(r.get("wh_kita"))
 
-            kunAmt = income_map[biz_no]["kun"]
-            saAmt  = income_map[biz_no]["sa"]
-            kiAmt  = income_map[biz_no]["ki"]
+            kunAmt = _to_int(income_map[biz_no_key]["kun"])
+            saAmt  = _to_int(income_map[biz_no_key]["sa"])
+            kiAmt  = _to_int(income_map[biz_no_key]["ki"])
 
             # ASP: (제출금액합) != (a03+a30+a40) 이면 skeleton
             hasSkeleton = (kunAmt + saAmt + kiAmt) != (wh_k + wh_s + wh_i)
+
+            # isBanki: SQL에서 '' 또는 '1'로 반환됨
+            is_banki = str(r.get("isBanki", "")).strip() == "1"
 
             out.append({
                 "YN_0": idx,
@@ -782,37 +777,57 @@ def api_kani_sa_il_list(request):
                 "groupManager": r.get("groupManager", "") or "",
                 "seq_no": r.get("seq_no"),
                 "biz_name": r.get("biz_name", "") or "",
-                "biz_no": biz_no,
+                "biz_no": biz_no_raw,
 
-                "isBanki": True if str(r.get("banki", "")).strip() == "1" else False,
+                "isBanki": is_banki,
 
                 "wh_Kunro": wh_k,
                 "wh_sayoup": wh_s,
                 "wh_kita": wh_i,
 
-                # ✅ 아이콘 대신 플래그/값만 내려준다
-                "isKun": income_map[biz_no]["hasKun"],
+                # 아이콘 대신 플래그/값만 내려준다
+                "isKun": income_map[biz_no_key]["hasKun"],
                 "isKunAmt": kunAmt,
 
                 "isIlyoung": r.get("isIlyoung", "") or "",
 
-                "isSa": income_map[biz_no]["hasSa"],
+                "isSa": income_map[biz_no_key]["hasSa"],
                 "isSaAmt": saAmt,
 
-                "isKi": income_map[biz_no]["hasKi"],
+                "isKi": income_map[biz_no_key]["hasKi"],
                 "isKiAmt": kiAmt,
 
                 "YN_9": r.get("YN_9", "") or "",
 
                 "isSkele": True if (hasSkeleton and ((kunAmt+saAmt+kiAmt) != 0 or (wh_k+wh_s+wh_i) != 0)) else False,
             })
-
+            
+        print(f"out:{out[0]}")
+        DBG(f"RESPONSE SUCCESS - Returning {len(out)} rows")
+        if out:
+            sample = out[0]
+            logger.info(
+                "[api_kani_sa_il_list] sample seq=%s wh_Kunro=%s wh_sayoup=%s wh_kita=%s isBanki=%s",
+                sample.get("seq_no"),
+                sample.get("wh_Kunro"),
+                sample.get("wh_sayoup"),
+                sample.get("wh_kita"),
+                sample.get("isBanki"),
+            )
+            print("[api_kani_sa_il_list] sample", {
+                "seq_no": sample.get("seq_no"),
+                "biz_no": sample.get("biz_no"),
+                "wh_Kunro": sample.get("wh_Kunro"),
+                "wh_sayoup": sample.get("wh_sayoup"),
+                "wh_kita": sample.get("wh_kita"),
+                "isBanki": sample.get("isBanki"),
+            })
         return JsonResponse({"ok": True, "rows": out})
 
     except Exception as e:
-        DBG("❌ EXCEPTION", str(e))
+        DBG("EXCEPTION", str(e))
         traceback.print_exc()
-        raise
+        return JsonResponse({"ok": False, "error": str(e), "rows": []}, status=500)
 
 @csrf_exempt
 @require_POST

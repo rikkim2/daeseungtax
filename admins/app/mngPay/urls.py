@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from . import views
 
 
@@ -27,7 +28,8 @@ urlpatterns = [
     path("get_folder_files/", views.get_folder_files, name="get_folder_files"),
     
     #사업/일용 간이지급명세서
-    path("mng_kani_sa_il/", views.kani_sa_il_page, name="kani_sa_il_page"),
+    # 별도 뷰 없이 index 분기(flag=kaniSail)로 이동
+    path("mng_kani_sa_il/", RedirectView.as_view(url="/mngPay?flag=kaniSail"), name="kani_sa_il_page"),
     path("mng_kani_sa_il/api/list/", views.api_kani_sa_il_list, name="api_kani_sa_il_list"),
 
     # 셀 편집 저장 (isIlyoung / YN_9 등)

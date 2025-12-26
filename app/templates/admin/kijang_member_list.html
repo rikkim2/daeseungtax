@@ -9,6 +9,9 @@
     max-width: 1200px;
     width: 95%;
   }
+  /* 모달이 열려 있을 때 배경 그리드와 포인터 충돌 방지, 모달 내부 드래그 허용 */
+  .member-modal-open .ext-grid-wrapper { pointer-events: none; }
+  .member-modal-open .modal-content { user-select: text; }
 
   /* 세로 스크롤 확실히 활성화 */
   .modal-dialog-scrollable .modal-body {
@@ -21,13 +24,13 @@
     top: 0;
     z-index: 2;
     background: #fff;
-  }  
+  }
 </style>
 
 <div class="ext-grid-wrapper" style="width:100%; height:100%;"></div>
 
 <!-- 회원 등록/수정 모달 -->
-<div class="modal fade" id="memberModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="memberModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <!-- ★ 헤더에 타이틀 + 저장/취소 버튼 + 닫기 X -->
@@ -511,6 +514,11 @@
         openMemberModal(seq);
     });
 
+    // 모달 열림/닫힘 시 바디 클래스 토글 → 백그라운드 그리드 포인터 차단, 드래그 지연 방지
+    $('#memberModal')
+      .on('shown.bs.modal', function () { document.body.classList.add('member-modal-open'); })
+      .on('hidden.bs.modal', function () { document.body.classList.remove('member-modal-open'); });
+
     // 공용 모달 오픈 함수
     function openMemberModal(seq_no) {
         const $modal = $('#memberModal');
@@ -634,6 +642,8 @@
                 $select.select2({
                     dropdownParent: $modal
                 });
+                // 모달 닫힘 방지
+                $select.on('select2:opening select2:select select2:closing', function(e){ e.stopPropagation(); });
                 if (selectedVal) {
                     $select.val(selectedVal).trigger('change');
                 }

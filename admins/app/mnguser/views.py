@@ -35,7 +35,10 @@ from decimal import Decimal
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, IntegerField
+from django.db.models.functions import Cast
+from django.conf import settings
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -304,7 +307,34 @@ def kijang_member_create(request):
     if request.method == 'POST':
         form = MemUserForm(request.POST)
         if form.is_valid():
-            form.save()
+            with transaction.atomic():
+                # seq_no를 정수로 캐스팅해 최대값+1 채번 (문자열 비교 문제 방지)
+                last = (
+                    MemUser.objects.annotate(seq_int=Cast('seq_no', IntegerField()))
+                    .aggregate(max_no=Max('seq_int'))
+                    .get('max_no') or 0
+                )
+                new_seq_int = int(last) + 1
+                new_seq = str(new_seq_int).zfill(4)
+
+                # 혹시 중복이 있으면 안전하게 다음 번호로 증가
+                while MemUser.objects.filter(seq_no=new_seq).exists():
+                    new_seq_int += 1
+                    new_seq = str(new_seq_int).zfill(4)
+
+                member = form.save(commit=False)
+                member.seq_no = new_seq
+                # 필수 기본값 보정
+                member.biz_par_rate = member.biz_par_rate or 0
+                member.del_yn = getattr(member, 'del_yn', 'N') or 'N'
+                member.save()
+                logger.info(
+                    "[kijang_member_create] allocated seq_no=%s (last_int=%s) user_id=%s",
+                    new_seq,
+                    last,
+                    getattr(member, "user_id", None),
+                )
+                print("[kijang_member_create] allocated seq_no", new_seq, "last_int=", last, "user_id=", getattr(member, "user_id", None))
             return redirect('mnguser:kijang_member_list')
     else:
         form = MemUserForm()
@@ -467,12 +497,27 @@ def kijang_member_save(request):
     # 1) 신규인 경우 seq_no 생성
     # ─────────────────────────────────────
     if is_new:
-        last = MemUser.objects.aggregate(max_no=Max('seq_no'))['max_no']
+        last_int = (
+            MemUser.objects.aggregate(
+                max_no=Max(Cast('seq_no', IntegerField()))
+            ).get('max_no') or 0
+        )
         try:
-            last_int = int(last or "0")
-        except ValueError:
-            last_int = 0
-        seq_no = f"{last_int + 1:04d}"  # 4자리 zero-fill (예: 0001, 0002 ...)
+            new_seq_int = int(last_int) + 1
+        except (TypeError, ValueError):
+            new_seq_int = 1
+
+        seq_no = f"{new_seq_int:04d}"  # 4자리 zero-fill (예: 0001, 0002 ...)
+        while MemUser.objects.filter(seq_no=seq_no).exists():
+            new_seq_int += 1
+            seq_no = f"{new_seq_int:04d}"
+
+        logger.info("[kijang_member_save] new seq_no allocated seq_no=%s (last_int=%s)", seq_no, last_int)
+        print("[kijang_member_save] new seq_no allocated", seq_no, "last_int=", last_int)
+    else:
+        logger.info("[kijang_member_save] updating existing seq_no=%s user_id=%s", seq_no, (request.POST.get('user_id') or '').strip())
+        print("[kijang_member_save] updating existing seq_no", seq_no, "user_id", (request.POST.get('user_id') or '').strip())
+
 
     # ─────────────────────────────────────
     # 2) 공통 입력값 파싱
@@ -594,11 +639,9 @@ def kijang_member_save(request):
             is_new = True
 
     # MemUser 필드 매핑
-    member.duzon_id = duzon_id
+    member.duzon_id = duzon_id or '1'
     member.user_id  = user_id
-    if user_pwd:
-        member.user_pwd = user_pwd
-
+    member.user_pwd = user_pwd or '1'
     member.name  = name
     member.ssn   = ssn
     member.email = email
@@ -627,6 +670,8 @@ def kijang_member_save(request):
     member.uptaecd   = uptaecd
     member.isrnd     = isrnd
     member.isventure = isventure
+    # Biz_Par_Rate는 NULL 불가 컬럼이므로 기본 0으로 세팅
+    member.biz_par_rate = getattr(member, 'biz_par_rate', 0) or 0
 
     member.saletiname = sale_ti_name
     member.saletimail = sale_ti_mail
@@ -700,6 +745,62 @@ def kijang_member_save(request):
         deal.sanjaerate = '0'
 
     deal.save()
+
+    # 기본 폴더 생성 (static/cert_DS 하위)
+    def ensure_member_folders(biz_name, biz_type, reg_date_dt, biz_manager):
+        skip_managers = {"화물", "종소세", "종소세2", "종소세3"}
+        if (biz_manager or "").strip() in skip_managers:
+            return
+        if not biz_name:
+            return
+
+        base_root = Path(settings.BASE_DIR) / "static" / "cert_DS"
+        today_year = datetime.date.today().year
+        try:
+            bt = int(biz_type)
+        except Exception:
+            bt = 0
+
+        folder_paths = []
+        name_dir = base_root / biz_name
+
+        # 기본
+        folder_paths.append(name_dir)
+        folder_paths.append(name_dir / "이관자료")
+        if bt < 4:
+            folder_paths.append(name_dir / "등기서류")
+
+        def add_year_paths(target_year: int):
+            base_y = name_dir / str(target_year)
+            folder_paths.append(base_y)
+            folder_paths.append(base_y / "인건비")
+            folder_paths.append(base_y / "세무조정계산서")
+            if bt == 5:
+                folder_paths.append(base_y / "사업장현황신고")
+            folder_paths.append(base_y / "부가세")
+            if bt == 4:
+                folder_paths.append(base_y / "부가세" / "1기확정")
+                folder_paths.append(base_y / "부가세" / "2기확정")
+            elif bt < 4:
+                folder_paths.append(base_y / "부가세" / "1기예정")
+                folder_paths.append(base_y / "부가세" / "1기확정")
+                folder_paths.append(base_y / "부가세" / "2기예정")
+                folder_paths.append(base_y / "부가세" / "2기확정")
+            folder_paths.append(base_y / "기장보고서")
+
+        # 올해
+        add_year_paths(today_year)
+        # 과거 연도 (최대 3년 전, 등록연도 기준)
+        reg_year = reg_date_dt.year if reg_date_dt else None
+        for offset in (1, 2, 3):
+            if reg_year and reg_year <= today_year - offset:
+                add_year_paths(today_year - offset)
+
+        for p in folder_paths:
+            if p and not p.exists():
+                p.mkdir(parents=True, exist_ok=True)
+
+    ensure_member_folders(biz_name, biz_type, reg_date_dt, biz_manager)
 
     msg = '신규 등록되었습니다.' if is_new else '수정되었습니다.'
     return JsonResponse({'ok': True, 'msg': msg, 'seq_no': seq_no})

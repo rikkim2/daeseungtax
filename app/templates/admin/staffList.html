@@ -5,304 +5,1069 @@
     /* 스크롤 컨테이너 */
     .admin-list-scroll-container {
         position: absolute;
-        top: 0; 
-        bottom: 0; 
-        left: 0; 
+        top: 0;
+        bottom: 0;
+        left: 0;
         right: 0;
-        overflow-y: auto;   
-        overflow-x: hidden; 
-        padding: 15px;      
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px;
+        background: #f8f9fa;
     }
-    /* 테이블 안의 아바타 */
-    .avatar.avatar-md {
-        width: 32px;
-        height: 32px;
+
+    /* 조직도 헤더 */
+    .org-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 팀 그리드 */
+    .teams-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    /* 팀 카드 */
+    .team-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden;
+    }
+
+    .team-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    /* 팀 헤더 (세무사) */
+    .team-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        position: relative;
+    }
+
+    .team-header .badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(255,255,255,0.3);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .leader-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .leader-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 3px solid rgba(255,255,255,0.3);
+        object-fit: cover;
+    }
+
+    .leader-details h4 {
+        margin: 0 0 5px 0;
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .leader-details p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 13px;
+    }
+
+    /* 팀 멤버 영역 */
+    .team-members {
+        padding: 20px;
+    }
+
+    .members-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .member-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .member-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        transition: background 0.2s;
+    }
+
+    .member-item:hover {
+        background: #e9ecef;
+    }
+
+    .member-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .member-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .member-details h5 {
+        margin: 0 0 3px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .member-details p {
+        margin: 0;
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .member-actions {
+        display: flex;
+        gap: 5px;
+    }
+
+    /* 빈 팀 메시지 */
+    .empty-team {
+        text-align: center;
+        padding: 30px;
+        color: #adb5bd;
+        font-style: italic;
+    }
+
+    /* 미배정 직원 섹션 */
+    .unassigned-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f3f5;
+    }
+
+    .section-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #495057;
+    }
+
+    .section-header .badge {
+        background: #ffc107;
+        color: white;
+    }
+
+    /* 모달 스타일 개선 */
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    /* 버튼 스타일 */
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-action.edit {
+        background: #007bff;
+        color: white;
+    }
+
+    .btn-action.edit:hover {
+        background: #0056b3;
+    }
+
+    .btn-action.delete {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-action.delete:hover {
+        background: #c82333;
+    }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+        .teams-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* 모달 스타일 개선 */
+/* 1. 모달 다이얼로그: 화면의 90% 높이로 강제 고정 */
+    #adminModal .modal-dialog {
+        height: 90vh !important;
+        display: flex;
+        align-items: center;
+        margin: 1.75rem auto;
+    }
+
+    /* 2. 모달 컨텐츠: 세로 배치 설정 */
+    #adminModal .modal-content {
+        height: 100% !important;
+        max-height: 100% !important;
+        display: flex;
+        flex-direction: column; 
+        overflow: hidden;
+    }
+
+    /* 3. 헤더: 고정 높이 */
+    #adminModal .modal-header {
+        flex-shrink: 0;
+        z-index: 10;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    #adminModal .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    /* ★핵심 수정★: 중간에 낀 Form 태그가 남은 공간을 다 차지하도록 설정 */
+    #adminModal form {
+        display: flex;           /* 폼 내부도 Flex로 만듦 */
+        flex-direction: column;  /* 세로 배치 */
+        flex: 1 1 auto;          /* 헤더 제외한 남은 공간 모두 차지 */
+        min-height: 0;           /* 스크롤 버그 방지 */
+        overflow: hidden;        /* 내부 스크롤이 밖으로 새지 않게 */
+    }
+
+    /* 4. 모달 바디: 폼 내부에서 남은 공간 다 차지하고 스크롤 */
+    #adminModal .modal-body {
+        flex: 1 1 auto;          /* 푸터 제외한 남은 공간 모두 차지 */
+        overflow-y: auto !important; /* 내용 넘치면 무조건 스크롤 */
+        padding: 20px 25px;
+        min-height: 0;
+    }
+
+    /* 5. 푸터: 고정 높이 */
+    #adminModal .modal-footer {
+        flex-shrink: 0;
+        z-index: 10;
+        background: white;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* 디자인 요소 (유지) */
+    #adminModal .avatar-container:hover {
+        opacity: 0.9;
+    }
+    #adminModal .form-label.fw-semibold {
+        font-size: 13px;
+        color: #495057;
+        margin-bottom: 6px;
+    }
+    #adminModal h6.text-primary {
+        color: #667eea !important;
+        font-weight: 600;
+    }
+
+    /* 카메라 버튼 스타일 */
+    .avatar-camera {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #667eea;
+        color: white;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        z-index: 5;
+        transition: all 0.2s;
+    }
+    .avatar-camera:hover {
+        transform: scale(1.1);
+        background: #5a67d8;
     }
 </style>
 
 <div class="admin-list-scroll-container">
 
-    <div class="row row-sm">
-        <div class="col-lg-12">
-            <div class="card custom-card">
-                <div class="card-body">
-                    <div class="text-left py-4 ">
-                        <a class="btn btn-primary" id="addRowBtn" href="javascript:void(0)">신규등록</a>
-                    </div>	
-                    <div class="table-responsive">
-                        <table id="user-datatable" class="table table-bordered text-nowrap w-100">
-                            <thead>
-                                    <tr>
-                                            <th>대화사진</th>
-                                            <th>아이디</th>
-                                            <th>패스워드</th>
-                                            <th>전화번호</th>
-                                            <th>이메일</th>
-                                            <th>묶음</th>
-                                            <th>직책</th>
-                                            <th>관리권한</th>
-                                            <th>입사일</th>
-                                            <th>YS</th>
-                                            <th>Htx_ID</th>
-                                            <th>수정/삭제</th>
-                                    </tr>
-                            </thead>
-                            <tbody>
-                                    {% for admin in adminList %}
-                                    <tr>
-                                            <td class="text-center editable" data-field="admin_name">
-                                                <div class="avatar avatar-md rounded-circle me-2">
-                                                        <img alt="avatar" class="rounded-circle" src="{% get_static_prefix %}assets/images/faces/{{ admin.admin_name }}.png" >
-                                                </div>
-                                                <span>{{ admin.admin_name }}</span>
-                                            </td>
-                                            <td class="editable" data-field="admin_id">{{ admin.admin_id }}</td>
-                                            <td class="editable" data-field="admin_pwd">{{ admin.admin_pwd }}</td>
-                                            <td class="editable" data-field="admin_tel_no">{{ admin.admin_tel_no }}</td>
-                                            <td class="editable" data-field="admin_email">{{ admin.admin_email }}</td>
-                                            <td class="editable" data-field="admin_biz_area">{{ admin.admin_biz_area }}</td>
-                                            <td class="editable" data-field="biz_level">{{ admin.biz_level }}</td>
-                                            <td class="editable" data-field="grade">{{ admin.grade }}</td>
-                                            <td class="editable" data-field="reg_date">{{ admin.reg_date|date:"Y-m-d" }}</td>
-                                            <td class="editable" data-field="manage_YN">{{ admin.manage_YN }}</td>
-                                            <td class="editable" data-field="htx_id">{{ admin.htx_id }}</td>
-                                            <td style="display: flex; gap: 5px;">
-                                                <button type="button" class="btn btn-primary btn-sm edit-btn" data-admin-update-url="{% url 'admin_update' %}">
-                                                        Edit
-                                                </button>
-                                                <button type="button" class="btn btn-success btn-sm save-btn" style="display:none;">
-                                                        Save
-                                                </button>
-                                        
-                                                <form action="{% url 'delete_admin' seq_no=admin.seq_no %}" method="post" style="display:inline;">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="btn btn-icon btn-sm btn-secondary-light" data-bs-toggle="tooltip" title="삭제" onclick="return confirm('정말 [{{admin.admin_id}}]를 삭제하시겠습니까?');">
-                                                                <i class="fe fe-trash-2"></i>
-                                                        </button>
-                                                </form>																					
-                                            </td>
-                                    </tr>
-                                    {% endfor %}
-                            </tbody>
-                        </table>												
+    <!-- 헤더 -->
+    <div class="org-header">
+        <div>
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #212529;">조직도</h2>
+            <p style="margin: 5px 0 0 0; color: #6c757d;">팀별 관리자 및 직원 현황</p>
+        </div>
+        <button class="btn btn-primary" id="addAdminBtn" data-bs-toggle="modal" data-bs-target="#adminModal">
+            <i class="fe fe-plus me-2"></i>신규 등록
+        </button>
+    </div>
+
+    <!-- 팀 카드 그리드 -->
+    {% if teams %}
+    <div class="teams-grid">
+        {% for team in teams %}
+        <div class="team-card">
+            <!-- 팀 헤더 (세무사) -->
+            <div class="team-header">
+                <span class="badge">팀장 · 세무사</span>
+                <div class="leader-info">
+                    <img src="{% static 'assets/images/faces/' %}{{ team.leader.admin_name }}.png"
+                         alt="{{ team.leader.admin_name }}"
+                         class="leader-avatar"
+                         onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
+                    <div class="leader-details">
+                        <h4>{{ team.leader.admin_name }}</h4>
+                        <p>
+                            <i class="fe fe-briefcase me-1"></i>{{ team.leader.admin_biz_area|default:"미지정" }}
+                            {% if team.leader.admin_tel_no %}
+                            · <i class="fe fe-phone me-1"></i>{{ team.leader.admin_tel_no }}
+                            {% endif %}
+                        </p>
+                        <p style="margin-top: 5px;">
+                            <i class="fe fe-mail me-1"></i>{{ team.leader.admin_email|default:"이메일 없음" }}
+                        </p>
                     </div>
                 </div>
+                <div style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button class="btn btn-sm btn-light edit-leader-btn"
+                            data-admin-id="{{ team.leader.admin_id }}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#adminModal"
+                            style="opacity: 0.95;">
+                        <i class="fe fe-edit-2 me-1"></i>수정
+                    </button>
+                </div>
+            </div>
+
+            <!-- 팀 멤버 -->
+            <div class="team-members">
+                <div class="members-title">
+                    <i class="fe fe-users me-1"></i>팀 멤버 ({{ team.members|length }}명)
+                </div>
+                {% if team.members %}
+                <div class="member-list">
+                    {% for member in team.members %}
+                    <div class="member-item">
+                        <div class="member-info">
+                            <img src="{% static 'assets/images/faces/' %}{{ member.admin_name }}.png"
+                                 alt="{{ member.admin_name }}"
+                                 class="member-avatar"
+                                 onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
+                            <div class="member-details">
+                                <h5>{{ member.admin_name }}</h5>
+                                <p>
+                                    {{ member.admin_id }}
+                                    {% if member.admin_tel_no %}· {{ member.admin_tel_no }}{% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn-action edit edit-member-btn"
+                                    data-admin-id="{{ member.admin_id }}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#adminModal">
+                                <i class="fe fe-edit-2"></i>
+                            </button>
+                            <form action="{% url 'delete_admin' seq_no=member.seq_no %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-action delete"
+                                        onclick="return confirm('정말 {{ member.admin_name }}님을 삭제하시겠습니까?');">
+                                    <i class="fe fe-trash-2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-team">
+                    <i class="fe fe-user-x" style="font-size: 32px; opacity: 0.3;"></i>
+                    <p>팀 멤버가 없습니다</p>
+                </div>
+                {% endif %}
             </div>
         </div>
+        {% endfor %}
     </div>
+    {% endif %}
+
+    <!-- 미배정 직원 섹션 -->
+    {% if unassigned_admins %}
+    <div class="unassigned-section">
+        <div class="section-header">
+            <h3>미배정 직원</h3>
+            <span class="badge">{{ unassigned_admins|length }}</span>
+        </div>
+        <div class="member-list">
+            {% for admin in unassigned_admins %}
+            <div class="member-item">
+                <div class="member-info">
+                    <img src="{% static 'assets/images/faces/' %}{{ admin.admin_name }}.png"
+                         alt="{{ admin.admin_name }}"
+                         class="member-avatar"
+                         onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
+                    <div class="member-details">
+                        <h5>{{ admin.admin_name }}</h5>
+                        <p>{{ admin.admin_id }} · {{ admin.biz_level }}</p>
+                    </div>
+                </div>
+                <div class="member-actions">
+                    <button class="btn-action edit edit-member-btn"
+                            data-admin-id="{{ admin.admin_id }}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#adminModal">
+                        <i class="fe fe-edit-2"></i>
+                    </button>
+                    <form action="{% url 'delete_admin' seq_no=admin.seq_no %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-action delete"
+                                onclick="return confirm('정말 {{ admin.admin_name }}님을 삭제하시겠습니까?');">
+                            <i class="fe fe-trash-2"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-<script src="{% static 'assets/plugins/datatable/js/jquery.dataTables.min.js' %}"></script>
-<script src="{% static 'assets/plugins/datatable/js/dataTables.bootstrap5.js' %}"></script>
-<script src="{% static 'assets/plugins/datatable/dataTables.responsive.min.js' %}"></script>
+    {% endif %}
+
+    <!-- 기타 관리자 섹션 -->
+    {% if other_admins %}
+    <div class="unassigned-section">
+        <div class="section-header">
+            <h3>관리자</h3>
+            <span class="badge bg-info">{{ other_admins|length }}</span>
+        </div>
+        <div class="member-list">
+            {% for admin in other_admins %}
+            <div class="member-item">
+                <div class="member-info">
+                    <img src="{% static 'assets/images/faces/' %}{{ admin.admin_name }}.png"
+                         alt="{{ admin.admin_name }}"
+                         class="member-avatar"
+                         onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
+                    <div class="member-details">
+                        <h5>{{ admin.admin_name }}</h5>
+                        <p>{{ admin.admin_id }} · {{ admin.biz_level }}</p>
+                    </div>
+                </div>
+                <div class="member-actions">
+                    <button class="btn-action edit edit-member-btn"
+                            data-admin-id="{{ admin.admin_id }}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#adminModal">
+                        <i class="fe fe-edit-2"></i>
+                    </button>
+                    <form action="{% url 'delete_admin' seq_no=admin.seq_no %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-action delete"
+                                onclick="return confirm('정말 {{ admin.admin_name }}님을 삭제하시겠습니까?');">
+                            <i class="fe fe-trash-2"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- 관리자 추가/수정 모달 -->
+<div class="modal fade" id="adminModal" tabindex="-1" aria-labelledby="adminModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adminModalLabel">관리자 정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="adminForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="formMode" value="create">
+
+                    <!-- 프로필 이미지 업로드 -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 text-center">
+                            <div class="avatar-container position-relative d-inline-block" style="cursor: pointer;" id="avatarContainer">
+                                <img id="adminAvatarPreview"
+                                     src="{% static 'assets/images/faces/blank.jpg' %}"
+                                     alt="Profile"
+                                     class="rounded-circle"
+                                     style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #e9ecef;">
+                                <input type="file"
+                                       id="adminAvatarInput"
+                                       name="avatar_image"
+                                       accept="image/jpeg, image/png, image/jpg"
+                                       style="display: none;">
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">프로필 사진을 클릭하여 업로드</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 기본 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-user me-2"></i>기본 정보
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">이름 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="admin_name" id="admin_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">아이디 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="admin_id" id="admin_id" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">비밀번호 <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="admin_pwd" id="admin_pwd" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fe fe-eye" id="togglePasswordIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">입사일</label>
+                            <input type="date" class="form-control" name="reg_date" id="reg_date">
+                        </div>
+                    </div>
+
+                    <!-- 연락처 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-phone me-2"></i>연락처 정보
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">전화번호</label>
+                            <input type="text" class="form-control" name="admin_tel_no" id="admin_tel_no" placeholder="010-0000-0000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">이메일</label>
+                            <input type="email" class="form-control" name="admin_email" id="admin_email" placeholder="example@email.com">
+                        </div>
+                    </div>
+
+                    <!-- 조직 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-briefcase me-2"></i>조직 정보
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">소속 팀 (묶음)</label>
+                            <div class="input-group">
+                                <select class="form-select" name="admin_biz_area" id="admin_biz_area">
+                                    <option value="">선택 안함</option>
+                                    {% for area in biz_areas %}
+                                    <option value="{{ area }}">{{ area }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-outline-secondary" type="button" id="addNewAreaBtn" title="새 팀 추가">
+                                    <i class="fe fe-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">직책 <span class="text-danger">*</span></label>
+                            <select class="form-select" name="biz_level" id="biz_level" required>
+                                <option value="직원">직원</option>
+                                <option value="관리자">관리자</option>
+                                <option value="세무사">세무사</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">등급</label>
+                            <select class="form-select" name="grade" id="grade">
+                                <option value="MEM">MEM</option>
+                                <option value="SALE">SALE</option>
+                                <option value="SA">SA</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">관리권한</label>
+                            <input type="text" class="form-control" name="manage_YN" id="manage_YN" placeholder="Y/N">
+                        </div>
+                    </div>
+
+                    <!-- 시스템 정보 섹션 -->
+                    <h6 class="mb-3 text-primary border-bottom pb-2">
+                        <i class="fe fe-settings me-2"></i>시스템 정보
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Htx ID</label>
+                            <input type="text" class="form-control" name="htx_id" id="htx_id">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary" id="saveAdminBtn">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
-// 탭 전용 스크립트 캡슐화
 (function() {
-    
-    // 테이블 요소 찾기 (탭 내부)
-    // var tableId = '#user-datatable'; // ID 중복 방지를 위해선 탭마다 다른 ID를 쓰거나 class로 찾아야 함
-    // 여기서는 간단히 기존 로직 사용하되 destroy 옵션 필수
-    
-    // DataTable 초기화
-    if ($.fn.DataTable.isDataTable('#user-datatable')) {
-        $('#user-datatable').DataTable().destroy();
-    }
-    
-    var table = $('#user-datatable').DataTable({
-        "pageLength": 50,
-        "lengthMenu": [ [10, 25, 50, 100], [10, 25, 50, 100] ],
-        "searching": true,
-        "paging": true,
-        "info": true,
-        "responsive": true,
-        "autoWidth": false
+
+    // 파일 인풋 클릭 시 버블링 막기 (무한루프 방지)
+    $('#adminAvatarInput').on('click', function(e) {
+        e.stopPropagation();
     });
 
-    // --------------------------------------------------------
-    // 이벤트 위임 (동적 생성 요소 및 탭 환경 대응)
-    // --------------------------------------------------------
+    // 아바타 컨테이너 클릭 시 파일 선택창 열기
+    $('#avatarContainer').off('click').on('click', function(e) {
+        e.preventDefault();
+        $('#adminAvatarInput').trigger('click');
+    });
 
-    // Edit 버튼 클릭
-    $('#user-datatable tbody').on('click', '.edit-btn', function() {
-        let row = $(this).closest('tr');
-        let saveButton = row.find('.save-btn');
-        let editButton = $(this);
+    // 아바타 파일 선택 시 미리보기 (중복 방지)
+    $('#adminAvatarInput').off('change').on('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#adminAvatarPreview').attr('src', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
-        row.find('.editable').each(function() {
-            let td = $(this);
-            let fieldName = td.data('field');
-            // span이 있으면 텍스트 추출, 없으면 바로 텍스트
-            let currentValue = td.find('span').length > 0 ? td.find('span').text().trim() : td.text().trim();
-            let input;
+    // 비밀번호 표시/숨김 토글
+    $('#togglePassword').off('click').on('click', function() {
+        const passwordInput = $('#admin_pwd');
+        const icon = $('#togglePasswordIcon');
 
-            if (fieldName === 'biz_level') {
-                input = $('<select class="form-control form-control-sm"></select>');
-                input.append(`<option value="직원" ${currentValue === '직원' ? 'selected' : ''}>직원</option>`);
-                input.append(`<option value="관리자" ${currentValue === '관리자' ? 'selected' : ''}>관리자</option>`);
-                input.append(`<option value="세무사" ${currentValue === '세무사' ? 'selected' : ''}>세무사</option>`);
-            } else if (fieldName === 'grade') {
-                input = $('<select class="form-control form-control-sm"></select>');
-                input.append(`<option value="MEM" ${currentValue === 'MEM' ? 'selected' : ''}>MEM</option>`);
-                input.append(`<option value="SALE" ${currentValue === 'SALE' ? 'selected' : ''}>SALE</option>`);
-                input.append(`<option value="SA" ${currentValue === 'SA' ? 'selected' : ''}>SA</option>`);
+        if (passwordInput.attr('type') === 'password') {
+            passwordInput.attr('type', 'text');
+            icon.removeClass('fe-eye').addClass('fe-eye-off');
+        } else {
+            passwordInput.attr('type', 'password');
+            icon.removeClass('fe-eye-off').addClass('fe-eye');
+        }
+    });
+
+    // 새 팀 추가 버튼
+    $('#addNewAreaBtn').off('click').on('click', function() {
+        const newArea = prompt('새로운 팀 이름을 입력하세요:');
+        if (newArea && newArea.trim()) {
+            const trimmedArea = newArea.trim();
+
+            // 이미 존재하는지 확인
+            const exists = $('#admin_biz_area option').filter(function() {
+                return $(this).val() === trimmedArea;
+            }).length > 0;
+
+            if (exists) {
+                alert('이미 존재하는 팀 이름입니다.');
+                $('#admin_biz_area').val(trimmedArea);
             } else {
-                input = $('<input type="text" class="form-control form-control-sm">');
-                input.val(currentValue);
-            }
+                // 새 옵션 추가 (정렬하여 삽입)
+                const $newOption = $('<option>', {
+                    value: trimmedArea,
+                    text: trimmedArea
+                });
 
-            input.attr('name', fieldName);
-            td.html(input); // 기존 내용 지우고 input 삽입
-        });
-
-        saveButton.show();
-        editButton.hide();
-    });
-
-    // Save 버튼 클릭
-    $('#user-datatable tbody').on('click', '.save-btn', function() {
-        let row = $(this).closest('tr');
-        let editButton = row.find('.edit-btn');
-        let saveButton = $(this);
-        let updateUrl = editButton.data('admin-update-url');    
-
-        let formData = new FormData();
-        row.find('.editable input, .editable select').each(function() {
-            formData.append($(this).attr('name'), $(this).val());
-        });
-
-        // AJAX 요청
-        fetch(updateUrl, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // 성공 시 텍스트로 변환
-                row.find('.editable').each(function() {
-                    let td = $(this);
-                    let input = td.find('input, select');
-                    let val = input.val();
-                    
-                    td.empty(); // input 제거
-
-                    if (td.data('field') === 'admin_name') {
-                        // 이름 컬럼은 아바타 다시 생성
-                        let avatarHtml = `
-                            <div class="avatar avatar-md rounded-circle me-2">
-                                <img alt="avatar" class="rounded-circle" src="{% get_static_prefix %}assets/images/faces/${val}.png" onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
-                            </div>
-                            <span>${val}</span>
-                        `;
-                        td.html(avatarHtml);
-                    } else {
-                        td.text(val);
+                // 정렬된 위치에 삽입
+                let inserted = false;
+                $('#admin_biz_area option').each(function() {
+                    if ($(this).val() && $(this).val() > trimmedArea) {
+                        $newOption.insertBefore($(this));
+                        inserted = true;
+                        return false; // break
                     }
                 });
-                
-                saveButton.hide();
-                editButton.show();
-            } else {
-                alert('업데이트 실패: ' + data.error);
+
+                if (!inserted) {
+                    $('#admin_biz_area').append($newOption);
+                }
+
+                $('#admin_biz_area').val(trimmedArea);
             }
-        })
-        .catch(err => alert('오류 발생: ' + err));
+        }
     });
 
-    // 신규등록 버튼
-    $('#addRowBtn').off('click').on('click', function() {
-        // DataTable의 row.add() API를 사용하는 것이 좋지만, 
-        // 기존 코드처럼 prepend 방식으로 처리하려면 DOM 조작 후 draw() 필요할 수 있음.
-        // 여기서는 간단히 DOM prepend 사용 (단, 페이징/정렬 시 사라질 수 있음 주의)
-        
-        let newRowHtml = `
-            <tr>
-                <td class="editable" data-field="admin_name"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="admin_id"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="admin_pwd"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="admin_tel_no"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="admin_email"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="admin_biz_area"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="biz_level">
-                    <select class="form-control form-control-sm">
-                        <option value="직원">직원</option>
-                        <option value="관리자">관리자</option>
-                        <option value="세무사">세무사</option>
-                    </select>
-                </td>
-                <td class="editable" data-field="grade">
-                    <select class="form-control form-control-sm">
-                        <option value="MEM">MEM</option>
-                        <option value="SALE">SALE</option>
-                        <option value="SA">SA</option>
-                    </select>
-                </td>
-                <td class="editable" data-field="reg_date"><input type="text" class="form-control form-control-sm" value="{{ now|localtime|date:"Y-m-d" }}"></td>
-                <td class="editable" data-field="manage_YN"><input type="text" class="form-control form-control-sm"></td>
-                <td class="editable" data-field="htx_id"><input type="text" class="form-control form-control-sm"></td>
-                <td style="display: flex; gap: 5px;">
-                    <button type="button" class="btn btn-primary btn-sm save-new-btn">Save</button>
-                    <button type="button" class="btn btn-secondary btn-sm cancel-btn">Cancel</button>
-                </td>
-            </tr>
-        `;
-        
-        $('#user-datatable tbody').prepend(newRowHtml);
+    // 모달 초기화 (신규 등록)
+    $('#addAdminBtn').on('click', function() {
+        $('#adminModalLabel').text('신규 관리자 등록');
+        $('#formMode').val('create');
+        $('#adminForm')[0].reset();
+        $('#adminForm').attr('action', "{% url 'admin_create' %}");
+        $('#admin_id').prop('readonly', false);
+
+        // 아바타 미리보기 초기화
+        $('#adminAvatarPreview').attr('src', "{% static 'assets/images/faces/blank.jpg' %}");
+
+        // 비밀번호 필드 마스크 상태로 초기화
+        $('#admin_pwd').attr('type', 'password');
+        $('#togglePasswordIcon').removeClass('fe-eye-off').addClass('fe-eye');
     });
 
-    // 신규 행 저장
-    $('#user-datatable tbody').on('click', '.save-new-btn', function() {
-        let row = $(this).closest('tr');
-        let formData = new FormData();
-        let valid = true;
+    // 모달 초기화 (수정)
+    $(document).on('click', '.edit-leader-btn, .edit-member-btn', function() {
+        const adminId = $(this).data('admin-id');
+        $('#adminModalLabel').text('관리자 정보 수정');
+        $('#formMode').val('update');
+        $('#adminForm').attr('action', "{% url 'admin_update' %}");
+        $('#admin_id').prop('readonly', true);
 
-        row.find('.editable input, .editable select').each(function() {
-            let field = $(this).parent().data('field');
-            let val = $(this).val().trim();
-            
-            // 필수값 체크 (예시)
-            if(['admin_name', 'admin_id', 'admin_pwd'].includes(field) && !val) {
-                alert(field + ' 값을 입력하세요.');
-                valid = false;
-                return false; 
-            }
-            formData.append(field, val);
-        });
-
-        if(!valid) return;
-
-        fetch("{% url 'admin_create' %}", {
+        // AJAX로 관리자 정보 가져오기
+        $.ajax({
+            url: "{% url 'getAdminInfo' %}",
             method: 'POST',
-            body: formData,
-            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                alert('등록되었습니다.');
-                // 탭 새로고침 또는 row 업데이트
-                // 여기서는 간단히 탭 재로딩을 위해 트리거
-                // (TabManager 로직에 따라 다름, 일단은 reload)
-                // location.reload(); // 탭 환경에서는 비추천
-                // 대신 현재 탭을 다시 로드하는 로직 호출 (TabManager에 구현 필요)
-                // 임시로 row 내용만 텍스트로 확정
-                row.find('.editable').each(function() {
-                    let val = $(this).find('input, select').val();
-                    $(this).text(val);
-                });
-                row.find('.save-new-btn, .cancel-btn').remove();
-                // Edit 버튼 등 추가 필요... 복잡하므로 보통 재로딩 권장
-            } else {
-                alert('에러: ' + data.error);
+            data: {
+                'admin_id': adminId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // 폼에 데이터 채우기
+                    $('#admin_name').val(response.admin_name);
+                    $('#admin_id').val(adminId);
+                    $('#admin_pwd').val(response.admin_pwd);
+                    $('#admin_tel_no').val(response.admin_tel_no);
+                    $('#admin_email').val(response.admin_email);
+                    $('#admin_biz_area').val(response.admin_biz_area);
+                    $('#biz_level').val(response.biz_level);
+                    $('#grade').val(response.grade);
+                    $('#manage_YN').val(response.manage_YN);
+                    $('#htx_id').val(response.htx_id);
+                    $('#reg_date').val(response.reg_date);
+
+                    // 원래 값들을 data 속성에 저장 (변경 감지용)
+                    $('#adminForm').data('original-biz-area', response.admin_biz_area);
+                    $('#adminForm').data('original-biz-level', response.biz_level);
+
+                    // 아바타 미리보기 업데이트
+                    // [수정] 캐시 방지를 위해 타임스탬프(?v=...) 추가
+                    const avatarSrc = "{% static 'assets/images/faces/' %}" + response.admin_name + ".png?v=" + new Date().getTime();
+                    $('#adminAvatarPreview').attr('src', avatarSrc)
+                        .on('error', function() {
+                            $(this).attr('src', "{% static 'assets/images/faces/blank.jpg' %}");
+                        });
+
+                    // 비밀번호 필드 마스크 상태로 초기화
+                    $('#admin_pwd').attr('type', 'password');
+                    $('#togglePasswordIcon').removeClass('fe-eye-off').addClass('fe-eye');
+                } else {
+                    alert('관리자 정보를 불러올 수 없습니다: ' + response.error);
+                }
+            },
+            error: function(xhr) {
+                alert('오류가 발생했습니다.');
             }
         });
     });
 
-    // 취소 버튼
-    $('#user-datatable tbody').on('click', '.cancel-btn', function() {
-        $(this).closest('tr').remove();
+    // 폼 제출
+    $('#adminForm').on('submit', function(e) {
+        const formMode = $('#formMode').val();
+
+        // create 모드일 때는 기본 폼 제출
+        if (formMode === 'create') {
+            return true;
+        }
+
+        // update 모드일 때는 AJAX로 처리
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const originalAdminId = $('#admin_id').val();
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#adminModal').modal('hide');
+
+                    // 팀 재배치가 필요한지 확인
+                    const needsReorganization = checkNeedsReorganization(originalAdminId, response.data);
+
+                    if (needsReorganization) {
+                        // 팀 구조 변경이 필요한 경우 해당 영역만 다시 로드
+                        reloadTeamsSection();
+                    } else {
+                        // 단순 정보 업데이트만 필요한 경우 DOM 직접 업데이트
+                        updateAdminInDOM(originalAdminId, response.data);
+                    }
+
+                    // 성공 메시지
+                    showToast('저장되었습니다.');
+                } else {
+                    alert('저장 실패: ' + response.error);
+                }
+            },
+            error: function(xhr) {
+                alert('저장 중 오류가 발생했습니다.');
+            }
+        });
     });
+
+    // 팀 재배치 필요 여부 확인
+    function checkNeedsReorganization(adminId, newData) {
+        // 원래 값 가져오기
+        const originalBizArea = $('#adminForm').data('original-biz-area');
+        const originalBizLevel = $('#adminForm').data('original-biz-level');
+
+        console.log('원래 값:', {bizArea: originalBizArea, bizLevel: originalBizLevel});
+        console.log('새로운 값:', {bizArea: newData.admin_biz_area, bizLevel: newData.biz_level});
+
+        // 직책(biz_level) 변경 체크
+        if (originalBizLevel !== newData.biz_level) {
+            console.log('직책 변경 감지:', originalBizLevel, '->', newData.biz_level);
+            return true;
+        }
+
+        // 팀 이동 체크 (admin_biz_area 변경)
+        if (originalBizArea !== newData.admin_biz_area) {
+            console.log('팀 이동 감지:', originalBizArea, '->', newData.admin_biz_area);
+            return true;
+        }
+
+        console.log('단순 정보 업데이트');
+        return false;
+    }
+
+    // 팀 섹션만 다시 로드
+    function reloadTeamsSection() {
+        $.ajax({
+            url: window.location.href,
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(html) {
+                // 전체 HTML에서 필요한 부분만 추출
+                const $newContent = $(html);
+
+                // 팀 그리드 교체
+                const $newTeamsGrid = $newContent.find('.teams-grid');
+                if ($newTeamsGrid.length > 0) {
+                    $('.teams-grid').replaceWith($newTeamsGrid);
+                }
+
+                // 미배정 직원 섹션 교체
+                const $oldUnassigned = $('.unassigned-section').first();
+                const $newUnassigned = $newContent.find('.unassigned-section').first();
+                if ($newUnassigned.length > 0) {
+                    $oldUnassigned.replaceWith($newUnassigned);
+                } else {
+                    $oldUnassigned.remove();
+                }
+
+                // 관리자 섹션 교체
+                const $oldOthers = $('.unassigned-section').last();
+                const $newOthers = $newContent.find('.unassigned-section').last();
+                if ($newOthers.length > 0 && $newOthers[0] !== $newUnassigned[0]) {
+                    $oldOthers.replaceWith($newOthers);
+                }
+
+                // [추가] 새로 로드된 이미지들에 캐시 방지 적용 (즉시 반영)
+                const timestamp = new Date().getTime();
+                $('.leader-avatar, .member-avatar').each(function() {
+                    const src = $(this).attr('src');
+                    if (src && src.indexOf('data:image') === -1 && src.indexOf('blank.jpg') === -1) {
+                        $(this).attr('src', src.split('?')[0] + '?v=' + timestamp);
+                    }
+                });
+
+                showToast('화면이 업데이트되었습니다.');
+            },
+            error: function() {
+                console.error('섹션 새로고침 실패');
+                location.reload(); // 실패시 전체 새로고침
+            }
+        });
+    }
+
+    // DOM 업데이트 함수 (개선된 버전)
+    function updateAdminInDOM(adminId, data) {
+        console.log('updateAdminInDOM 호출:', adminId, data);
+
+        // 모든 수정 버튼에서 해당 admin_id를 가진 요소 찾기
+        const $editBtn = $(`.edit-leader-btn[data-admin-id="${adminId}"], .edit-member-btn[data-admin-id="${adminId}"]`);
+
+        console.log('찾은 버튼 수:', $editBtn.length);
+
+        if ($editBtn.length === 0) {
+            console.warn('수정 버튼을 찾을 수 없음, 전체 섹션 새로고침');
+            reloadTeamsSection();
+            return;
+        }
+
+        const isLeader = $editBtn.hasClass('edit-leader-btn');
+        console.log('리더 여부:', isLeader);
+
+        if (isLeader) {
+            // 팀장(세무사) 정보 업데이트
+            const $teamHeader = $editBtn.closest('.team-header');
+            console.log('팀 헤더 찾음:', $teamHeader.length);
+
+            // 이름 업데이트
+            $teamHeader.find('.leader-details h4').text(data.admin_name);
+
+            // 아바타 업데이트
+            // [수정] 캐시 방지 타임스탬프 추가
+            const avatarSrc = "{% static 'assets/images/faces/' %}" + data.admin_name + ".png?v=" + new Date().getTime();
+            $teamHeader.find('.leader-avatar').attr('src', avatarSrc);
+
+            // 소속/전화번호 업데이트
+            let bizInfo = '<i class="fe fe-briefcase me-1"></i>' + (data.admin_biz_area || '미지정');
+            if (data.admin_tel_no) {
+                bizInfo += ' · <i class="fe fe-phone me-1"></i>' + data.admin_tel_no;
+            }
+            $teamHeader.find('.leader-details p').first().html(bizInfo);
+
+            // 이메일 업데이트
+            const emailInfo = '<i class="fe fe-mail me-1"></i>' + (data.admin_email || '이메일 없음');
+            $teamHeader.find('.leader-details p').eq(1).html(emailInfo);
+
+            console.log('팀장 정보 업데이트 완료');
+
+        } else {
+            // 팀 멤버 정보 업데이트
+            const $memberItem = $editBtn.closest('.member-item');
+            console.log('멤버 아이템 찾음:', $memberItem.length);
+
+            // 이름 업데이트
+            $memberItem.find('.member-details h5').text(data.admin_name);
+
+            // 아바타 업데이트
+            // [수정] 캐시 방지 타임스탬프 추가
+            const avatarSrc = "{% static 'assets/images/faces/' %}" + data.admin_name + ".png?v=" + new Date().getTime();
+            $memberItem.find('.member-avatar').attr('src', avatarSrc);
+
+            // ID/전화번호 업데이트
+            let memberInfo = data.admin_id;
+            if (data.admin_tel_no) {
+                memberInfo += ' · ' + data.admin_tel_no;
+            }
+            $memberItem.find('.member-details p').text(memberInfo);
+
+            console.log('멤버 정보 업데이트 완료');
+        }
+    }
+
+    // 토스트 메시지 표시 함수 (간단한 알림)
+    function showToast(message) {
+        // 기존 토스트가 있으면 제거
+        $('.custom-toast').remove();
+
+        const toast = $(`
+            <div class="custom-toast" style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                animation: slideIn 0.3s ease-out;
+            ">
+                <i class="fe fe-check-circle me-2"></i>${message}
+            </div>
+        `);
+
+        // 애니메이션 스타일 추가
+        if (!$('#toastAnimation').length) {
+            $('head').append(`
+                <style id="toastAnimation">
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                    }
+                </style>
+            `);
+        }
+
+        $('body').append(toast);
+
+        // 3초 후 자동 제거
+        setTimeout(function() {
+            toast.css('animation', 'slideOut 0.3s ease-out');
+            setTimeout(function() {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
 
 })();
 </script>

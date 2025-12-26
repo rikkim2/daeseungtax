@@ -1,5 +1,6 @@
 import datetime
 import calendar
+import os
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render,redirect,get_object_or_404
 from decimal import Decimal, ROUND_DOWN
@@ -15,6 +16,8 @@ from pdf2image import convert_from_path
 from django.db.models import Q
 from django.db.models import Sum, F
 from admins.utils import send_kakao_notification
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 
 @login_required(login_url="/login/")
 def index(request):
@@ -29,24 +32,62 @@ def index(request):
   currentYear = today.year
   if currentMonth >= 7 :
     corpYear = today.year
-  
+
   corpYears = list(range(corpYear, corpYear - 6, -1))
   context['admin_grade'] = admin_grade
   context['corpYears'] = corpYears
-  
+
   templateMenu = gridTitle=""
   if flag == None:
-    context['adminList'] = MemAdmin.objects.all().order_by('admin_name')
+    # 팀별로 그룹화된 데이터 생성
+    all_admins = MemAdmin.objects.all().order_by('admin_biz_area', 'biz_level', 'admin_name')
+
+    # 세무사(팀장) 목록 추출
+    team_leaders = all_admins.filter(biz_level='세무사')
+
+    # 팀별 데이터 구조 생성
+    teams = []
+    for leader in team_leaders:
+      # 같은 admin_biz_area를 가진 직원들 찾기
+      team_members = all_admins.filter(
+        admin_biz_area=leader.admin_biz_area,
+        biz_level='직원'
+      ).order_by('admin_name')
+
+      teams.append({
+        'leader': leader,
+        'members': list(team_members)
+      })
+
+    # 팀에 속하지 않은 직원들 (admin_biz_area가 없거나 매칭되는 세무사가 없는 경우)
+    assigned_areas = [team['leader'].admin_biz_area for team in teams]
+    unassigned_admins = all_admins.filter(biz_level='직원').exclude(admin_biz_area__in=assigned_areas)
+
+    # 관리자 및 기타
+    other_admins = all_admins.filter(biz_level='관리자')
+
+    # 고유한 admin_biz_area 목록 추출 (빈 값 제외, 정렬)
+    biz_areas = MemAdmin.objects.filter(
+      admin_biz_area__isnull=False
+    ).exclude(
+      admin_biz_area=''
+    ).values_list('admin_biz_area', flat=True).distinct().order_by('admin_biz_area')
+
+    context['teams'] = teams
+    context['unassigned_admins'] = unassigned_admins
+    context['other_admins'] = other_admins
+    context['adminList'] = all_admins  # 기존 호환성 유지
+    context['biz_areas'] = list(biz_areas)  # 소속팀 목록
     templateMenu = 'admin/staffList.html'; gridTitle="관리자리스트"
   elif flag == "Pro":
     context['adminList'] =  MemAdmin.objects.filter(biz_level='세무사', grade='MEM').order_by('admin_name')
     context['invoiceAll'] = invoiceList(ADID,admin_grade,currentMonth,currentYear,corpYears)
     templateMenu = 'admin/staffInfo_Promotion.html'; gridTitle="업무성과금"
   elif flag == "SalePro":
-    
+
     context['invoiceAll'] = invoiceList_Sale(ADID,admin_grade,currentMonth,currentYear)
-    templateMenu = 'admin/sales_Promotion.html'; gridTitle="영업수당"    
-  context['gridTitle'] = gridTitle  
+    templateMenu = 'admin/sales_Promotion.html'; gridTitle="영업수당"
+  context['gridTitle'] = gridTitle
 
   return render(request, templateMenu,context)
 
@@ -628,7 +669,7 @@ def admin_create(request):
       manage_YN = request.POST.get('manage_YN')
       grade = request.POST.get('grade')
       htx_id = request.POST.get('htx_id')
-      
+
       # 새로운 Admin 객체 생성
       try:
         if User.objects.filter(username=admin_id).exists():
@@ -654,6 +695,28 @@ def admin_create(request):
             user_id=user.id
         )
         new_admin.save()  # 데이터베이스에 저장
+
+        # 프로필 이미지 처리
+        if 'avatar_image' in request.FILES:
+            avatar_file = request.FILES['avatar_image']
+            # static/assets/images/faces/ 경로에 저장
+            faces_path = os.path.join(settings.BASE_DIR, 'static', 'assets', 'images', 'faces')
+
+            # 디렉토리가 없으면 생성
+            if not os.path.exists(faces_path):
+                os.makedirs(faces_path)
+
+            # 파일 확장자 추출
+            file_extension = os.path.splitext(avatar_file.name)[1]
+            # admin_name으로 파일명 설정
+            filename = f"{admin_name}.png"
+            file_path = os.path.join(faces_path, filename)
+
+            # 파일 저장
+            with open(file_path, 'wb+') as destination:
+                for chunk in avatar_file.chunks():
+                    destination.write(chunk)
+
         return redirect('staffList')  # 성공적으로 저장된 후 리디렉션
       except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -665,64 +728,112 @@ def admin_update(request):
   if request.method == 'POST':
       admin_id = request.POST.get('admin_id')
       print(admin_id)
-      # if not admin_id:
-      #   return redirect('staffList')  # admin_id가 없으면 바로 리디렉션
+
       if admin_id:
-        admin = get_object_or_404(MemAdmin, admin_id=admin_id)
-        
-        # Update the fields with new data
-        admin.admin_pwd = request.POST.get('admin_pwd')
-        print("admin.admin_pwd :"+str(admin.admin_pwd ))
-        admin.admin_tel_no = request.POST.get('admin_tel_no')
-        admin.admin_email = request.POST.get('admin_email')
-        admin.admin_biz_area = request.POST.get('admin_biz_area')
-        admin.biz_level = request.POST.get('biz_level')
-        print("admin.biz_level :"+str(admin.biz_level ))
-        admin.grade = request.POST.get('grade')
-        print("admin.grade :"+str(admin.grade ))
-        admin.manage_YN = request.POST.get('manage_YN')
-        print("admin.manage_YN :"+str(admin.manage_YN ))
-        admin.reg_date = request.POST.get('reg_date')
-        admin.htx_id = request.POST.get('htx_id')
+        try:
+          admin = get_object_or_404(MemAdmin, admin_id=admin_id)
 
-        # auth_user 모델의 비밀번호를 업데이트
-        if admin.user_id and admin.admin_pwd:  # user_id가 연결된 경우에만 처리
-          user = get_object_or_404(User, pk=admin.user_id)
-          if user:
-            new_password = request.POST.get('admin_pwd')
-            if new_password:
-              user.set_password(new_password)  # 비밀번호 해시화
-              user.save()
-              print('auth_user 저장됨')
+          # Update the fields with new data
+          admin.admin_name = request.POST.get('admin_name', admin.admin_name)
+          admin.admin_pwd = request.POST.get('admin_pwd')
+          print("admin.admin_pwd :"+str(admin.admin_pwd ))
+          admin.admin_tel_no = request.POST.get('admin_tel_no')
+          admin.admin_email = request.POST.get('admin_email')
+          admin.admin_biz_area = request.POST.get('admin_biz_area')
+          admin.biz_level = request.POST.get('biz_level')
+          print("admin.biz_level :"+str(admin.biz_level ))
+          admin.grade = request.POST.get('grade')
+          print("admin.grade :"+str(admin.grade ))
+          admin.manage_YN = request.POST.get('manage_YN')
+          print("admin.manage_YN :"+str(admin.manage_YN ))
+          admin.reg_date = request.POST.get('reg_date')
+          admin.htx_id = request.POST.get('htx_id')
 
-        # Save changes to the database
-        admin.save()
-        return redirect('staffList')
+          # auth_user 모델의 비밀번호를 업데이트
+          if admin.user_id and admin.admin_pwd:  # user_id가 연결된 경우에만 처리
+            user = get_object_or_404(User, pk=admin.user_id)
+            if user:
+              new_password = request.POST.get('admin_pwd')
+              if new_password:
+                user.set_password(new_password)  # 비밀번호 해시화
+                user.save()
+                print('auth_user 저장됨')
+
+          # Save changes to the database
+          admin.save()
+
+          # 프로필 이미지 처리
+          if 'avatar_image' in request.FILES:
+            avatar_file = request.FILES['avatar_image']
+            # static/assets/images/faces/ 경로에 저장
+            faces_path = os.path.join(settings.BASE_DIR, 'static', 'assets', 'images', 'faces')
+
+            # 디렉토리가 없으면 생성
+            if not os.path.exists(faces_path):
+              os.makedirs(faces_path)
+
+            # admin_name으로 파일명 설정
+            filename = f"{admin.admin_name}.png"
+            file_path = os.path.join(faces_path, filename)
+
+            # 파일 저장
+            with open(file_path, 'wb+') as destination:
+              for chunk in avatar_file.chunks():
+                destination.write(chunk)
+
+          # AJAX 요청인 경우 JSON 반환
+          if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+              'success': True,
+              'message': '업데이트되었습니다.',
+              'data': {
+                'admin_id': admin.admin_id,
+                'admin_name': admin.admin_name,
+                'admin_tel_no': admin.admin_tel_no or '',
+                'admin_email': admin.admin_email or '',
+                'admin_biz_area': admin.admin_biz_area or '',
+                'biz_level': admin.biz_level or '',
+                'grade': admin.grade or '',
+                'manage_YN': admin.manage_YN or '',
+                'htx_id': admin.htx_id or '',
+              }
+            })
+
+          return redirect('staffList')
+        except Exception as e:
+          if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': str(e)})
+          return redirect('staffList')
+
   return redirect('staffList')
 
+@csrf_exempt
 def getAdminInfo(request):
-  if request.method == 'POST':      
+  if request.method == 'POST':
     admin_id = request.POST.get('admin_id')
     print(admin_id)
 
     if admin_id:
       admin = get_object_or_404(MemAdmin, admin_id=admin_id)
       data = {
+        'success': True,
         'admin_pwd' : admin.admin_pwd,
         'admin_name' : admin.admin_name,
-        'admin_tel_no' : admin.admin_tel_no,
-        'admin_email' : admin.admin_email,
-        'admin_biz_area' : admin.admin_biz_area,
-        'biz_level' : admin.biz_level,
-        'reg_date' : admin.reg_date,
-        'manage_YN' : admin.manage_YN,
-        'grade' : admin.grade,
-        'htx_id' : admin.htx_id,
+        'admin_tel_no' : admin.admin_tel_no or '',
+        'admin_email' : admin.admin_email or '',
+        'admin_biz_area' : admin.admin_biz_area or '',
+        'biz_level' : admin.biz_level or '',
+        'reg_date' : admin.reg_date.strftime('%Y-%m-%d') if admin.reg_date else '',
+        'manage_YN' : admin.manage_YN or '',
+        'grade' : admin.grade or '',
+        'htx_id' : admin.htx_id or '',
         'user_id' : admin.user_id
       }
-      return data
+      return JsonResponse(data)
+    else:
+      return JsonResponse({'success': False, 'error': 'Admin ID not provided'})
   else:
-    return {}
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 def delete_admin(request, seq_no):
   if request.method == 'POST': 

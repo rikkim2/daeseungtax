@@ -1,5 +1,7 @@
 import json
 import mimetypes
+import os
+import re
 from django.core.paginator import Paginator
 from django.shortcuts import render
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -13,6 +15,10 @@ from django.http import Http404
 from django.conf import settings
 from pathlib import Path
 from django.core.files.storage import FileSystemStorage
+from dotenv import load_dotenv
+from popbill import MessageService, PopbillException
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 @require_GET
 def mngMsg(request):
@@ -92,6 +98,10 @@ def sms_data(request):
     """
     sms_class = request.GET.get("sms_class", "vat")   # 기존 ASP의 flag 역할(부가세/급여/종소세 등)
     search_text = (request.GET.get("search_text") or "").strip()
+    ADID = (request.GET.get("ADID") or "").strip()
+    if not ADID:
+        ADID = (request.session.get("ADID") or "").strip()
+    request.session["ADID"] = ADID
 
     where_parts = [
         "a.Del_YN <> 'Y'",
@@ -105,20 +115,43 @@ def sms_data(request):
         like = f"%{search_text}%"
         params += [like, like, like]
 
+    # 담당자(ADID) 필터: '전체'가 아니면 biz_manager로 필터
+    if ADID and ADID != "전체":
+        where_parts.append("b.biz_manager = %s")
+        params.append(ADID)
+
     where_sql = " AND ".join(where_parts)
+
+    # 템플릿별 추가 조건 (mailFlag 참고)
+    template_where_map = {
+        "pay": "(b.goyoung_jungkyu = 'Y' OR b.goyoung_sayoup = 'Y' OR b.goyoung_ilyoung = 'Y')",
+        "yearend": "",  # 연말정산은 조건 없음
+        "younmal": "(b.goyoung_jungkyu = 'Y')",
+        "ilyoung": "(b.goyoung_ilyoung = 'Y')",
+        "vat": "(a.Biz_Type IN ('1','4'))",
+        "nonvat": "(a.Biz_Type IN ('2','6'))",
+        "corptax": "(a.Biz_Type BETWEEN '1' AND '3')",
+        "incometax": "(a.Biz_Type BETWEEN '4' AND '7')",
+    }
+    extra_where = template_where_map.get(sms_class.lower())
+    if extra_where:
+        where_sql = f"({where_sql}) AND {extra_where}"
 
     sql = f"""
         SELECT
+            b.biz_manager as groupManager,
+            c.admin_name,
+            c.admin_tel_no,        
             a.ceo_name,
             a.biz_name,
             a.hp_no,
             a.seq_no,
             a.biz_no,
-            '' AS sms_send_dt_rsv,
             ISNULL(CONVERT(varchar(16), d.sms_send_dt, 120), '')     AS sms_send_dt,
             ISNULL(d.sms_send_result, '')                             AS sms_send_result
         FROM mem_user a
         JOIN mem_deal b ON a.seq_no = b.seq_no
+        left join mem_admin c on b.biz_manager=c.admin_id
         LEFT JOIN Tbl_SMS d
                ON a.seq_no = d.seq_no
               AND d.sms_class = %s
@@ -160,24 +193,149 @@ def sms_send(request):
     toSendHours = request.POST.get("toSendHours", "")
     toSendMinute = request.POST.get("toSendMinute", "")
 
+    # SMS 내용 길이 제한(테이블 컬럼 초과 방지)
+    MAX_SMS_LEN = 400
+    if len(msg) > MAX_SMS_LEN:
+        msg = msg[:MAX_SMS_LEN]
+
     if not msg:
-        return JsonResponse({"ok": False, "msg": "내용을 입력하세요."}, status=400)
+        return JsonResponse({"success": False, "ok": False, "message": "내용을 입력하세요."}, status=400)
     if not seqs or not hps or len(seqs) != len(hps):
-        return JsonResponse({"ok": False, "msg": "대상을 선택하세요."}, status=400)
+        return JsonResponse({"success": False, "ok": False, "message": "대상을 선택하세요."}, status=400)
+
+    # Popbill 설정 로드 (admins/.env 우선, 없으면 프로젝트 루트/noa/.env)
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    env_candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(CURRENT_DIR)), ".env"),  # admins/.env
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(CURRENT_DIR))), ".env"),  # 프로젝트 루트/.env
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(CURRENT_DIR))), "noa", ".env"),  # noa/.env
+    ]
+    env_loaded = None
+    for env_path in env_candidates:
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+            env_loaded = env_path
+            break
+    LinkID = os.getenv("LinkID")
+    SecretKey = os.getenv("SecretKey")
+    CorpNum = os.getenv("CorpNum")
+    senderNumber = (os.getenv("senderNumber") or "").replace("-", "").strip()
+    if not (LinkID and SecretKey and CorpNum and senderNumber):
+        print(f"[sms_send] Popbill env missing. loaded_from={env_loaded} LinkID={LinkID} CorpNum={CorpNum} senderNumber={senderNumber}")
+    if not (LinkID and SecretKey and CorpNum and senderNumber):
+        return JsonResponse({"success": False, "ok": False, "message": "Popbill 설정을 확인하세요."}, status=500)
+
+    try:
+        messageService = MessageService(LinkID, SecretKey)
+        messageService.IsTest = False
+    except Exception as e:
+        return JsonResponse({"success": False, "ok": False, "message": f"Popbill 초기화 실패: {e}"}, status=500)
 
     now = timezone.now()
+    success_cnt = 0
+    fail_items = []
 
-    # TODO: 예약이면 예약시간 조립해서 sms_send_dt_rsv에 넣고,
-    # 실제 발송은 스케줄러/큐로 넘기는 구조가 베스트
-    # 여기서는 단순 저장 예시
+    def _byte_len(s: str) -> int:
+        try:
+            return len(s.encode("utf-8"))
+        except Exception:
+            return len(s)
+
+    def _cut_by_bytes(s: str, max_bytes: int) -> str:
+        out = []
+        total = 0
+        for ch in s:
+            bl = _byte_len(ch)
+            if total + bl > max_bytes:
+                break
+            out.append(ch)
+            total += bl
+        return "".join(out)
+
+    def get_sender_number(seq_no):
+        with connection.cursor() as c2:
+            c2.execute(
+                """
+                SELECT m.admin_tel_no
+                FROM mem_deal d
+                LEFT JOIN Mem_Admin m ON d.biz_manager = m.admin_id
+                WHERE d.seq_no = %s
+                """,
+                [seq_no],
+            )
+            row = c2.fetchone()
+            if row and row[0]:
+                return (row[0] or "").replace("-", "").strip()
+        return senderNumber
+
     with connection.cursor() as cur:
+        print(f"[sms_send] send count={len(seqs)} sms_class={sms_class} msg_len={len(msg)}")
         for seq_no, hp in zip(seqs, hps):
-            cur.execute("""
-                INSERT INTO Tbl_SMS (seq_no, sms_class, sms_send_dt, sms_send_dt_rsv, sms_send_result, sms_contents)
-                VALUES (%s, %s, %s, NULL, %s, %s)
-            """, [seq_no, sms_class, now, "OK", msg])
+            hp_clean = (hp or "").replace("-", "").strip()
+            if not hp_clean:
+                fail_items.append(f"seq_no {seq_no}: 수신번호 없음")
+                continue
 
-    return JsonResponse({"ok": True, "msg": "전송 처리 완료"})
+            send_ok = False
+            error_msg = ""
+            byte_len = _byte_len(msg)
+            is_lms = byte_len > 90
+            subject = _cut_by_bytes(msg, 40) if is_lms else ""
+            sender_hp = get_sender_number(seq_no)
+            try:
+                if is_lms:
+                    receiptNum = messageService.sendLMS(
+                        CorpNum,
+                        sender_hp,
+                        hp_clean,
+                        "",
+                        subject,
+                        msg,
+                        "",
+                        False,
+                        None,
+                    )
+                else:
+                    receiptNum = messageService.sendSMS(
+                        CorpNum,
+                        sender_hp,
+                        hp_clean,
+                        "",
+                        msg,
+                        "",
+                        False,
+                        None,
+                    )
+                send_ok = True
+            except PopbillException as pe:
+                error_msg = f"{pe.code}: {pe.message}"
+            except Exception as e:
+                error_msg = str(e)
+
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO Tbl_SMS (seq_no, sms_class, sms_send_dt, sms_send_result, sms_contents, sms_tel_no)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    [seq_no, sms_class, now, "Y" if send_ok else "N", msg, hp_clean],
+                )
+            except Exception as e:
+                send_ok = False
+                error_msg = (error_msg + " / DB: " + str(e)) if error_msg else f"DB: {e}"
+
+            if send_ok:
+                success_cnt += 1
+            else:
+                fail_items.append(error_msg or f"seq_no {seq_no}: 알 수 없는 오류")
+
+    if fail_items:
+        return JsonResponse(
+            {"success": False, "ok": False, "message": f"성공 {success_cnt}건, 실패 {len(fail_items)}건. 첫 실패 사유: {fail_items[0]}"},
+            status=200,
+        )
+
+    return JsonResponse({"success": True, "ok": True, "message": f"성공 {success_cnt}건 발송 완료"}, status=200)
 
 # ─────────────────────────────────────────────────────────
 # MAIL 
@@ -208,7 +366,6 @@ def mngMsg_mail_data(request):
             "admin_tel_no": (contact.get("admin_tel_no") if contact else "") or "",
         })
         
-
     mailFlag = (request.GET.get("mailFlag") or "").strip().lower()
     print(f"[mngMsg_mail_data] ADID={ADID} mailFlag={mailFlag}")
 
@@ -222,7 +379,6 @@ def mngMsg_mail_data(request):
     params = []
 
     # 템플릿(=mailFlag)별 추가 조건
-    # - yearend(프론트) / younmal(기존 표기) 둘 다 허용
     template_where_map = {
         "pay": "(b.goyoung_jungkyu = 'Y' OR b.goyoung_sayoup = 'Y' OR b.goyoung_ilyoung = 'Y')",
         "yearend": "",
@@ -241,7 +397,6 @@ def mngMsg_mail_data(request):
     if ADID and ADID != "전체":
         where_parts.append("b.biz_manager = %s")
         params.append(ADID)
-
     where_sql = " AND ".join(where_parts)
 
     # 상태표시용: 해당 템플릿(mailFlag)을 mail_class로 보고 마지막 발송일을 가져온다.
@@ -397,13 +552,13 @@ def mngMsg_mail_send(request):
         return JsonResponse({"ok": False, "msg": "invalid json"})
 
     seq_no = payload.get("seq_no")
-    email = payload.get("email")
+    raw_email = (payload.get("email") or "").strip()
     title = payload.get("title") or ""
     content = payload.get("content") or ""
     uploaded_name = payload.get("uploaded_name") or ""
-    print(f"[mngMsg_mail_send] seq_no={seq_no} email={email} title_len={len(title)} content_len={len(content)} uploaded_name={uploaded_name}")
+    print(f"[mngMsg_mail_send] seq_no={seq_no} email_raw='{raw_email}' title_len={len(title)} content_len={len(content)} uploaded_name={uploaded_name}")
 
-    if not seq_no or not email or not title:
+    if not seq_no or not raw_email or not title:
         return JsonResponse({"ok": False, "msg": "seq_no/email/title required"})
 
     from django.core.mail import EmailMultiAlternatives
@@ -413,6 +568,25 @@ def mngMsg_mail_send(request):
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or getattr(settings, "EMAIL_HOST_USER", None)
     if not from_email:
         return JsonResponse({"ok": False, "msg": "메일 발신 계정이 설정되지 않았습니다."}, status=500)
+
+    # 여러 이메일을 ; 또는 , 로 구분한 경우 지원
+    def parse_emails(addr_str):
+        parts = re.split(r"[;,]", addr_str)
+        addrs = []
+        for p in parts:
+            p = p.strip()
+            if not p:
+                continue
+            try:
+                validate_email(p)
+                addrs.append(p)
+            except ValidationError:
+                return None, p
+        return addrs, None
+
+    to_emails, invalid = parse_emails(raw_email)
+    if invalid or not to_emails:
+        return JsonResponse({"ok": False, "msg": f"잘못된 이메일 주소: {invalid or raw_email}"}, status=400)
 
     attachment_path = None
     if uploaded_name:
@@ -428,7 +602,7 @@ def mngMsg_mail_send(request):
             subject=title,
             body=strip_tags(content),
             from_email=from_email,
-            to=[email],
+            to=to_emails,
         )
         msg.attach_alternative(content, "text/html")
         if attachment_path:

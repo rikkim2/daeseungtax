@@ -15,6 +15,46 @@
         width: 100%;
         /* 높이는 JS에서 설정 */
     }
+
+/* [디자인 수정] 토글 버튼 기본 스타일 (선택 안됨) */
+    .custom-toggle-btn {
+        border-color: #d1d5db !important;
+        background-image: none !important;
+        background-color: #ffffff !important;
+        color: #4b5563 !important;
+        border-radius: 4px !important;
+        box-shadow: none !important;
+    }
+
+    /* [디자인 수정] 토글 버튼 선택됨 (Pressed) */
+    .custom-toggle-btn.x-btn-pressed {
+        background-color: #667eea !important; /* 테마 색상 (보라/블루) */
+        border-color: #667eea !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+
+    /* [디자인 수정] 마우스 호버 효과 */
+    .custom-toggle-btn:hover:not(.x-btn-pressed) {
+        background-color: #f3f4f6 !important;
+        border-color: #9ca3af !important;
+        color: #111827 !important;
+    }
+    
+    /* 버튼 그룹 간격 조정 */
+    .custom-btn-group .x-btn-group-body {
+        padding: 2px !important;
+    }
+
+/* [추가] 해골(오류) 발생 시 노란색 배경 */
+    .row-yellow-warning .x-grid-cell {
+        background-color: #ffffcc !important; /* 연한 노란색 */
+    }
+    
+    /* (선택사항) 마우스 올렸을 때 색상 유지하고 싶다면 아래 주석 해제 */
+    /* .row-yellow-warning.x-grid-row-over .x-grid-cell {
+        background-color: #ffffaa !important;
+    } */
 </style>  
 
 <div class="ext-grid-wrapper"></div>
@@ -82,11 +122,24 @@ console.log(ADID)
     proxy.extraParams.input_workyear = work_YY;
     proxy.extraParams.work_mm        = work_MM;
     proxy.extraParams.ADID           = ADID;
-    proxy.extraParams.flag           = flag;   // 필요하면
+    proxy.extraParams.flag           = flag;
+
+    console.log('🔄 Reloading store with params:', proxy.extraParams);
 
     store.reload({
       callback: function () {
-        if (ADID === "전체") store.group('groupManager');
+        if (ADID === "전체") {
+            // [핵심 수정] 방향을 'ASC'로 강제 지정하여 토글 방지
+            store.group({ property: 'groupManager', direction: 'ASC' });
+            
+            // 그룹 내부의 업체명 정렬도 유지하고 싶다면 sorters 재확인
+            store.sort([
+                { property: 'groupManager', direction: 'ASC' },
+                { property: 'biz_name', direction: 'ASC' }
+            ]);
+        } else {
+            store.clearGrouping();
+        }
       }
     });
   }
@@ -105,20 +158,21 @@ console.log(ADID)
     Ext.define('Plant', {
       extend: 'Ext.data.Model',
       fields: [
-        {name: 'groupManager',type: 'string'},
+        {name: 'groupManager',type: 'string', convert: function(v){ return (v || '').trim(); }},
         {name: 'seq_no'},
         {name: 'biz_name', type: 'string'},
+        {name: 'biz_type', type: 'string'},
         {name: 'isBanki', type: 'string'},
-        {name: 'wh_Kunro',type: 'string'},
-        {name: 'wh_sayoup',type: 'string'},
-        {name: 'wh_kita',type: 'string'},
+        {name: 'wh_Kunro',type: 'float', convert: function(v){ return parseFloat(v) || 0; }},
+        {name: 'wh_sayoup',type: 'float', convert: function(v){ return parseFloat(v) || 0; }},
+        {name: 'wh_kita',type: 'float', convert: function(v){ return parseFloat(v) || 0; }},
         { name: 'isKun', type: 'string' },
-        { name: 'isKunAmt', type: 'string' },
+        { name: 'isKunAmt', type: 'float', convert: function(v){ return parseFloat(v) || 0; } },
         { name: 'isIlyoung', type: 'string' },
         { name: 'isSa', type: 'string' },
-        { name: 'isSaAmt', type: 'string' },
+        { name: 'isSaAmt', type: 'float', convert: function(v){ return parseFloat(v) || 0; } },
         { name: 'isKi', type: 'string' },
-        { name: 'isKiAmt', type: 'string' },
+        { name: 'isKiAmt', type: 'float', convert: function(v){ return parseFloat(v) || 0; } },
         { name: 'YN_9', type: 'string' },
         { name: 'isSkele', type: 'string' }
       ]
@@ -127,13 +181,33 @@ console.log(ADID)
     mainStore = Ext.create('Ext.data.Store', {
       model: 'Plant',
       groupField: (ADID === "전체" ? 'groupManager' : null),
-      sorters: {property: 'biz_name', direction: 'ASC'},
+      // 그룹(담당자) 순서가 조회마다 바뀌지 않도록 group/grouper/sorters 모두 지정
+      grouper: { property: 'groupManager', direction: 'ASC' },
+      sorters: [
+        {property: 'groupManager', direction: 'ASC'},
+        {property: 'biz_name', direction: 'ASC'}
+      ],
       proxy: {
         type: 'ajax',
         url: "{% url 'api_kani_sa_il_list' %}",
-        reader: { type: 'json', root: 'rows' }
+        reader: {
+          type: 'json',
+          root: 'rows',
+          successProperty: 'ok'
+        }
       },
-      autoLoad: false
+      autoLoad: false,
+      listeners: {
+        load: function(store, records, successful, operation) {
+          var response = operation && operation.response ? operation.response : null;
+          if (!successful) {
+            console.error('Load failed. Response:', response ? response.responseText : 'No response');
+            Ext.Msg.alert('오류', '데이터를 불러오는데 실패했습니다.');
+          } else {
+            console.log('Load successful! Records:', records.length);
+          }
+        }
+      }
     });
 
     var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
@@ -165,11 +239,51 @@ console.log(ADID)
       updateScrollMenuText(item);
     }
     const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);      
-    function renderFlagEmoji(v){
-      return v ? "✅" : "";
+    function renderFlagEmoji(v, meta, rec) {
+      var colIndex = meta.column.dataIndex;
+
+      // 1. [반기] 컬럼: 값이 True(또는 "1", "true")인 경우만 체크
+      if (colIndex === 'isBanki') {
+        // 서버에서 boolean으로 오더라도 ExtJS Model이 string으로 변환할 수 있으므로 문자열 체크 포함
+        return (v === true || String(v) === 'true' || String(v) === '1' || v === 'Y') ? "✅" : "";
+      }
+
+      // 2. [전자신고 접수여부] 컬럼들 (isKun, isSa, isKi)
+      // 전체 합계가 아니라, "해당 항목"의 신고금액 vs 지급금액을 비교
+      var whAmt = 0;  // 원천징수 신고금액
+      var payAmt = 0; // 지급금액
+
+      if (colIndex === 'isKun') {       // 일용
+        whAmt = rec.get('wh_Kunro') || 0;
+        payAmt = rec.get('isKunAmt') || 0;
+      } else if (colIndex === 'isSa') { // 사업
+        whAmt = rec.get('wh_sayoup') || 0;
+        payAmt = rec.get('isSaAmt') || 0;
+      } else if (colIndex === 'isKi') { // 기타
+        whAmt = rec.get('wh_kita') || 0;
+        payAmt = rec.get('isKiAmt') || 0;
+      }
+
+      // 조건: 신고금액 0이고 지급금액도 0이면 공란
+      if (whAmt === 0 && payAmt === 0) {
+        return "";
+      }
+
+      // 금액이 일치하면 체크 표시 (불일치 시 공란, 불일치는 isSkele 컬럼에서 처리됨)
+      return (whAmt === payAmt) ? "✅" : "";
     }
-    function renderSkeletonEmoji(v){
-      return v ? "💀" : "";
+    function renderSkeletonEmoji(v, meta, rec){
+      // 지급금액/신고금액 모두 0이면 공란, 다르면 해골
+      var wh_k = rec.get('wh_Kunro') || 0;
+      var wh_s = rec.get('wh_sayoup') || 0;
+      var wh_i = rec.get('wh_kita') || 0;
+      var kunAmt = rec.get('isKunAmt') || 0;
+      var saAmt  = rec.get('isSaAmt') || 0;
+      var kiAmt  = rec.get('isKiAmt') || 0;
+      var totalWh = wh_k + wh_s + wh_i;
+      var totalPay = kunAmt + saAmt + kiAmt;
+      if (totalWh === 0 && totalPay === 0) return "";
+      return totalWh !== totalPay ? "💀" : "";
     }       
     mainGrid = Ext.create('Ext.grid.Panel', {
       loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
@@ -179,55 +293,80 @@ console.log(ADID)
       width: '100%',
       height: getGridHeight(),
       columnLines: true,
-      ... (ADID === "전체" ? { 
-            features: [{
-                id: 'groupManager',
-                ftype: 'groupingsummary',
-                startCollapsed: false,
-                groupHeaderTpl: '{name}',
-                hideGroupedHeader: false,
-                enableGroupingMenu: true
-            }]
-        } : {}),       
+      viewConfig: {
+          getRowClass: function(record, rowIndex, rowParams, store) {
+              // 데이터 모델의 'isSkele' 값이 true(또는 "true")이면 클래스 적용
+              var isSkele = record.get('isSkele');
+              if (isSkele === true || String(isSkele) === 'true') {
+                  return 'row-yellow-warning';
+              }
+              return '';
+          }
+      },
+      features: (ADID === "전체"
+        ? [{
+            id: 'groupManager',
+            ftype: 'groupingsummary',
+            startCollapsed: false,
+            groupHeaderTpl: '{name}',
+            hideGroupedHeader: false,
+            enableGroupingMenu: true
+          }]
+        : []),
       plugins: [cellEditing],
       selModel: { selType: 'cellmodel' },
       columns: [
 		    {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0}, 
         {  header: 'SEQ', dataIndex: 'seq_no',width: 50        }, 
-        {  id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',width: 140	}, 
-        { header:'반기', dataIndex:'isBanki', width:33, align:'center', renderer: renderFlagEmoji },
+        {  id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',width: 150	}, 
+        { header:'반기', dataIndex:'isBanki', width:50, align:'center', renderer: renderFlagEmoji },
         {
           text: '원천징수 신고금액',
           columns: [
-            { header: '<center>일용<br>(지급시기)</center>', dataIndex: 'wh_Kunro',  width: 75, xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
-            {	header: '<center>사업소득</center>', dataIndex: 'wh_sayoup',  width: 75, xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
-            {	header: '<center>기타소득</center>', dataIndex: 'wh_kita',  width: 75, xtype: 'numbercolumn', align:'right',format:'0,000'            }
+            { header: '<center>일용<br>(지급시기)</center>', dataIndex: 'wh_Kunro',  width: 100, xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            {	header: '<center>사업소득</center>', dataIndex: 'wh_sayoup',  width: 100, xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            {	header: '<center>기타소득</center>', dataIndex: 'wh_kita',  width: 100, xtype: 'numbercolumn', align:'right',format:'0,000'            }
           ]		}, 
         {
           text: '전자신고 접수여부',
           columns: [
-            { header:'일용', dataIndex:'isKun', width:33, renderer: renderFlagEmoji },
-            {	header: '<center>일용<br>지급금액</center>', dataIndex: 'isKunAmt',  width: 75,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            { header:'일용', dataIndex:'isKun', width:50, renderer: renderFlagEmoji},
+            { header: '<center>일용<br>지급금액</center>',dataIndex: 'isKunAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
             {	header: '<center>근로내용확인신고<br>접수번호</center>', dataIndex: 'isIlyoung',  width: 150, editor: { allowBlank: false }			}, 
-            { header:'사업', dataIndex:'isSa',  width:33, renderer: renderFlagEmoji },
-            {	header: '<center>사업<br>지급금액</center>', dataIndex: 'isSaAmt',  width: 75,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
-            { header:'기타', dataIndex:'isKi',  width:33, renderer: renderFlagEmoji },
-            {	header: '<center>기타<br>지급금액</center>', dataIndex: 'isKiAmt',  width: 75,xtype: 'numbercolumn', align:'right',format:'0,000'            }
+            { header:'사업', dataIndex:'isSa',  width:50, renderer: renderFlagEmoji },
+            {	header: '<center>사업<br>지급금액</center>', dataIndex: 'isSaAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
+            { header:'기타', dataIndex:'isKi',  width:50, renderer: renderFlagEmoji },
+            {	header: '<center>기타<br>지급금액</center>', dataIndex: 'isKiAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000'            }
           ]
 		    }, 
-        {	header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   width: 250, editor: { allowBlank: false }		}, 
-        { header:'오류', dataIndex:'isSkele', width:35, renderer: renderSkeletonEmoji },
+        {	header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   flex: 1, editor: { allowBlank: false }		}, 
+        { header:'오류', dataIndex:'isSkele', width:50, renderer: renderSkeletonEmoji },
       ],
       dockedItems: [
         {
           dock: 'top',
           xtype: 'toolbar',
-          style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+          padding: '10 0 5 10', // 여백을 좀 더 주어 시원하게
+          style: { background: '#fff', border: 'none' }, // [수정] 중간 선 제거
           items: [
             ...dockedItemsConfig,
+            { xtype: 'tbspacer', width: 20 }, // 구분 여백
             {
-                xtype: 'buttongroup', columns: 5, frame: false,
-                defaults: { enableToggle: true, toggleGroup: 'yearGroup', margin: '0 5 0 0', style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } },
+                xtype: 'buttongroup', 
+                columns: 5, 
+                frame: false,
+                cls: 'custom-btn-group', // 그룹용 클래스 (필요시)
+                bodyStyle: 'background: transparent;', // 배경 투명
+                border: false,
+                // [수정] defaults에 커스텀 클래스 적용
+                defaults: { 
+                    enableToggle: true, 
+                    toggleGroup: 'yearGroup', 
+                    margin: '0 4 0 0', 
+                    cls: 'custom-toggle-btn', // ★ 위에서 정의한 CSS 클래스 적용
+                    height: 32, // 버튼 높이를 키워 클릭하기 쉽게
+                    width: 60   // 버튼 너비 고정
+                },
                 items: Array.from({ length: 5 }, (_, i) => ({
                   text: `${currentYear - i}년`,
                   pressed: currentYear - i === parseInt(work_YY, 10),
@@ -240,20 +379,36 @@ console.log(ADID)
           ]
         },
         {
-          xtype: 'buttongroup', columns: 12,
-          defaults: { 
-            enableToggle: true, toggleGroup: 'monthGroup', margin: '0 5 0 0', 
-            style: { border: '1px solid #ccc', padding: '5px 6px', borderRadius: '5px' } 
-          },
-          items: Array.from({ length: 12 }, (_, i) => ({
-              text: `${i + 1}월`,
-              pressed: i + 1 === parseInt(work_MM, 10),
-              handler: function () {
-                work_MM = parseInt(this.text.replace('월', ''), 10);
-                syncParamsAndReload();
-              }
-          })),
-          style: { background: '#fff', border: '1px solid #ccc', padding: '6px' }
+          xtype: 'toolbar', // buttongroup을 toolbar 안에 넣거나 직접 배치
+          dock: 'top',
+          padding: '5 0 5 10',
+          style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+          items: [
+            {
+              xtype: 'buttongroup', 
+              columns: 12,
+              frame: false,
+              bodyStyle: 'background: transparent;',
+              border: false,
+              // [수정] defaults에 커스텀 클래스 적용
+              defaults: { 
+                  enableToggle: true, 
+                  toggleGroup: 'monthGroup', 
+                  margin: '0 4 0 0', 
+                  cls: 'custom-toggle-btn', // ★ 위에서 정의한 CSS 클래스 적용
+                  height: 32,
+                  width: 50
+              },
+              items: Array.from({ length: 12 }, (_, i) => ({
+                  text: `${i + 1}월`,
+                  pressed: i + 1 === parseInt(work_MM, 10),
+                  handler: function () {
+                    work_MM = parseInt(this.text.replace('월', ''), 10);
+                    syncParamsAndReload();
+                  }
+              }))
+            }
+          ]
         }
       ],
       listeners: {
@@ -273,15 +428,27 @@ console.log(ADID)
     }      
     
     // proxy.extraParams 초기값 세팅 후 조회
-    mainStore.getProxy().extraParams = {
+    var initialParams = {
       input_workyear: work_YY,
       work_mm: work_MM,
       ADID: ADID,
       flag: flag
     };
+    mainStore.getProxy().extraParams = initialParams;
+    console.log('📡 Initial load with params:', initialParams);
+
     mainStore.load({
-      callback: function () {
-        if (ADID === "전체") mainStore.group('groupManager');
+      callback: function (records, operation, success) {
+        console.log('Store load callback:', { records: records, success: success, recordCount: records ? records.length : 0 });
+        if (success) {
+          console.log('Data loaded successfully. Record count:', mainStore.getCount());
+          if (ADID === "전체") {
+              // [핵심 수정] 초기 로드 시에도 방향 명시
+              mainStore.group({ property: 'groupManager', direction: 'ASC' });
+          }
+        } else {
+          console.error('Store load failed!', operation);
+        }
       }
     });
 
