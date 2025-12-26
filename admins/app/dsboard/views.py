@@ -47,7 +47,7 @@ def get_pending_filings(request):
     담당자별로 필터링 가능
     """
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         today = datetime.date.today()
         current_year = today.year
         current_month = today.month
@@ -487,7 +487,7 @@ def get_receivables(request):
     현재는 기본 구조만 제공, 실제 미수금 데이터는 별도 테이블 필요
     """
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
 
         # TODO: 실제 미수금 테이블 연동 필요
         # 현재는 샘플 데이터 구조만 제공
@@ -529,7 +529,7 @@ def get_executive_renewals(request):
     법인 설립일 기준으로 임기 만료 예정 법인 조회
     """
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         today = datetime.date.today()
 
         renewals = []
@@ -605,7 +605,7 @@ def get_new_companies(request):
     """
     try:
         days = int(request.GET.get('days', 30))
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
 
         cutoff_date = timezone.now() - timedelta(days=days)
 
@@ -689,7 +689,7 @@ def get_bizbank_data(request):
     print("="*80)
 
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         admin_id = request.user.username
 
         print(f"📥 요청 파라미터:")
@@ -774,7 +774,7 @@ def get_cash_data(request):
     print("="*80)
 
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         year = request.GET.get('year', datetime.datetime.now().year)
         admin_id = request.user.username
 
@@ -885,7 +885,7 @@ def get_vat_data(request):
     print("="*80)
 
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         year = int(request.GET.get('year', datetime.datetime.now().year))
         admin_id = request.user.username
 
@@ -1066,7 +1066,7 @@ def get_report_data(request):
     print("="*80)
 
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         admin_id = request.user.username
 
         today = datetime.date.today()
@@ -1208,7 +1208,7 @@ def get_kani_mm_data(request):
     print("="*80)
 
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         admin_id = request.user.username
 
         # 최근 6개월 데이터 조회
@@ -1427,7 +1427,7 @@ def get_kani_banki_data(request):
     print("="*80)
 
     try:
-        담당자 = request.GET.get('staff', None)
+        담당자 = request.GET.get('ADID', None)
         admin_id = request.user.username
 
         print(f"📥 요청 파라미터:")

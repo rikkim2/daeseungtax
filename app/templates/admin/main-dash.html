@@ -509,7 +509,7 @@
             const staff = $('#staffFilter').val();
             const year = $('#yearFilter').val();
             const params = [];
-            if (staff) params.push(`staff=${encodeURIComponent(staff)}`);
+            if (staff) params.push(`ADID=${encodeURIComponent(staff)}`);
             if (year) params.push(`year=${year}`);
             return params.length > 0 ? '?' + params.join('&') : '';
         },
