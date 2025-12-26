@@ -13,6 +13,7 @@ from app.models import (
     원천세전자신고,
     종합소득세전자신고2,
     지급조서전자신고,
+    지급조서간이소득,
     일용직전자신고
 )
 import datetime
@@ -220,6 +221,48 @@ def get_pending_filings(request):
                         '연락처': corp.biz_tel,
                         '대표자': corp.ceo_name
                     })
+
+        # 4. 지급조서간이소득 미신고 업체 (전년도 사업/일용/기타소득)
+        # 지급조서는 다음해 3월 10일까지 제출
+        # 2월부터 3월 10일까지 알림
+        if 2 <= current_month <= 3:
+            # 전년도 지급조서 확인
+            filing_year = current_year - 1
+            filing_deadline = datetime.date(current_year, 3, 10)
+            days_until_filing = (filing_deadline - today).days
+
+            # 3월 10일 전후 30일 이내만 체크
+            if -30 <= days_until_filing <= 40:
+                # 모든 업체 조회 (사업소득 지급이 있는 업체)
+                all_corps = MemUsers.objects.filter(
+                    del_yn='N'
+                ).exclude(biz_no='')
+
+                if 담당자:
+                    all_corps = all_corps.filter(biz_area=담당자)
+
+                for corp in all_corps:
+                    과세년도_str = str(filing_year)
+
+                    # 지급조서간이소득 신고 여부 확인
+                    filed = 지급조서간이소득.objects.filter(
+                        사업자번호=corp.biz_no,
+                        과세년도__contains=과세년도_str
+                    ).exists()
+
+                    # 신고하지 않은 업체만 추가
+                    if not filed:
+                        pending_list.append({
+                            '업체명': corp.biz_name,
+                            '사업자번호': corp.biz_no,
+                            '담당자': corp.biz_area,
+                            '신고유형': '지급조서(간이)',
+                            '과세기간': f"{filing_year}년",
+                            '신고마감일': filing_deadline.strftime('%Y-%m-%d'),
+                            'D_day': days_until_filing,
+                            '연락처': corp.biz_tel,
+                            '대표자': corp.ceo_name
+                        })
 
         # D-day 기준으로 정렬 (마감일이 가까운 순)
         pending_list.sort(key=lambda x: x['D_day'])
