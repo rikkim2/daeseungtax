@@ -242,6 +242,7 @@
     }
 
     mainGrid = Ext.create('Ext.grid.Panel', {
+      id: 'mainGrid',
       loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
       store: mainStore,
       renderTo: renderTarget,
@@ -249,6 +250,67 @@
       width: '100%',
       height: getGridHeight(),
       columnLines: true,
+      tools: [  // 최상단 오른쪽 툴바
+          {
+            xtype: 'button',
+            text: '접수번호저장',
+            iconCls: 'fa fa-floppy-o',
+            handler: function (btn) {
+              Ext.create('Ext.window.Window', {
+                title: '데이터 붙여넣기',
+                modal: true,
+                frame: false,
+                width: 800,
+                height: 200,
+                layout: 'fit',
+                items: [{
+                    xtype: 'textarea',
+                    name: 'clipboardData',
+                    emptyText: '홈택스 전자신고 결과를 드래그 복사해서 붙여넣으세요.'
+                }],
+                buttons: [
+                  {
+                    text: '저장',
+                    handler: function(btn) {
+                        var win = btn.up('window');
+                        var clipboardData = win.down('textarea').getValue();
+                        Ext.Ajax.request({
+                          url: "{% url 'save_clipboard_Pay' %}",
+                          method: 'POST',
+                          params: {
+                              clipboardData: clipboardData,
+                              csrfmiddlewaretoken: "{{ csrf_token }}"
+                          },
+                          success: function(response) {
+                            win.close();
+                            Swal.fire({
+                              title: '작업 성공',
+                              text: '접수번호가 성공적으로 저장되었습니다.',
+                              icon: 'success',
+                              showConfirmButton: true,
+                              willClose: () => {
+                                // 그리드 새로고침
+                                mainStore.reload();
+                              }
+                            });
+                          },
+                          failure: function(response) {
+                            Swal.fire("오류", "저장오류 : " + response.message, "error");
+                          }
+                        });
+                    }
+                  },
+                  {
+                    text: '취소',
+                    handler: function(btn) {
+                        btn.up('window').close();
+                    }
+                  }]
+              }).show();
+            },
+            style: 'margin-right: 10px;'
+          }
+      ],
       viewConfig: {
           getRowClass: function(record, rowIndex, rowParams, store) {
               var isSkele = record.get('isSkele');
