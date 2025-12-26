@@ -30,18 +30,24 @@ from email import encoders
 def index(request):
   global seq_no
   context = {}
-  mem_admin = MemAdmin.objects.get(admin_id=request.user.username) 
+  mem_admin = MemAdmin.objects.get(admin_id=request.user.username)
 
   root_dir = 'static/cert_DS/'+mem_admin.admin_name
 
-  context['isRND'] = "운영중" 
-  context['colorRND'] = "info" 
-  context['isVENTURE'] = "설치"  
-  context['colorVENTURE'] = "success" 
+  context['isRND'] = "운영중"
+  context['colorRND'] = "info"
+  context['isVENTURE'] = "설치"
+  context['colorVENTURE'] = "success"
   context['regDate'] =  str(mem_admin.reg_date.year)+"년 "  + str(mem_admin.reg_date.month)+"월 " + str(mem_admin.reg_date.day)+"일"
-  
+
 
   return render(request, "admin/staffInfo.html",context)
+
+@login_required(login_url="/login/")
+def staffHoliday(request):
+  """직원 휴가 및 일정 관리 페이지"""
+  context = {}
+  return render(request, "admin/staffHoliday.html", context)
 
 @login_required(login_url="/login/")
 def fileupload(request):
