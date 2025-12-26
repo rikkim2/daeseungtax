@@ -2,12 +2,225 @@
 {% load static %}
 {% load humanize %}
     {% block styles %}
+    <style>
+        .dashboard-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
 
+        .dashboard-card h5 {
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .stat-card p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .table-responsive {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .badge-danger { background-color: #dc3545; }
+        .badge-warning { background-color: #ffc107; color: #000; }
+        .badge-info { background-color: #17a2b8; }
+        .badge-success { background-color: #28a745; }
+
+        .d-day-urgent {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .d-day-warning {
+            background-color: #ffc107;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .tab-content {
+            margin-top: 20px;
+        }
+
+        .nav-tabs .nav-link {
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+        }
+    </style>
     {% endblock %}
-    
+
     {% block tab_content_wrapper %}
-        <div class="p-4">    
-            <p>일정관리 준비중....</p>
+        <div class="p-4">
+            <!-- 필터 섹션 -->
+            <div class="filter-section">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="staffFilter">담당자 필터</label>
+                        <select id="staffFilter" class="form-control">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-primary btn-block" onclick="loadAllData()">
+                            <i class="fe fe-refresh-cw"></i> 새로고침
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 통계 요약 -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <h3 id="pendingCount">0</h3>
+                        <p>미신고 업체</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <h3 id="receivableCount">0</h3>
+                        <p>미수금 업체</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <h3 id="renewalCount">0</h3>
+                        <p>임원등기 연임</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                        <h3 id="newCompanyCount">0</h3>
+                        <p>신규업체 (30일)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 탭 네비게이션 -->
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="pending-tab" data-toggle="tab" href="#pending" role="tab">
+                        담당자별 할일 <span class="badge badge-danger" id="pendingBadge">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="receivable-tab" data-toggle="tab" href="#receivable" role="tab">
+                        미수금 현황 <span class="badge badge-warning" id="receivableBadge">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="renewal-tab" data-toggle="tab" href="#renewal" role="tab">
+                        임원등기 연임안내 <span class="badge badge-info" id="renewalBadge">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="newcompany-tab" data-toggle="tab" href="#newcompany" role="tab">
+                        신규업체 관리 <span class="badge badge-success" id="newCompanyBadge">0</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- 탭 컨텐츠 -->
+            <div class="tab-content" id="dashboardTabContent">
+                <!-- 담당자별 할일 -->
+                <div class="tab-pane fade show active" id="pending" role="tabpanel">
+                    <div class="dashboard-card">
+                        <h5>신고기한 임박 업체 목록</h5>
+                        <div id="pendingFilingsContent">
+                            <div class="loading">
+                                <i class="fa fa-spinner fa-spin"></i> 데이터 로딩 중...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 미수금 현황 -->
+                <div class="tab-pane fade" id="receivable" role="tabpanel">
+                    <div class="dashboard-card">
+                        <h5>미수금 현황</h5>
+                        <div id="receivablesContent">
+                            <div class="loading">
+                                <i class="fa fa-spinner fa-spin"></i> 데이터 로딩 중...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 임원등기 연임안내 -->
+                <div class="tab-pane fade" id="renewal" role="tabpanel">
+                    <div class="dashboard-card">
+                        <h5>임원등기 연임 예정 법인</h5>
+                        <div id="renewalsContent">
+                            <div class="loading">
+                                <i class="fa fa-spinner fa-spin"></i> 데이터 로딩 중...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 신규업체 관리 -->
+                <div class="tab-pane fade" id="newcompany" role="tabpanel">
+                    <div class="dashboard-card">
+                        <h5>최근 신규 등록 업체</h5>
+                        <div id="newCompaniesContent">
+                            <div class="loading">
+                                <i class="fa fa-spinner fa-spin"></i> 데이터 로딩 중...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     {% endblock %}
 
@@ -16,5 +229,334 @@
 		{% endblock %}
 
     {% block scripts %}
+    <script>
+        $(document).ready(function() {
+            // 담당자 목록 로드
+            loadStaffList();
 
+            // 초기 데이터 로드
+            loadAllData();
+
+            // 담당자 필터 변경시
+            $('#staffFilter').change(function() {
+                loadAllData();
+            });
+        });
+
+        function loadStaffList() {
+            $.ajax({
+                url: '/admin/dsboard/api/staff-list/',
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const select = $('#staffFilter');
+                        response.data.forEach(staff => {
+                            select.append(`<option value="${staff}">${staff}</option>`);
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    console.error('담당자 목록 로드 실패:', xhr);
+                }
+            });
+        }
+
+        function loadAllData() {
+            loadPendingFilings();
+            loadReceivables();
+            loadRenewals();
+            loadNewCompanies();
+        }
+
+        function getStaffFilter() {
+            const staff = $('#staffFilter').val();
+            return staff ? `?staff=${encodeURIComponent(staff)}` : '';
+        }
+
+        function loadPendingFilings() {
+            const filter = getStaffFilter();
+
+            $.ajax({
+                url: '/admin/dsboard/api/pending-filings/' + filter,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        renderPendingFilings(response.data);
+                        updateStats('pending', response.count);
+                    }
+                },
+                error: function(xhr) {
+                    $('#pendingFilingsContent').html(`
+                        <div class="alert alert-danger">
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderPendingFilings(data) {
+            if (data.length === 0) {
+                $('#pendingFilingsContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-check-circle" style="font-size: 3rem; color: #28a745;"></i>
+                        <p>신고기한이 임박한 업체가 없습니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>D-Day</th>
+                                <th>신고유형</th>
+                                <th>업체명</th>
+                                <th>사업자번호</th>
+                                <th>담당자</th>
+                                <th>과세기간</th>
+                                <th>신고마감일</th>
+                                <th>대표자</th>
+                                <th>연락처</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach(item => {
+                const dDayClass = item.D_day <= 0 ? 'd-day-urgent' :
+                                 item.D_day <= 3 ? 'd-day-warning' : '';
+                const dDayText = item.D_day <= 0 ? `D+${Math.abs(item.D_day)}` : `D-${item.D_day}`;
+
+                html += `
+                    <tr>
+                        <td><span class="${dDayClass}">${dDayText}</span></td>
+                        <td><span class="badge badge-primary">${item.신고유형}</span></td>
+                        <td><strong>${item.업체명}</strong></td>
+                        <td>${item.사업자번호}</td>
+                        <td>${item.담당자}</td>
+                        <td>${item.과세기간}</td>
+                        <td>${item.신고마감일}</td>
+                        <td>${item.대표자}</td>
+                        <td>${item.연락처}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#pendingFilingsContent').html(html);
+        }
+
+        function loadReceivables() {
+            const filter = getStaffFilter();
+
+            $.ajax({
+                url: '/admin/dsboard/api/receivables/' + filter,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        renderReceivables(response.data, response.message);
+                        updateStats('receivable', response.count);
+                    }
+                },
+                error: function(xhr) {
+                    $('#receivablesContent').html(`
+                        <div class="alert alert-danger">
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderReceivables(data, message) {
+            if (message) {
+                $('#receivablesContent').html(`
+                    <div class="alert alert-info">
+                        <i class="fe fe-info"></i> ${message}
+                    </div>
+                `);
+                return;
+            }
+
+            if (data.length === 0) {
+                $('#receivablesContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-check-circle" style="font-size: 3rem; color: #28a745;"></i>
+                        <p>미수금이 있는 업체가 없습니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            // TODO: 실제 미수금 데이터 렌더링 로직
+        }
+
+        function loadRenewals() {
+            const filter = getStaffFilter();
+
+            $.ajax({
+                url: '/admin/dsboard/api/executive-renewals/' + filter,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        renderRenewals(response.data);
+                        updateStats('renewal', response.count);
+                    }
+                },
+                error: function(xhr) {
+                    $('#renewalsContent').html(`
+                        <div class="alert alert-danger">
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderRenewals(data) {
+            if (data.length === 0) {
+                $('#renewalsContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-check-circle" style="font-size: 3rem; color: #28a745;"></i>
+                        <p>임원등기 연임이 필요한 법인이 없습니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>D-Day</th>
+                                <th>업체명</th>
+                                <th>사업자번호</th>
+                                <th>담당자</th>
+                                <th>대표자</th>
+                                <th>설립일</th>
+                                <th>연임예정일</th>
+                                <th>연락처</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach(item => {
+                const dDayClass = item.D_day <= 30 ? 'd-day-urgent' :
+                                 item.D_day <= 90 ? 'd-day-warning' : '';
+
+                html += `
+                    <tr>
+                        <td><span class="${dDayClass}">D-${item.D_day}</span></td>
+                        <td><strong>${item.업체명}</strong></td>
+                        <td>${item.사업자번호}</td>
+                        <td>${item.담당자}</td>
+                        <td>${item.대표자}</td>
+                        <td>${item.설립일}</td>
+                        <td>${item.연임예정일}</td>
+                        <td>${item.연락처}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#renewalsContent').html(html);
+        }
+
+        function loadNewCompanies() {
+            const filter = getStaffFilter();
+
+            $.ajax({
+                url: '/admin/dsboard/api/new-companies/' + filter,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        renderNewCompanies(response.data);
+                        updateStats('newCompany', response.count);
+                    }
+                },
+                error: function(xhr) {
+                    $('#newCompaniesContent').html(`
+                        <div class="alert alert-danger">
+                            데이터 로드 실패: ${xhr.responseJSON?.error || '알 수 없는 오류'}
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderNewCompanies(data) {
+            if (data.length === 0) {
+                $('#newCompaniesContent').html(`
+                    <div class="empty-state">
+                        <i class="fe fe-inbox" style="font-size: 3rem; color: #999;"></i>
+                        <p>최근 등록된 업체가 없습니다.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>등록일</th>
+                                <th>업체명</th>
+                                <th>사업자번호</th>
+                                <th>업체유형</th>
+                                <th>담당자</th>
+                                <th>대표자</th>
+                                <th>연락처</th>
+                                <th>이메일</th>
+                                <th>업태/종목</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.등록일}</td>
+                        <td><strong>${item.업체명}</strong></td>
+                        <td>${item.사업자번호}</td>
+                        <td><span class="badge badge-info">${item.업체유형}</span></td>
+                        <td>${item.담당자}</td>
+                        <td>${item.대표자}</td>
+                        <td>${item.연락처}</td>
+                        <td>${item.이메일}</td>
+                        <td>${item.업태} / ${item.종목}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#newCompaniesContent').html(html);
+        }
+
+        function updateStats(type, count) {
+            $(`#${type}Count`).text(count);
+            $(`#${type}Badge`).text(count);
+        }
+    </script>
     {% endblock %}
