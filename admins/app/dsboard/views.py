@@ -7,6 +7,7 @@ from app.models import (
     MemAdmin,
     userProfile,
     MemUsers,
+    MemDeal,
     부가가치세전자신고,
     부가가치세전자신고3,
     법인세전자신고2,
@@ -46,81 +47,141 @@ def get_pending_filings(request):
     try:
         담당자 = request.GET.get('staff', None)
         today = datetime.date.today()
+        current_year = today.year
+        current_month = today.month
 
-        # 신고 마감일 계산 함수
-        def get_vat_deadline(year, period):
-            """부가세 신고 마감일 계산 (1기: 4/25, 2기: 10/25)"""
-            if period == '1':
-                return datetime.date(year, 4, 25)
-            elif period == '2':
-                return datetime.date(year, 10, 25)
-            return None
-
-        def get_withholding_deadline(year, month):
-            """원천세 신고 마감일 계산 (다음달 10일)"""
+        # 유틸리티 함수들
+        def get_month_last_day(year, month):
+            """해당 월의 마지막 날 계산"""
             if month == 12:
-                return datetime.date(year + 1, 1, 10)
-            else:
-                return datetime.date(year, month + 1, 10)
-
-        def get_corp_deadline(year, month):
-            """법인세 신고 마감일 계산 (결산월 +3개월 말일)"""
-            deadline_month = month + 3
-            deadline_year = year
-            if deadline_month > 12:
-                deadline_month -= 12
-                deadline_year += 1
-
-            # 해당 월의 마지막 날 계산
-            if deadline_month == 12:
                 last_day = 31
-            elif deadline_month in [4, 6, 9, 11]:
+            elif month in [4, 6, 9, 11]:
                 last_day = 30
-            elif deadline_month == 2:
+            elif month == 2:
                 # 윤년 계산
-                if deadline_year % 4 == 0 and (deadline_year % 100 != 0 or deadline_year % 400 == 0):
+                if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0):
                     last_day = 29
                 else:
                     last_day = 28
             else:
                 last_day = 31
+            return last_day
 
-            return datetime.date(deadline_year, deadline_month, last_day)
+        def adjust_for_weekend(target_date):
+            """주말인 경우 다음 평일로 조정 (공휴일 간단 처리)"""
+            # 토요일(5)이면 월요일로, 일요일(6)이면 월요일로
+            weekday = target_date.weekday()
+            if weekday == 5:  # 토요일
+                target_date += timedelta(days=2)
+            elif weekday == 6:  # 일요일
+                target_date += timedelta(days=1)
+            return target_date
 
         pending_list = []
 
         # 1. 부가가치세 미신고 업체
-        current_year = today.year
-        current_month = today.month
+        # 법인(biz_type ≤ 3): 매분기말 익월 25일
+        # 개인(biz_type ≥ 4): 매반기말 익월 25일
 
-        # 부가세 기간 판단 (1기: 1-6월, 2기: 7-12월)
-        if 1 <= current_month <= 6:
-            vat_period = '2'  # 전년도 2기
-            vat_year = current_year - 1
-        else:
-            vat_period = '1'  # 당해년도 1기
-            vat_year = current_year
+        # 법인 - 분기별 체크 (1, 4, 7, 10월 마감)
+        corp_vat_quarters = {
+            1: (current_year - 1, 10, 12, '4'),  # 1월: 전년 10-12월 (4분기)
+            2: (current_year - 1, 10, 12, '4'),
+            3: (current_year - 1, 10, 12, '4'),
+            4: (current_year, 1, 3, '1'),        # 4월: 당해 1-3월 (1분기)
+            5: (current_year, 1, 3, '1'),
+            6: (current_year, 1, 3, '1'),
+            7: (current_year, 4, 6, '2'),        # 7월: 당해 4-6월 (2분기)
+            8: (current_year, 4, 6, '2'),
+            9: (current_year, 4, 6, '2'),
+            10: (current_year, 7, 9, '3'),       # 10월: 당해 7-9월 (3분기)
+            11: (current_year, 7, 9, '3'),
+            12: (current_year, 7, 9, '3'),
+        }
 
-        vat_deadline = get_vat_deadline(vat_year if vat_period == '2' else current_year,
-                                       '1' if vat_period == '2' else vat_period)
+        # 개인 - 반기별 체크 (1, 7월 마감)
+        indiv_vat_periods = {
+            1: (current_year - 1, 2, '2'),   # 1월: 전년 하반기 (7-12월)
+            2: (current_year - 1, 2, '2'),
+            3: (current_year - 1, 2, '2'),
+            4: (current_year - 1, 2, '2'),
+            5: (current_year - 1, 2, '2'),
+            6: (current_year - 1, 2, '2'),
+            7: (current_year, 1, '1'),       # 7월: 당해 상반기 (1-6월)
+            8: (current_year, 1, '1'),
+            9: (current_year, 1, '1'),
+            10: (current_year, 1, '1'),
+            11: (current_year, 1, '1'),
+            12: (current_year, 1, '1'),
+        }
 
-        if vat_deadline:
+        # 법인 부가세 체크
+        if current_month in corp_vat_quarters:
+            vat_year, start_month, end_month, quarter = corp_vat_quarters[current_month]
+            # 분기 마지막 달의 다음달 25일
+            deadline_month = end_month + 1 if end_month < 12 else 1
+            deadline_year = vat_year if end_month < 12 else vat_year + 1
+            vat_deadline = datetime.date(deadline_year, deadline_month, 25)
+            vat_deadline = adjust_for_weekend(vat_deadline)
+
             days_until_deadline = (vat_deadline - today).days
 
-            # 마감 3일 전부터 알림
             if -30 <= days_until_deadline <= 3:
-                # 모든 일반과세자 업체 조회
-                all_corps = MemUsers.objects.filter(
-                    ibo_type='1',  # 일반과세자
-                    del_yn='N'  # 삭제되지 않은 업체
+                # 법인 업체 조회 (biz_type ≤ 3)
+                corps = MemUsers.objects.filter(
+                    del_yn='N',
+                    biz_type__lte=3
                 ).exclude(biz_no='')
 
                 if 담당자:
-                    all_corps = all_corps.filter(biz_area=담당자)
+                    corps = corps.filter(biz_area=담당자)
 
-                for corp in all_corps:
-                    # 해당 기간에 신고했는지 확인
-                    과세기간_str = f"{vat_year}년 제{vat_period}기"
+                for corp in corps:
+                    과세기간_str = f"{vat_year}년 제{quarter}분기"
+
+                    filed = 부가가치세전자신고3.objects.filter(
+                        사업자등록번호=corp.biz_no,
+                        과세기간__contains=f"{vat_year}년"
+                    ).filter(
+                        과세기간__contains=f"제{quarter}"
+                    ).exists()
+
+                    if not filed:
+                        pending_list.append({
+                            '업체명': corp.biz_name,
+                            '사업자번호': corp.biz_no,
+                            '담당자': corp.biz_area,
+                            '신고유형': '부가가치세(법인)',
+                            '과세기간': 과세기간_str,
+                            '신고마감일': vat_deadline.strftime('%Y-%m-%d'),
+                            'D_day': days_until_deadline,
+                            '연락처': corp.biz_tel,
+                            '대표자': corp.ceo_name
+                        })
+
+        # 개인 부가세 체크
+        if current_month in indiv_vat_periods:
+            vat_year, period_num, period_str = indiv_vat_periods[current_month]
+            # 반기 마지막 달의 다음달 25일
+            deadline_month = 1 if period_str == '2' else 7  # 2기는 1월 25일, 1기는 7월 25일
+            deadline_year = vat_year + 1 if period_str == '2' else vat_year
+            vat_deadline = datetime.date(deadline_year, deadline_month, 25)
+            vat_deadline = adjust_for_weekend(vat_deadline)
+
+            days_until_deadline = (vat_deadline - today).days
+
+            if -30 <= days_until_deadline <= 3:
+                # 개인 업체 조회 (biz_type ≥ 4)
+                corps = MemUsers.objects.filter(
+                    del_yn='N',
+                    biz_type__gte=4
+                ).exclude(biz_no='')
+
+                if 담당자:
+                    corps = corps.filter(biz_area=담당자)
+
+                for corp in corps:
+                    과세기간_str = f"{vat_year}년 제{period_str}기"
 
                     filed = 부가가치세전자신고3.objects.filter(
                         사업자등록번호=corp.biz_no,
@@ -132,7 +193,7 @@ def get_pending_filings(request):
                             '업체명': corp.biz_name,
                             '사업자번호': corp.biz_no,
                             '담당자': corp.biz_area,
-                            '신고유형': '부가가치세',
+                            '신고유형': '부가가치세(개인)',
                             '과세기간': 과세기간_str,
                             '신고마감일': vat_deadline.strftime('%Y-%m-%d'),
                             'D_day': days_until_deadline,
@@ -140,8 +201,7 @@ def get_pending_filings(request):
                             '대표자': corp.ceo_name
                         })
 
-        # 2. 원천세 미신고 업체
-        # 전월 원천세 확인 (매월 10일까지)
+        # 2. 원천세 미신고 업체 (매월 10일까지)
         if current_month == 1:
             withholding_year = current_year - 1
             withholding_month = 12
@@ -149,11 +209,16 @@ def get_pending_filings(request):
             withholding_year = current_year
             withholding_month = current_month - 1
 
-        withholding_deadline = get_withholding_deadline(withholding_year, withholding_month)
+        # 다음달 10일
+        if withholding_month == 12:
+            withholding_deadline = datetime.date(withholding_year + 1, 1, 10)
+        else:
+            withholding_deadline = datetime.date(withholding_year, withholding_month + 1, 10)
+
+        withholding_deadline = adjust_for_weekend(withholding_deadline)
         days_until_withholding = (withholding_deadline - today).days
 
         if -30 <= days_until_withholding <= 3:
-            # 원천세 신고 대상 업체 (직원이 있는 업체 또는 사업소득 지급 업체)
             all_corps = MemUsers.objects.filter(
                 del_yn='N'
             ).exclude(biz_no='')
@@ -182,8 +247,8 @@ def get_pending_filings(request):
                         '대표자': corp.ceo_name
                     })
 
-        # 3. 법인세 미신고 업체 (결산월 기준)
-        # 각 업체의 결산월을 확인하여 신고 마감일 계산
+        # 3. 법인세 미신고 업체 (결산월 + 3/4개월)
+        # MemDeal.fiscalMM 기준
         all_corps = MemUsers.objects.filter(
             ibo_type='2',  # 법인
             del_yn='N'
@@ -193,36 +258,116 @@ def get_pending_filings(request):
             all_corps = all_corps.filter(biz_area=담당자)
 
         for corp in all_corps:
-            # 결산월 추출 (biz_start_day에서 추정 또는 기본 12월)
-            # 실제로는 별도 결산월 필드가 있어야 함
-            결산월 = 12  # 기본값
+            try:
+                # MemDeal에서 결산월 정보 가져오기
+                mem_deal = MemDeal.objects.filter(seq_no=corp.seq_no).first()
 
-            # 결산월 3개월 후가 신고 마감
-            corp_deadline = get_corp_deadline(current_year - 1, 결산월)
-            days_until_corp = (corp_deadline - today).days
+                if not mem_deal or not mem_deal.fiscalmm:
+                    continue  # 결산월 정보가 없으면 스킵
 
-            if -30 <= days_until_corp <= 3:
-                과세년월_str = f"{current_year - 1}12"
+                결산월 = int(mem_deal.fiscalmm)
 
-                filed = 법인세전자신고2.objects.filter(
-                    사업자번호=corp.biz_no,
-                    과세년월=과세년월_str
-                ).exists()
+                # TODO: 성실신고법인 여부 확인 필요 (현재는 일반법인으로 처리)
+                # 성실신고법인인 경우 +4개월, 아니면 +3개월
+                is_sincere = False  # 추후 필드 추가 필요
+                months_to_add = 4 if is_sincere else 3
 
-                if not filed:
-                    pending_list.append({
-                        '업체명': corp.biz_name,
-                        '사업자번호': corp.biz_no,
-                        '담당자': corp.biz_area,
-                        '신고유형': '법인세',
-                        '과세기간': f"{current_year - 1}년",
-                        '신고마감일': corp_deadline.strftime('%Y-%m-%d'),
-                        'D_day': days_until_corp,
-                        '연락처': corp.biz_tel,
-                        '대표자': corp.ceo_name
-                    })
+                # 결산월 기준으로 신고연도 계산
+                # 예: 결산월이 12월이면 전년도 12월 결산
+                if 결산월 >= current_month - months_to_add:
+                    # 전년도 결산
+                    filing_year = current_year - 1
+                else:
+                    # 당해년도 결산
+                    filing_year = current_year
 
-        # 4. 지급조서간이소득 미신고 업체 (매월 간이지급명세서)
+                # 신고 마감일: 결산월 + months_to_add 개월의 말일
+                deadline_month = 결산월 + months_to_add
+                deadline_year = filing_year
+
+                if deadline_month > 12:
+                    deadline_month -= 12
+                    deadline_year += 1
+
+                last_day = get_month_last_day(deadline_year, deadline_month)
+                corp_deadline = datetime.date(deadline_year, deadline_month, last_day)
+                corp_deadline = adjust_for_weekend(corp_deadline)
+
+                days_until_corp = (corp_deadline - today).days
+
+                # 마감일 전후 30일 이내만 체크
+                if -30 <= days_until_corp <= 30:
+                    과세년월_str = f"{filing_year}{str(결산월).zfill(2)}"
+
+                    filed = 법인세전자신고2.objects.filter(
+                        사업자번호=corp.biz_no,
+                        과세년월=과세년월_str
+                    ).exists()
+
+                    if not filed:
+                        신고유형 = '법인세(성실)' if is_sincere else '법인세'
+                        pending_list.append({
+                            '업체명': corp.biz_name,
+                            '사업자번호': corp.biz_no,
+                            '담당자': corp.biz_area,
+                            '신고유형': 신고유형,
+                            '과세기간': f"{filing_year}년 {결산월}월 결산",
+                            '신고마감일': corp_deadline.strftime('%Y-%m-%d'),
+                            'D_day': days_until_corp,
+                            '연락처': corp.biz_tel,
+                            '대표자': corp.ceo_name
+                        })
+            except (ValueError, AttributeError):
+                continue
+
+        # 4. 종합소득세 미신고 업체 (개인사업자, 매년 5월/6월 말)
+        # 일반: 5월 31일, 성실신고대상자: 6월 30일
+        if 4 <= current_month <= 7:  # 4월~7월에만 체크
+            # 개인사업자 조회 (biz_type ≥ 4)
+            all_corps = MemUsers.objects.filter(
+                del_yn='N',
+                biz_type__gte=4
+            ).exclude(biz_no='')
+
+            if 담당자:
+                all_corps = all_corps.filter(biz_area=담당자)
+
+            for corp in all_corps:
+                # TODO: 성실신고대상자 여부 확인 필요
+                is_sincere = False  # 추후 필드 추가 필요
+
+                # 일반: 5월 31일, 성실: 6월 30일
+                deadline_month = 6 if is_sincere else 5
+                last_day = get_month_last_day(current_year, deadline_month)
+                income_deadline = datetime.date(current_year, deadline_month, last_day)
+                income_deadline = adjust_for_weekend(income_deadline)
+
+                days_until_income = (income_deadline - today).days
+
+                # 마감일 전후 30일 이내만 체크
+                if -30 <= days_until_income <= 30:
+                    과세년도_str = str(current_year - 1)
+
+                    filed = 종합소득세전자신고2.objects.filter(
+                        주민번호__contains=corp.ssn[:6] if corp.ssn else '',
+                        과세년월__contains=과세년도_str
+                    ).exists()
+
+                    if not filed:
+                        신고유형 = '종합소득세(성실)' if is_sincere else '종합소득세'
+                        pending_list.append({
+                            '업체명': corp.biz_name,
+                            '사업자번호': corp.biz_no,
+                            '담당자': corp.biz_area,
+                            '신고유형': 신고유형,
+                            '과세기간': f"{current_year - 1}년",
+                            '신고마감일': income_deadline.strftime('%Y-%m-%d'),
+                            'D_day': days_until_income,
+                            '연락처': corp.biz_tel,
+                            '대표자': corp.ceo_name
+                        })
+
+        # 5. 지급조서간이소득 미신고 업체 (매월 간이지급명세서)
         # 제출기한: 이번달 분은 다음달 말일까지
         # 전월 지급조서 확인 (다음달 말일 마감)
 
