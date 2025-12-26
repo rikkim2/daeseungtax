@@ -684,9 +684,17 @@ def get_bizbank_data(request):
     """
     1. 사업용계좌 미신고 업체 조회
     """
+    print("\n" + "="*80)
+    print("[사업용계좌 API] 요청 시작")
+    print("="*80)
+
     try:
         담당자 = request.GET.get('staff', None)
         admin_id = request.user.username
+
+        print(f"📥 요청 파라미터:")
+        print(f"  - admin_id: {admin_id}")
+        print(f"  - 담당자 필터: {담당자 or '전체'}")
 
         sql = """
             SELECT a.seq_no AS sqno, a.biz_name, b.biz_manager
@@ -717,13 +725,24 @@ def get_bizbank_data(request):
 
         sql += " AND b.biz_manager NOT IN ('환급1','종소세','종소세1','종소세2','종소세3') ORDER BY b.biz_manager"
 
+        print(f"\n🔍 SQL 쿼리:")
+        print(f"  Params: {params}")
+        print(f"  Query Preview: {sql[:200]}...")
+
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
 
+        print(f"\n✅ 쿼리 실행 성공!")
+        print(f"  - 조회된 행 수: {len(rows)}")
+
         result = []
         for row in rows:
             result.append([row[0], row[2], row[1]])  # [sqno, biz_manager, biz_name]
+
+        print(f"  - 결과 데이터 샘플: {result[:3] if result else '데이터 없음'}")
+        print(f"\n✅ 응답 성공 (200 OK)")
+        print("="*80 + "\n")
 
         return JsonResponse({
             'success': True,
@@ -732,6 +751,13 @@ def get_bizbank_data(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"\n❌ 에러 발생!")
+        print(f"  에러 메시지: {str(e)}")
+        print(f"\n상세 스택 트레이스:")
+        print(traceback.format_exc())
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -743,10 +769,19 @@ def get_cash_data(request):
     """
     2. 현금영수증 가맹점 가입의무 현황
     """
+    print("\n" + "="*80)
+    print("[현금영수증 API] 요청 시작")
+    print("="*80)
+
     try:
         담당자 = request.GET.get('staff', None)
         year = request.GET.get('year', datetime.datetime.now().year)
         admin_id = request.user.username
+
+        print(f"📥 요청 파라미터:")
+        print(f"  - admin_id: {admin_id}")
+        print(f"  - 담당자 필터: {담당자 or '전체'}")
+        print(f"  - 기준연도: {year}")
 
         sql = """
             SELECT
@@ -788,9 +823,16 @@ def get_cash_data(request):
 
         sql += " AND b.biz_manager NOT IN ('환급1','종소세','종소세1','종소세2','종소세3') ORDER BY b.biz_manager"
 
+        print(f"\n🔍 SQL 쿼리:")
+        print(f"  Params: {params}")
+        print(f"  Query Preview: {sql[:200]}...")
+
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
+
+        print(f"\n✅ 쿼리 실행 성공!")
+        print(f"  - 조회된 행 수: {len(rows)}")
 
         result = []
         for row in rows:
@@ -809,6 +851,10 @@ def get_cash_data(request):
                 row[7] if row[7] else 0   # 대상금액
             ])
 
+        print(f"  - 결과 데이터 샘플: {result[:2] if result else '데이터 없음'}")
+        print(f"\n✅ 응답 성공 (200 OK)")
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': True,
             'data': result,
@@ -816,6 +862,13 @@ def get_cash_data(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"\n❌ 에러 발생!")
+        print(f"  에러 메시지: {str(e)}")
+        print(f"\n상세 스택 트레이스:")
+        print(traceback.format_exc())
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -827,6 +880,10 @@ def get_vat_data(request):
     """
     3. 부가가치세 신고 현황 (상세)
     """
+    print("\n" + "="*80)
+    print("[부가가치세 API] 요청 시작")
+    print("="*80)
+
     try:
         담당자 = request.GET.get('staff', None)
         year = int(request.GET.get('year', datetime.datetime.now().year))
@@ -834,6 +891,12 @@ def get_vat_data(request):
 
         today = datetime.date.today()
         current_month = today.month
+
+        print(f"📥 요청 파라미터:")
+        print(f"  - admin_id: {admin_id}")
+        print(f"  - 담당자 필터: {담당자 or '전체'}")
+        print(f"  - 기준연도: {year}")
+        print(f"  - 오늘 날짜: {today}, 현재 월: {current_month}")
 
         # 현재 작업해야 할 분기/기수 판단
         work_vat = False
@@ -851,7 +914,11 @@ def get_vat_data(request):
             elif current_month == 10:
                 work_qt = 3
 
+        print(f"  - 부가세 신고 기간 여부: {work_vat}, 분기: {work_qt}")
+
         if not work_vat:
+            print(f"⚠️  현재는 부가세 신고 기간이 아닙니다.")
+            print("="*80 + "\n")
             return JsonResponse({
                 'success': True,
                 'data': [],
@@ -923,9 +990,17 @@ def get_vat_data(request):
 
         sql += " AND b.biz_manager NOT IN ('환급1','종소세','종소세1','종소세2','종소세3') ORDER BY b.biz_manager"
 
+        print(f"\n🔍 SQL 쿼리:")
+        print(f"  과세기간: {kwasekikan}, 신고구분: {ks2}")
+        print(f"  Params: {params}")
+        print(f"  Query Preview: {sql[:250]}...")
+
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
+
+        print(f"\n✅ 쿼리 실행 성공!")
+        print(f"  - 조회된 행 수: {len(rows)}")
 
         result = []
         idx = 0
@@ -955,6 +1030,10 @@ def get_vat_data(request):
             ])
             idx += 1
 
+        print(f"  - 결과 데이터 샘플: {result[:2] if result else '데이터 없음'}")
+        print(f"\n✅ 응답 성공 (200 OK)")
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': True,
             'data': result,
@@ -964,6 +1043,13 @@ def get_vat_data(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"\n❌ 에러 발생!")
+        print(f"  에러 메시지: {str(e)}")
+        print(f"\n상세 스택 트레이스:")
+        print(traceback.format_exc())
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -975,6 +1061,10 @@ def get_report_data(request):
     """
     4. 기장보고서 작성 현황 (분기별)
     """
+    print("\n" + "="*80)
+    print("[기장보고서 API] 요청 시작")
+    print("="*80)
+
     try:
         담당자 = request.GET.get('staff', None)
         admin_id = request.user.username
@@ -984,10 +1074,16 @@ def get_report_data(request):
         current_month = today.month
         current_quarter = (current_month - 1) // 3 + 1
 
+        print(f"📥 요청 파라미터:")
+        print(f"  - admin_id: {admin_id}")
+        print(f"  - 담당자 필터: {담당자 or '전체'}")
+        print(f"  - 현재 연도: {current_year}, 현재 분기: {current_quarter}")
+
         result = []
         idx = 0
 
         # 이전 4개 분기 체크
+        print(f"\n🔍 이전 4개 분기 조회 시작...")
         for i in range(1, 5):
             quarter = current_quarter - i
             year = current_year
@@ -1040,9 +1136,13 @@ def get_report_data(request):
 
             sql += " ORDER BY b.biz_manager"
 
+            print(f"  [{i}/4] {year}년 {quarter}분기 조회 (Params: {params})")
+
             with connection.cursor() as cursor:
                 cursor.execute(sql, params)
                 rows = cursor.fetchall()
+
+            print(f"       -> 조회 결과: {len(rows)}건")
 
             for row in rows:
                 # 마감일 계산
@@ -1072,6 +1172,12 @@ def get_report_data(request):
                 ])
                 idx += 1
 
+        print(f"\n✅ 전체 조회 완료!")
+        print(f"  - 총 결과 수: {len(result)}")
+        print(f"  - 결과 데이터 샘플: {result[:2] if result else '데이터 없음'}")
+        print(f"\n✅ 응답 성공 (200 OK)")
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': True,
             'data': result,
@@ -1079,6 +1185,13 @@ def get_report_data(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"\n❌ 에러 발생!")
+        print(f"  에러 메시지: {str(e)}")
+        print(f"\n상세 스택 트레이스:")
+        print(traceback.format_exc())
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -1090,6 +1203,10 @@ def get_kani_mm_data(request):
     """
     5. 간이지급명세서(매월) - 사업/일용소득
     """
+    print("\n" + "="*80)
+    print("[간이지급명세서(매월) API] 요청 시작")
+    print("="*80)
+
     try:
         담당자 = request.GET.get('staff', None)
         admin_id = request.user.username
@@ -1097,6 +1214,11 @@ def get_kani_mm_data(request):
         # 최근 6개월 데이터 조회
         today = datetime.date.today()
         start_month = today - timedelta(days=150)  # 약 5개월
+
+        print(f"📥 요청 파라미터:")
+        print(f"  - admin_id: {admin_id}")
+        print(f"  - 담당자 필터: {담당자 or '전체'}")
+        print(f"  - 조회 기간: 최근 5개월")
 
         sql = """
             SELECT
@@ -1236,9 +1358,16 @@ def get_kani_mm_data(request):
 
         sql += " GROUP BY AA.작업연도, AA.사업자등록번호, AA.사유 ORDER BY 1, 2"
 
+        print(f"\n🔍 SQL 쿼리:")
+        print(f"  Params: {params}")
+        print(f"  Query Type: 복잡한 UNION ALL 쿼리 (사업/일용소득 누락분 + 차이분)")
+
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
+
+        print(f"\n✅ 쿼리 실행 성공!")
+        print(f"  - 조회된 행 수: {len(rows)}")
 
         result = []
         idx = 0
@@ -1263,6 +1392,11 @@ def get_kani_mm_data(request):
                 ])
                 idx += 1
 
+        print(f"  - 필터링 후 결과 수: {len(result)}")
+        print(f"  - 결과 데이터 샘플: {result[:2] if result else '데이터 없음'}")
+        print(f"\n✅ 응답 성공 (200 OK)")
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': True,
             'data': result,
@@ -1270,6 +1404,13 @@ def get_kani_mm_data(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"\n❌ 에러 발생!")
+        print(f"  에러 메시지: {str(e)}")
+        print(f"\n상세 스택 트레이스:")
+        print(traceback.format_exc())
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -1281,9 +1422,17 @@ def get_kani_banki_data(request):
     """
     6. 간이지급명세서(반기) - 근로소득
     """
+    print("\n" + "="*80)
+    print("[간이지급명세서(반기) API] 요청 시작")
+    print("="*80)
+
     try:
         담당자 = request.GET.get('staff', None)
         admin_id = request.user.username
+
+        print(f"📥 요청 파라미터:")
+        print(f"  - admin_id: {admin_id}")
+        print(f"  - 담당자 필터: {담당자 or '전체'}")
 
         sql = """
             SELECT A.담당, A.사업자번호, MAX(A.상호) AS 상호, A.년도, A.구분,
@@ -1363,14 +1512,23 @@ def get_kani_banki_data(request):
             ORDER BY A.년도, A.담당, A.사업자번호, A.구분
         """
 
+        print(f"\n🔍 SQL 쿼리:")
+        print(f"  Params: {params}")
+        print(f"  Query Type: 복잡한 UNION ALL 쿼리 (급여지급현황 + 지급조서)")
+
         with connection.cursor() as cursor:
             cursor.execute(sql, params)
             rows = cursor.fetchall()
+
+        print(f"\n✅ 쿼리 실행 성공!")
+        print(f"  - 조회된 행 수: {len(rows)}")
 
         result = []
         idx = 0
         today = datetime.date.today()
         current_month = today.month
+
+        print(f"  - 현재 월: {current_month} (필터링 적용)")
 
         for row in rows:
             # 현재 월에 따라 표시할 데이터 필터링
@@ -1391,6 +1549,11 @@ def get_kani_banki_data(request):
             ])
             idx += 1
 
+        print(f"  - 필터링 후 결과 수: {len(result)}")
+        print(f"  - 결과 데이터 샘플: {result[:2] if result else '데이터 없음'}")
+        print(f"\n✅ 응답 성공 (200 OK)")
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': True,
             'data': result,
@@ -1398,6 +1561,13 @@ def get_kani_banki_data(request):
         })
 
     except Exception as e:
+        import traceback
+        print(f"\n❌ 에러 발생!")
+        print(f"  에러 메시지: {str(e)}")
+        print(f"\n상세 스택 트레이스:")
+        print(traceback.format_exc())
+        print("="*80 + "\n")
+
         return JsonResponse({
             'success': False,
             'error': str(e)
