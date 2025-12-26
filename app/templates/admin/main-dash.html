@@ -1,20 +1,107 @@
 {% extends 'components/admin-base.html' %}
 {% load static %}
 {% load humanize %}
-    {% block styles %}
 
-    {% endblock %}
-    
-    {% block tab_content_wrapper %}
-        <div class="p-4">    
-            <p>일정관리 준비중....</p>
-        </div>
-    {% endblock %}
+{% block tab_content_wrapper %}
 
-		{% block modal %}
+<style>
+    /* 탭 임베디드 환경을 위한 스크롤 래퍼 */
+    .tab-scroll-wrapper {
+        height: 100vh;           /* 화면 전체 높이를 사용 (탭 내부 기준) */
+        overflow-y: auto;        /* 세로 스크롤 활성화 */
+        overflow-x: hidden;      /* 가로 스크롤 방지 */
+        padding: 20px;           /* 내부 여백 */
+        box-sizing: border-box;  
+    }
 
-		{% endblock %}
+    /* 스크롤바 디자인 (Webkit 브라우저용 - 크롬, 사파리 등) */
+    .tab-scroll-wrapper::-webkit-scrollbar {
+        width: 8px;
+    }
+    .tab-scroll-wrapper::-webkit-scrollbar-track {
+        background: #f1f1f1; 
+    }
+    .tab-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: #c1c1c1; 
+        border-radius: 4px;
+    }
+    .tab-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8; 
+    }
+</style>
 
-    {% block scripts %}
+<div class="tab-scroll-wrapper">
 
-    {% endblock %}
+							<!--ROW OPENED-->
+							<div class="row">
+								<div class="col-md-12">
+						
+									<div class="card overflow-hidden">
+										
+										<div class="card-footer p-0">
+										
+											<!-- Tabs -->
+											<div class="tabs-menu4 py-5 project-menu">
+												<nav class="nav border-bottom px-4 d-block d-lg-flex flex-2">
+													<a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1 active" data-bs-toggle="tab" href="#tab_1">
+														요약
+													</a>
+													<a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#tab_2">
+														기장보고서
+													</a>
+													<a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#tab_3">
+														미수금
+													</a>
+													<a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#tab_4">
+														임원연임
+													</a>
+													<a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#tab_5">
+														미수금
+													</a>
+													<a class="nav-link border py-1 mb-2 mb-lg-0 br-lg-5 mx-1 mx-md-1" data-bs-toggle="tab" href="#tab_6">
+														신규업체 관리
+													</a>
+												</nav>
+											</div><!-- /Tabs -->
+										</div>
+									</div>
+								</div>
+
+								<div class="col-md-12">
+									<div class="tab-content">
+										<div class="tab-pane active" id="tab_1">
+				
+										</div>
+
+										<div class="tab-pane" id="tab_2">
+										
+										</div>
+
+										<div class="tab-pane" id="tab_3">
+						
+										</div>
+
+										<div class="tab-pane" id="tab_4">
+										
+										</div>
+
+										<div class="tab-pane" id="tab_5">
+										
+										</div>
+
+										<div class="tab-pane" id="tab_6">
+										
+										</div>
+
+									</div>
+								</div>
+							</div>
+							<!--ROW CLOSED-->
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}

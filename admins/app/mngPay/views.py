@@ -126,7 +126,7 @@ def index(request):
   if flag == "payroll":
     templateMenu = 'admin/mng_payroll.html'; gridTitle="원천세신고현황"
   elif flag == "kaniKunro":
-    templateMenu = 'admin/mng_pay_kaniKunro.html'; gridTitle="근로소득 간이지급명세서"
+    templateMenu = 'admin/mng_kaniKunro.html'; gridTitle="근로소득 간이지급명세서"
   elif flag == "kaniSail":
     templateMenu = 'admin/mng_kaniSail.html'; gridTitle="사업일용기타 간이지급명세서"
   elif flag == "yearend":
@@ -138,15 +138,6 @@ def index(request):
   context['gridTitle'] = gridTitle  
   return render(request, templateMenu,context)
 
-
-def mng_kani_kunro(request):
-  return
-def mng_zzjs_yearend(request):
-  return
-def mng_zzjs_kita(request):
-  return
-def mng_pay_report(request):
-  return
 
 #원천세 신고 대상자 리스트
 def mng_payroll(request):
@@ -420,7 +411,7 @@ def save_elecfile_Pay(request):
         sqnos.append({"userID": userID, "seq_no": memuser.seq_no})
   return JsonResponse({"success": True, "sqnos": sqnos})
 
-#전자신고 접수번호 저장 - 클립보드 타입 - 법인세 전용
+#전자신고 접수번호 저장 - 클립보드 타입 - 원천세 전용
 def save_clipboard_Pay(request):
   if request.method == 'POST':
     sqnos = []
@@ -835,63 +826,412 @@ def api_kani_sa_il_list(request):
 def api_kani_sa_il_update(request):
     """
     그리드 셀 수정 저장:
-    - isIlyoung(접수번호) -> 원본: ajax_proc_Total_ilyoungIssue.asp
-    - YN_9(차이원인 txt_bigo) -> 원본: ajax_proc_kani_sa-il.asp
+    - isIlyoung(접수번호) -> tbl_mng_jaroe.bigo (ASP 로직: 없으면 row 생성 후 bigo 저장)
+    - YN_9(차이원인)     -> tbl_kani.txt_bigo (기존 upsert 유지)
     """
-    seq_no = request.POST.get("seq_no")
-    field = request.POST.get("field")
-    work_yy = int(request.POST.get("work_yy"))
-    work_mm = int(request.POST.get("work_mm"))
-    val = request.POST.get("val", "")
 
-    if not seq_no or field not in ("isIlyoung", "YN_9"):
-        return JsonResponse({"ok": False, "msg": "bad request"}, status=400)
+    def DBG(title, value=None):
+        print("\n" + "="*90)
+        print(f"[KANI_UPDATE] {title}")
+        if value is not None:
+            print(value)
+        print("="*90)
 
-    with connection.cursor() as cur:
-        if field == "isIlyoung":
-            # tbl_mng_jaroe의 bigo에 저장하던 로직(원본대로 맞춰서 테이블/컬럼 조정)
-            cur.execute("""
-                update tbl_mng_jaroe
-                   set bigo=%s
-                 where seq_no=%s and work_yy=%s and work_mm=%s
-            """, [val, seq_no, work_yy, work_mm])
+    try:
+        seq_no  = (request.POST.get("seq_no") or "").strip()
+        field   = (request.POST.get("field") or "").strip()
+        work_yy = (request.POST.get("work_YY") or "").strip()
+        work_mm_raw = (request.POST.get("work_MM") or "").strip()
+        val     = (request.POST.get("val") or "").strip()
+
+        # work_mm은 숫자로 들어와야 함
+        try:
+            work_mm = int(work_mm_raw)
+        except:
+            work_mm = None
+
+        DBG("REQ", {
+            "seq_no": seq_no,
+            "field": field,
+            "work_yy": work_yy,
+            "work_mm_raw": work_mm_raw,
+            "work_mm": work_mm,
+            "val": val,
+        })
+
+        if not seq_no or field not in ("isIlyoung", "YN_9") or not work_yy or work_mm is None:
+            DBG("❌ BAD REQUEST")
+            return JsonResponse({"ok": False, "msg": "bad request"}, status=400)
+
+        with connection.cursor() as cur:
+
+            # ------------------------------------------------------------------
+            # 1) isIlyoung -> tbl_mng_jaroe.bigo  (ASP 로직 그대로)
+            # ------------------------------------------------------------------
+            if field == "isIlyoung":
+                # (1) 존재 여부 체크
+                sql_chk = """
+                    select top 1 1
+                    from tbl_mng_jaroe
+                    where seq_no=%s and work_YY=%s and work_mm=%s
+                """
+                params_chk = [seq_no, work_yy, str(work_mm)]  # ASP는 work_mm을 문자열로 비교했음
+                DBG("SQL CHECK", {"sql": sql_chk, "params": params_chk})
+
+                cur.execute(sql_chk, params_chk)
+                exists = cur.fetchone() is not None
+                DBG("EXISTS?", exists)
+
+                if exists:
+                    # (2-A) update
+                    sql_upd = """
+                        update tbl_mng_jaroe
+                           set bigo=%s
+                         where seq_no=%s and work_YY=%s and work_mm=%s
+                    """
+                    params_upd = [val, seq_no, work_yy, str(work_mm)]
+                    DBG("SQL UPDATE", {"sql": sql_upd, "params": params_upd})
+
+                    cur.execute(sql_upd, params_upd)
+                    affected = cur.rowcount
+                    DBG("UPDATE rowcount", affected)
+
+                    if affected == 0:
+                        DBG("⚠️ WARN: tbl_mng_jaroe 대상 행이 없음", {
+                            "seq_no": seq_no, "work_yy": work_yy, "work_mm": work_mm
+                        })
+
+                else:
+                    # (2-B) insert (ASP: values(seq_no, work_yy, work_mm, '0'*14, txt_bigo))
+                    # ASP의 For j=0 To 13 => 14개 '0'
+                    zeros_14 = ["0"] * 14
+
+                    # 컬럼명 없이 VALUES 전체를 넣는 구조를 그대로 재현
+                    # 파라미터 바인딩으로 안전하게 구성
+                    placeholders = ",".join(["%s"] * (3 + 14 + 1))  # 3 + 14 + bigo
+                    sql_ins = f"insert into tbl_mng_jaroe values({placeholders})"
+                    params_ins = [seq_no, work_yy, str(work_mm)] + zeros_14 + [val]
+
+                    DBG("SQL INSERT", {"sql": sql_ins, "params(head)": params_ins[:8], "params(len)": len(params_ins)})
+
+                    cur.execute(sql_ins, params_ins)
+                    DBG("INSERT OK", {"rowcount": cur.rowcount})
+
+                return JsonResponse({"ok": True})
+
+            # ------------------------------------------------------------------
+            # 2) YN_9 -> tbl_kani.txt_bigo (기존 upsert)
+            # ------------------------------------------------------------------
+            else:
+                sql_upsert = """
+                    if exists(select 1 from tbl_kani where seq_no=%s and work_yy=%s and work_banki=%s)
+                        update tbl_kani
+                           set txt_bigo=%s
+                         where seq_no=%s and work_yy=%s and work_banki=%s
+                    else
+                        insert into tbl_kani(seq_no, work_yy, work_banki, txt_bigo)
+                        values(%s,%s,%s,%s)
+                """
+                params = [
+                    seq_no, work_yy, work_mm,
+                    val, seq_no, work_yy, work_mm,
+                    seq_no, work_yy, work_mm, val
+                ]
+                DBG("SQL KANI UPSERT", {"sql": sql_upsert, "params": params})
+
+                cur.execute(sql_upsert, params)
+                DBG("KANI UPSERT OK", {"rowcount": cur.rowcount})
+
+                return JsonResponse({"ok": True})
+
+    except Exception as e:
+        DBG("❌ EXCEPTION", str(e))
+        traceback.print_exc()
+        return JsonResponse({"ok": False, "msg": str(e)}, status=500)
+
+
+
+@require_POST
+@login_required
+def save_clipboard_Kani(request):
+    """
+    '접수번호저장' 팝업에서 붙여넣기 한 홈택스 데이터를 저장합니다.
+    (mng_kaniSail.html)
+    """
+    try:
+        clipboard_data = request.POST.get("clipboardData")
+        if not clipboard_data:
+            return JsonResponse({"ok": False, "msg": "데이터가 없습니다."}, status=400)
+
+        # 홈택스에서 복사한 데이터는 탭으로 구분됨
+        fields = [field.strip() for field in clipboard_data.split('\t')]
+
+        # ASP 코드의 wc 변수에 맞춰 데이터 파싱
+        wc0 = fields[0]   # 접수번호
+        wc1 = fields[1]   # 접수자
+        wc2 = fields[2]   # 자료명
+        wc3 = fields[3]   # 사업자번호
+        wc4 = fields[4]   # 상호
+        wc5 = fields[5]   # 지급연월=과세년도
+        wc6 = fields[6]   # 제출방식(홈택스)==> 사용안함
+        wc7 = fields[7]  # 제출구분(정기)
+        wc8 = fields[8]  # 제출건수
+        wc9 = fields[9]  # 총금액
+        wc10 = fields[10]  # 접수일시
+
+        with connection.cursor() as cursor:
+            # 1. 기존 데이터 삭제
+            delete_sql = "DELETE FROM 지급조서간이소득 WHERE 과세년도 = %s AND 신고서종류 = %s AND 사업자번호 = %s"
+            cursor.execute(delete_sql, [wc5, wc2, wc3])
+
+            # 2. 새 데이터 삽입
+            insert_sql = """
+                INSERT INTO 지급조서간이소득 (접수번호, 접수자, 신고서종류, 사업자번호, 상호, 과세년도, 신고구분, 제출건수, 제출금액,  작성일자) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            total_amount = wc9.replace(',', '')
+            params = [wc0, wc1, wc2, wc3, wc4, wc5, wc7, wc8, total_amount, wc10]
+            cursor.execute(insert_sql, params)
+
+        return JsonResponse({"ok": True, "msg": "저장되었습니다."})
+
+    except IndexError:
+        return JsonResponse({"ok": False, "msg": "붙여넣기 한 데이터의 형식이 올바르지 않습니다. 모든 항목이 포함되었는지 확인해주세요."}, status=400)
+    except Exception as e:
+        logger.error(f"Error in save_clipboard_Kani: {e}")
+        return JsonResponse({"ok": False, "msg": str(e)}, status=500)
+
+
+
+#간이지급명세서 - 근로소득
+@require_GET
+@login_required
+def api_kani_kunro_list(request):
+    """
+    간이지급명세서(근로소득) 리스트 조회
+    원본: list_kani_kyunro.asp
+    """
+    def DBG(title, value=None):
+        print("\n" + "="*80)
+        print(f"[DBG] {title}")
+        if value is not None:
+            print(value)
+        print("="*80)
+
+    try:
+        today = datetime.date.today()
+
+        # 파라미터 받기
+        input_workyear = request.GET.get("input_workyear")
+        if not input_workyear:
+            if today.month <= 3:
+                input_workyear = today.year - 1
+            else:
+                input_workyear = today.year
+        input_workyear = int(input_workyear)
+
+        work_banki = request.GET.get("work_banki", "").strip()
+        if not work_banki:
+            if 1 < today.month < 8:
+                work_banki = "Jan"
+            else:
+                work_banki = "Jul"
+
+        ADID = (request.GET.get("ADID") or "").strip()
+
+        # 과세기간 문자열 생성 (2023년 이하는 "Jan-23" 형식, 2024년 이상은 "2024 상반기" 형식)
+        work_yy = input_workyear - 2000
+        if input_workyear <= 2023:
+            kwase_kigan = f"{work_banki}-{work_yy:02d}"
         else:
-            # tbl_kani.txt_bigo 저장(원본 txt_bigo)
-            # 없으면 upsert
-            cur.execute("""
-                if exists(select 1 from tbl_kani where seq_no=%s and work_yy=%s and work_banki=%s)
-                    update tbl_kani set txt_bigo=%s where seq_no=%s and work_yy=%s and work_banki=%s
-                else
-                    insert into tbl_kani(seq_no, work_yy, work_banki, txt_bigo)
-                    values(%s,%s,%s,%s)
-            """, [seq_no, work_yy, work_mm, val, seq_no, work_yy, work_mm,
-                  seq_no, work_yy, work_mm, val])
+            kwase_kigan = f"{input_workyear} {'상반기' if work_banki == 'Jan' else '하반기'}"
 
-    return JsonResponse({"ok": True})
+        DBG("REQUEST PARAMS", {
+            "input_workyear": input_workyear,
+            "work_banki": work_banki,
+            "ADID": ADID,
+            "kwase_kigan": kwase_kigan
+        })
+
+        # 관리자 필터
+        where_admin = ""
+        params = []
+        if ADID and ADID != "전체":
+            where_admin = " AND b.biz_manager = %s "
+            params.append(ADID)
+
+        # 메인 쿼리: 급여지급현황에서 근로소득 합계
+        if work_banki == "Jan":  # 상반기
+            salary_sum_sql = """
+                ISNULL((SELECT SUM(지급총액 - 식대 - 자가운전보조금 - 육아수당 - 연구개발수당 - 기타수당1)
+                        FROM 급여지급현황 d
+                        WHERE d.seq_no=a.seq_no AND work_yy=%s AND work_mm<=6), 0)
+            """
+        else:  # 하반기
+            salary_sum_sql = """
+                ISNULL((SELECT SUM(지급총액 - 식대 - 자가운전보조금 - 육아수당 - 연구개발수당 - 기타수당1)
+                        FROM 급여지급현황 d
+                        WHERE d.seq_no=a.seq_no AND work_yy=%s AND work_mm>6), 0)
+            """
+
+        sql_main = f"""
+            SELECT
+                b.biz_manager as groupManager,
+                a.seq_no as seq_no,
+                a.biz_name as biz_name,
+                a.biz_no as biz_no,
+                a.biz_type as biz_type,
+                {salary_sum_sql} as a01,
+                ISNULL(d.txt_bigo,'') as txt_bigo
+            FROM mem_user a
+            JOIN mem_deal b ON a.seq_no=b.seq_no
+            LEFT JOIN tbl_kani d ON b.seq_no=d.seq_no AND d.work_yy=%s AND d.work_banki=%s
+            WHERE a.duzon_ID <> ''
+              AND (
+                  (SELECT SUM(a01) FROM 원천세전자신고 d2 WHERE a.biz_no=d2.사업자등록번호
+                   AND LEFT(과세연월,4)=%s
+                   AND 과세연월{'<=' if work_banki == 'Jan' else '>'} %s) > 0
+              )
+              {where_admin}
+            ORDER BY groupManager, biz_name ASC
+        """
+
+        # 파라미터 구성
+        # salary_sum에 input_workyear, tbl_kani 조인에 input_workyear + work_banki
+        # WHERE 조건에 input_workyear(문자열), 비교기준(YYYYMM)
+        compare_month = f"{input_workyear}06" if work_banki == "Jan" else f"{input_workyear}06"
+        params_main = [
+            str(input_workyear),  # salary_sum_sql
+            str(input_workyear), work_banki,  # tbl_kani 조인
+            str(input_workyear), compare_month  # WHERE 조건
+        ] + params
+
+        def _norm_biz_no(x):
+            """사업자번호 비교를 위한 숫자만 키."""
+            if x is None:
+                return ""
+            return "".join(ch for ch in str(x) if ch.isdigit())
+
+        rows = []
+        biz_no_list = []
+
+        with connection.cursor() as cur:
+            DBG("MAIN SQL", sql_main)
+            DBG("MAIN PARAMS", params_main)
+            cur.execute(sql_main, params_main)
+
+            cols = [c[0] for c in cur.description]
+            for r in cur.fetchall():
+                item = dict(zip(cols, r))
+                rows.append(item)
+                biz_no_list.append(_norm_biz_no(item["biz_no"]))
+            DBG(f"MAIN QUERY - Found {len(rows)} rows")
+
+        # 지급조서간이소득 조회
+        income_map = defaultdict(lambda: {"kunAmt": 0, "hasKun": False, "issuedID": ""})
+
+        if biz_no_list:
+            placeholders = ",".join(["%s"] * len(biz_no_list))
+            sql_income = f"""
+                SELECT
+                    사업자번호,
+                    LTRIM(RTRIM(REPLACE(신고서종류,' ',''))) as kind,
+                    ISNULL(제출금액,0) as amt,
+                    ISNULL(접수자,'') as issuer
+                FROM 지급조서간이소득
+                WHERE CAST(과세년도 as varchar(50)) = %s
+                  AND REPLACE(사업자번호, '-', '') IN ({placeholders})
+            """
+            params_income = [kwase_kigan] + biz_no_list
+
+            with connection.cursor() as cur:
+                DBG("INCOME SQL", sql_income)
+                DBG("INCOME PARAMS(head)", params_income[:12])
+                cur.execute(sql_income, params_income)
+
+                income_rows = cur.fetchall()
+                DBG(f"INCOME QUERY - Found {len(income_rows)} rows")
+
+                for biz_no, kind, amt, issuer in income_rows:
+                    key = _norm_biz_no(biz_no)
+                    amt = int(amt or 0)
+                    if kind == "간이지급명세서(근로소득)":
+                        income_map[key]["kunAmt"] = amt
+                        income_map[key]["hasKun"] = True
+                        income_map[key]["issuedID"] = (issuer or "").strip()[-2:] if issuer else ""
+
+        # 결과 조합
+        def _to_int(x):
+            if x is None:
+                return 0
+            if isinstance(x, (int,)):
+                return x
+            if isinstance(x, (float, Decimal)):
+                return int(x)
+            try:
+                s = str(x).replace(",", "").strip()
+                return int(float(s))
+            except Exception:
+                return 0
+
+        out = []
+        for idx, r in enumerate(rows):
+            biz_no_raw = (r.get("biz_no") or "").strip()
+            biz_no_key = _norm_biz_no(biz_no_raw)
+            wh_kunro = _to_int(r.get("a01"))
+            kunAmt = _to_int(income_map[biz_no_key]["kunAmt"])
+
+            # skeleton 판정: 급여지급현황 합계 != 지급조서 금액
+            hasSkeleton = (wh_kunro != kunAmt) and (wh_kunro != 0 or kunAmt != 0)
+
+            out.append({
+                "YN_0": idx,
+                "groupManager": r.get("groupManager", "") or "",
+                "seq_no": r.get("seq_no"),
+                "biz_name": r.get("biz_name", "") or "",
+                "biz_no": biz_no_raw,
+                "wh_Kunro": wh_kunro,
+                "isKun": income_map[biz_no_key]["hasKun"],
+                "isKunAmt": kunAmt,
+                "YN_9": r.get("txt_bigo", "") or "",
+                "isSkele": hasSkeleton,
+                "issuedID": income_map[biz_no_key]["issuedID"]
+            })
+
+        DBG(f"RESPONSE SUCCESS - Returning {len(out)} rows")
+        return JsonResponse({"ok": True, "rows": out})
+
+    except Exception as e:
+        DBG("EXCEPTION", str(e))
+        traceback.print_exc()
+        return JsonResponse({"ok": False, "error": str(e), "rows": []}, status=500)
 
 
 @csrf_exempt
 @require_POST
 @login_required
-def api_kani_sa_il_paste_issue(request):
+def api_kani_kunro_update(request):
     """
-    '접수번호저장' 팝업에서 붙여넣기 데이터 저장 (ajax_pasteExcel_ZKKN.asp 역할)
-    요청 파라미터: wc2..wc12
-    저장 로직은 기존 ASP 저장 테이블/프로시저에 맞게 구현 필요.
-    여기서는 예시로만 둠.
+    간이지급명세서(근로소득) 그리드 셀 수정 저장
+    원본: ajax_proc_kani.asp
     """
-    wc2 = request.POST.get("wc2","")
-    wc3 = request.POST.get("wc3","")  # 사업자번호
-    wc4 = request.POST.get("wc4","")
-    wc5 = request.POST.get("wc5","")
-    wc7 = request.POST.get("wc7","")
-    wc8 = request.POST.get("wc8","")
-    wc9 = request.POST.get("wc9","")
-    wc10 = request.POST.get("wc10","")
-    wc11 = request.POST.get("wc11","")
-    wc12 = request.POST.get("wc12","")  # 접수번호
+    seq_no = request.POST.get("seq_no")
+    work_yy = request.POST.get("work_yy")
+    work_banki = request.POST.get("work_banki")
+    txt_bigo = request.POST.get("txt_bigo", "")
 
-    # TODO: 실제 저장 대상(테이블/프로시저)을 ASP와 동일하게 맞추세요.
-    # 예: 접수번호 테이블에 insert, 또는 관련 업무 테이블 업데이트 등
-    # 여기서는 ok만 반환
+    if not seq_no or not work_yy or not work_banki:
+        return JsonResponse({"ok": False, "msg": "bad request"}, status=400)
+
+    with connection.cursor() as cur:
+        # tbl_kani.txt_bigo 저장 (없으면 insert)
+        cur.execute("""
+            IF EXISTS(SELECT 1 FROM tbl_kani WHERE seq_no=%s AND work_yy=%s AND work_banki=%s)
+                UPDATE tbl_kani SET txt_bigo=%s WHERE seq_no=%s AND work_yy=%s AND work_banki=%s
+            ELSE
+                INSERT INTO tbl_kani(seq_no, work_yy, work_banki, txt_bigo)
+                VALUES(%s,%s,%s,%s)
+        """, [seq_no, work_yy, work_banki, txt_bigo, seq_no, work_yy, work_banki,
+              seq_no, work_yy, work_banki, txt_bigo])
+
     return JsonResponse({"ok": True})

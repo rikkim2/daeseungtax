@@ -358,7 +358,7 @@
             <div class="team-header">
                 <span class="badge">팀장 · 세무사</span>
                 <div class="leader-info">
-                    <img src="{% static 'assets/images/faces/' %}{{ team.leader.admin_name }}.png"
+                    <img src="{% static 'assets/images/faces/' %}{{ team.leader.admin_name }}.png?v={% now 'U' %}"
                          alt="{{ team.leader.admin_name }}"
                          class="leader-avatar"
                          onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
@@ -396,7 +396,7 @@
                     {% for member in team.members %}
                     <div class="member-item">
                         <div class="member-info">
-                            <img src="{% static 'assets/images/faces/' %}{{ member.admin_name }}.png"
+                            <img src="{% static 'assets/images/faces/' %}{{ member.admin_name }}.png?v={% now 'U' %}"
                                  alt="{{ member.admin_name }}"
                                  class="member-avatar"
                                  onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
@@ -449,7 +449,7 @@
             {% for admin in unassigned_admins %}
             <div class="member-item">
                 <div class="member-info">
-                    <img src="{% static 'assets/images/faces/' %}{{ admin.admin_name }}.png"
+                    <img src="{% static 'assets/images/faces/' %}{{ admin.admin_name }}.png?v={% now 'U' %}"
                          alt="{{ admin.admin_name }}"
                          class="member-avatar"
                          onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
@@ -490,7 +490,7 @@
             {% for admin in other_admins %}
             <div class="member-item">
                 <div class="member-info">
-                    <img src="{% static 'assets/images/faces/' %}{{ admin.admin_name }}.png"
+                    <img src="{% static 'assets/images/faces/' %}{{ admin.admin_name }}.png?v={% now 'U' %}"
                          alt="{{ admin.admin_name }}"
                          class="member-avatar"
                          onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">

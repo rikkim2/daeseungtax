@@ -1,4 +1,4 @@
-﻿{% load static %}
+﻿﻿{% load static %}
 
 <script src="{% static 'assets/js/util.js'%}"></script>
 
@@ -185,12 +185,15 @@ var TabManager = {
             success: function(response) {
                 $content.html(response);
                 $content.data('loaded', true);
-                
-                // 삽입된 스크립트 실행 (ExtJS 등)
-                self.executeScripts($content);
 
-                // 레이아웃 조정
-                setTimeout(function() { $(window).trigger('resize'); }, 200);
+                // DOM이 완전히 업데이트된 후 스크립트 실행
+                setTimeout(function() {
+                    // 삽입된 스크립트 실행 (ExtJS 등)
+                    self.executeScripts($content);
+
+                    // 레이아웃 조정
+                    setTimeout(function() { $(window).trigger('resize'); }, 100);
+                }, 50);
             },
             error: function(xhr) {
                 $content.html('<div class="p-4 text-danger">페이지를 불러오는데 실패했습니다. (' + xhr.status + ')</div>');
@@ -227,13 +230,27 @@ var TabManager = {
     // HTML 내 스크립트 실행 (ExtJS 호환성)
     executeScripts: function($container) {
         $container.find('script').each(function() {
-            if (!this.src && this.innerHTML.trim()) {
-                try {
-                    // 글로벌 스코프에서 실행
-                    window.eval(this.innerHTML);
-                } catch(err) {
-                    console.error('Script execution error:', err);
+            var $script = $(this);
+
+            // 외부 스크립트는 건너뜀 (src 속성이 있는 경우)
+            if (this.src) return;
+
+            var scriptContent = this.innerHTML.trim();
+            if (!scriptContent) return;
+
+            try {
+                // 스크립트 요소가 DOM에 존재하는지 확인
+                if (!this.parentElement) {
+                    console.warn('Script element has no parent, skipping execution');
+                    return;
                 }
+
+                // Function 생성자를 사용하여 안전하게 실행
+                var scriptFunc = new Function(scriptContent);
+                scriptFunc.call(window);
+            } catch(err) {
+                console.error('Script execution error:', err);
+                console.error('Failed script content:', scriptContent.substring(0, 200));
             }
         });
     }

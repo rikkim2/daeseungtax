@@ -28,8 +28,8 @@
 
     /* [디자인 수정] 토글 버튼 선택됨 (Pressed) */
     .custom-toggle-btn.x-btn-pressed {
-        background-color: #667eea !important; /* 테마 색상 (보라/블루) */
-        border-color: #667eea !important;
+        background-color: #8397f0 !important; /* 테마 색상 (보라/블루) */
+        border-color: #8397f0 !important;
         color: #ffffff !important;
         font-weight: bold !important;
     }
@@ -52,9 +52,9 @@
     }
     
     /* (선택사항) 마우스 올렸을 때 색상 유지하고 싶다면 아래 주석 해제 */
-    /* .row-yellow-warning.x-grid-row-over .x-grid-cell {
+    .row-yellow-warning.x-grid-row-over .x-grid-cell {
         background-color: #ffffaa !important;
-    } */
+    } 
 </style>  
 
 <div class="ext-grid-wrapper"></div>
@@ -68,9 +68,14 @@
   var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
   var work_YY = '{{ request.session.workyearPay }}';
   var work_MM = '{{ request.session.workmonthPay }}';  
-  // 값이 없으면 현재 날짜 기준 설정
-  if(!work_YY) work_YY = new Date().getFullYear();
-  if(!work_MM) work_MM = new Date().getMonth() + 1;  
+  
+  // [수정] 값이 없으면 "전월" 기준 설정 (간이지급명세서는 보통 전월분 신고)
+  if (!work_YY || !work_MM) {
+      var d = new Date();
+      d.setMonth(d.getMonth() - 1); // 1개월 전으로 이동 (1월이면 작년 12월로 자동 계산됨)
+      if (!work_YY) work_YY = d.getFullYear();
+      if (!work_MM) work_MM = d.getMonth() + 1;
+  }
 console.log(ADID)
   const currentYear = new Date().getFullYear();
   var payrollYear, selectedPeriod, selectedSheetID, selectedSheetName="";
@@ -220,8 +225,8 @@ console.log(ADID)
             params: {
               seq_no: e.record.get('seq_no'),
               field: e.field,
-              work_YY: (window.STATE && STATE.work_YY) || '',
-              work_MM: (window.STATE && STATE.work_MM) || '',
+              work_YY: work_YY,
+              work_MM: work_MM,
               val: e.record.get(e.field)
             },
             failure: function () {
@@ -290,6 +295,71 @@ console.log(ADID)
       store: mainStore,
       renderTo: renderTarget,
       title: '간이지급명세서 - 사업,일용,기타 / 일용직 근로내용확인서',
+      tools: [
+          {
+            xtype: 'button',
+            text: '접수번호저장',
+            iconCls: 'fa fa-floppy-o',
+            handler: function (btn) {
+              Ext.create('Ext.window.Window', {
+                title: '데이터 붙여넣기',
+                modal: true,
+                frame:false,
+                width: 800,
+                height: 200,
+                layout: 'fit',
+                items: [{
+                    xtype: 'textarea',
+                    name: 'clipboardData',
+                    emptyText: '홈택스 전자신고 결과를 드래그 복사해서 붙여넣으세요.'
+                }],
+                buttons: [
+                  {
+                    text: '저장',
+                    handler: function(btn) {
+                        var win = btn.up('window');
+                        var clipboardData = win.down('textarea').getValue();
+                        Ext.Ajax.request({
+                          url: "{% url 'save_clipboard_Kani' %}",
+                          method: 'POST',
+                          params: {
+                              clipboardData: clipboardData,
+                              csrfmiddlewaretoken: "{{ csrf_token }}"
+                          },
+                          success: function(response) {
+                            win.close();
+                            Swal.fire({
+                              title: '작업 성공',
+                              text: '전자신고파일이 성공적으로 저장되었습니다.',
+                              icon: 'success',
+                              showConfirmButton: true,
+                              willClose: () => {
+                                if (mainStore) mainStore.reload();
+                              }
+                            });
+                          },
+                          failure: function(response) {
+                            var errorMsg = "서버 오류";
+                            try {
+                                var json = Ext.decode(response.responseText);
+                                errorMsg = json.message || errorMsg;
+                            } catch(e) {}
+                            Swal.fire("오류", "저장오류 : " + errorMsg, "error");
+                          }
+                        });
+                    }
+                  },
+                  {
+                    text: '취소',
+                    handler: function(btn) {
+                        btn.up('window').close();
+                    }
+                  }]
+              }).show();
+            },
+            style: 'margin-right: 10px;'
+          }
+      ],
       width: '100%',
       height: getGridHeight(),
       columnLines: true,
@@ -362,6 +432,7 @@ console.log(ADID)
                 defaults: { 
                     enableToggle: true, 
                     toggleGroup: 'yearGroup', 
+                    allowDepress: false,   // ✅ 같은 버튼 다시 눌러도 pressed 해제 불가
                     margin: '0 4 0 0', 
                     cls: 'custom-toggle-btn', // ★ 위에서 정의한 CSS 클래스 적용
                     height: 32, // 버튼 높이를 키워 클릭하기 쉽게
@@ -394,6 +465,7 @@ console.log(ADID)
               defaults: { 
                   enableToggle: true, 
                   toggleGroup: 'monthGroup', 
+                  allowDepress: false,   // ✅ 같은 버튼 다시 눌러도 pressed 해제 불가
                   margin: '0 4 0 0', 
                   cls: 'custom-toggle-btn', // ★ 위에서 정의한 CSS 클래스 적용
                   height: 32,
