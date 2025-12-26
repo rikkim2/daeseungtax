@@ -1,0 +1,442 @@
+{% load static %}
+
+<style>
+    .icon-refresh { color: white; }
+    .modal-xxl { min-width: 1200px; max-width: 1400px; }
+
+    /* [핵심] Bootstrap과 ExtJS 충돌 방지 */
+    .ext-grid-wrapper .x-table {
+        width: auto !important;
+        margin: 0 !important;
+    }
+
+    /* 그리드 래퍼 */
+    .ext-grid-wrapper {
+        width: 100%;
+        /* 높이는 JS에서 설정 */
+    }
+
+/* [디자인 수정] 토글 버튼 기본 스타일 (선택 안됨) */
+    .custom-toggle-btn {
+        border-color: #d1d5db !important;
+        background-image: none !important;
+        background-color: #ffffff !important;
+        color: #4b5563 !important;
+        border-radius: 4px !important;
+        box-shadow: none !important;
+    }
+
+    /* [디자인 수정] 토글 버튼 선택됨 (Pressed) */
+    .custom-toggle-btn.x-btn-pressed {
+        background-color: #667eea !important; /* 테마 색상 (보라/블루) */
+        border-color: #667eea !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+
+    /* [디자인 수정] 마우스 호버 효과 */
+    .custom-toggle-btn:hover:not(.x-btn-pressed) {
+        background-color: #f3f4f6 !important;
+        border-color: #9ca3af !important;
+        color: #111827 !important;
+    }
+
+    /* 버튼 그룹 간격 조정 */
+    .custom-btn-group .x-btn-group-body {
+        padding: 2px !important;
+    }
+
+/* [추가] 해골(오류) 발생 시 노란색 배경 */
+    .row-yellow-warning .x-grid-cell {
+        background-color: #ffffcc !important; /* 연한 노란색 */
+    }
+</style>
+
+<div class="ext-grid-wrapper"></div>
+<script>
+(function () {
+  var mainGrid, mainStore;
+  var flag = '{{ flag }}';
+  var adminBizLevel = '{{ admin_biz_level }}'.trim();
+  const isSuperuser = '{{ admin_grade }}' === 'SA';
+  var ADID = '{{ ADID }}'.trim();
+  var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
+
+  // 근로소득은 반기 기준이므로 work_YY와 work_banki 사용
+  var work_YY = '{{ request.session.workyearPay }}';
+  var work_banki = '';  // Jan(상반기) / Jul(하반기)
+
+  // 값이 없으면 현재 날짜 기준 설정
+  if(!work_YY) work_YY = new Date().getFullYear();
+
+  // 현재 월 기준으로 기본 반기 설정
+  var currentMonth = new Date().getMonth() + 1;
+  if (currentMonth > 1 && currentMonth < 8) {
+    work_banki = 'Jan';  // 상반기
+  } else {
+    work_banki = 'Jul';  // 하반기
+  }
+
+  const currentYear = new Date().getFullYear();
+
+  // 1. renderTopic
+  window.renderTopic = function(value, p, record) {
+      return Ext.String.format(
+          `<div style="cursor:pointer; color:blue;"
+              onclick="window.summitModal(${record.data.seq_no}, '${Ext.String.htmlEncode(record.data.biz_name)}', ${work_YY}, '${work_banki}', 'kaniKunro');">
+              ${Ext.String.htmlEncode(value)}
+          </div>`
+      );
+  };
+
+  window.summitModal = async function(seq_no, biz_name, wYY, wBanki, flag) {
+    // 팝업 로직 (필요시 구현)
+  };
+
+  function findRenderTarget() {
+    // 1) 전체에서 "Ext 컴포넌트가 없는 래퍼" 찾기
+    var el = $('.ext-grid-wrapper').filter(function () {
+      return $(this).find('.x-grid, .x-panel, .x-component').length === 0;
+    }).last()[0];
+
+    // 2) 없으면 활성 탭에서 다시 찾기
+    if (!el) {
+      el = $('div.tab-pane.active .ext-grid-wrapper').filter(function () {
+        return $(this).find('.x-grid, .x-panel, .x-component').length === 0;
+      }).last()[0];
+    }
+    return el || null;
+  }
+
+  function syncParamsAndReload() {
+    var store = mainGrid.getStore();
+    var proxy = store.getProxy();
+
+    proxy.extraParams = proxy.extraParams || {};
+    proxy.extraParams.input_workyear = work_YY;
+    proxy.extraParams.work_banki = work_banki;
+    proxy.extraParams.ADID = ADID;
+    proxy.extraParams.flag = flag;
+
+    console.log('🔄 Reloading store with params:', proxy.extraParams);
+
+    store.reload({
+      callback: function () {
+        if (ADID === "전체") {
+            store.group({ property: 'groupManager', direction: 'ASC' });
+            store.sort([
+                { property: 'groupManager', direction: 'ASC' },
+                { property: 'biz_name', direction: 'ASC' }
+            ]);
+        } else {
+            store.clearGrouping();
+        }
+      }
+    });
+  }
+
+  function buildGrid() {
+    if (mainGrid) return;
+
+    var renderTarget = findRenderTarget();
+    if (!renderTarget) return;
+
+    // 높이가 0이면 최소 높이 부여
+    if (renderTarget.clientHeight < 50) {
+      renderTarget.style.minHeight = '600px';
+    }
+
+    Ext.define('Plant', {
+      extend: 'Ext.data.Model',
+      fields: [
+        {name: 'groupManager',type: 'string', convert: function(v){ return (v || '').trim(); }},
+        {name: 'seq_no'},
+        {name: 'biz_name', type: 'string'},
+        {name: 'biz_type', type: 'string'},
+        {name: 'wh_Kunro',type: 'float', convert: function(v){ return parseFloat(v) || 0; }},
+        { name: 'isKun', type: 'string' },
+        { name: 'isKunAmt', type: 'float', convert: function(v){ return parseFloat(v) || 0; } },
+        { name: 'YN_9', type: 'string' },
+        { name: 'isSkele', type: 'string' },
+        { name: 'issuedID', type: 'string' }
+      ]
+    });
+
+    mainStore = Ext.create('Ext.data.Store', {
+      model: 'Plant',
+      groupField: (ADID === "전체" ? 'groupManager' : null),
+      grouper: { property: 'groupManager', direction: 'ASC' },
+      sorters: [
+        {property: 'groupManager', direction: 'ASC'},
+        {property: 'biz_name', direction: 'ASC'}
+      ],
+      proxy: {
+        type: 'ajax',
+        url: "{% url 'api_kani_kunro_list' %}",
+        reader: {
+          type: 'json',
+          root: 'rows',
+          successProperty: 'ok'
+        }
+      },
+      autoLoad: false,
+      listeners: {
+        load: function(store, records, successful, operation) {
+          var response = operation && operation.response ? operation.response : null;
+          if (!successful) {
+            console.error('Load failed. Response:', response ? response.responseText : 'No response');
+            Ext.Msg.alert('오류', '데이터를 불러오는데 실패했습니다.');
+          } else {
+            console.log('Load successful! Records:', records.length);
+          }
+        }
+      }
+    });
+
+    var cellEditing = Ext.create('Ext.grid.plugin.CellEditing', {
+      clicksToEdit: 1,
+      listeners: {
+        edit: function (editor, e) {
+          Ext.Ajax.request({
+            url: "{% url 'api_kani_kunro_update' %}",
+            method: "POST",
+            params: {
+              seq_no: e.record.get('seq_no'),
+              work_yy: work_YY,
+              work_banki: work_banki,
+              txt_bigo: e.record.get('YN_9')
+            },
+            failure: function () {
+              e.record.set('YN_9', e.originalValue);
+              Ext.Msg.alert("오류", "저장 실패");
+            }
+          });
+        }
+      }
+    });
+
+    // Docked Items Config 생성
+    function onItemClickHandler(item) {
+      ADID = item;
+      syncParamsAndReload();
+      updateScrollMenuText(item);
+    }
+    const dockedItemsConfig = createDockedItemsConfig(adminBizLevel, arrADID, ADID, onItemClickHandler);
+
+    function renderFlagEmoji(v, meta, rec) {
+      var colIndex = meta.column.dataIndex;
+      if (colIndex === 'isKun') {
+        var whAmt = rec.get('wh_Kunro') || 0;
+        var payAmt = rec.get('isKunAmt') || 0;
+        if (whAmt === 0 && payAmt === 0) return "";
+        return (whAmt === payAmt) ? "✅" : "";
+      }
+      return "";
+    }
+
+    function renderSkeletonEmoji(v, meta, rec){
+      var wh = rec.get('wh_Kunro') || 0;
+      var kunAmt = rec.get('isKunAmt') || 0;
+      if (wh === 0 && kunAmt === 0) return "";
+      return wh !== kunAmt ? "💀" : "";
+    }
+
+    mainGrid = Ext.create('Ext.grid.Panel', {
+      loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
+      store: mainStore,
+      renderTo: renderTarget,
+      title: '간이지급명세서 - 근로소득',
+      width: '100%',
+      height: getGridHeight(),
+      columnLines: true,
+      viewConfig: {
+          getRowClass: function(record, rowIndex, rowParams, store) {
+              var isSkele = record.get('isSkele');
+              if (isSkele === true || String(isSkele) === 'true') {
+                  return 'row-yellow-warning';
+              }
+              return '';
+          }
+      },
+      features: (ADID === "전체"
+        ? [{
+            id: 'groupManager',
+            ftype: 'groupingsummary',
+            startCollapsed: false,
+            groupHeaderTpl: '{name}',
+            hideGroupedHeader: false,
+            enableGroupingMenu: true
+          }]
+        : []),
+      plugins: [cellEditing],
+      selModel: { selType: 'cellmodel' },
+      columns: [
+        {   dataIndex: 'groupManager',header: '<center>관리자</center>',  width: 0},
+        {  header: 'SEQ', dataIndex: 'seq_no',width: 50        },
+        {  id: 'biz_name',header: '<center>업체명</center>', dataIndex: 'biz_name',width: 200, renderer: renderTopic	},
+        { header: '<center>원천징수<br>근로소득</center>', dataIndex: 'wh_Kunro',  width: 100, xtype: 'numbercolumn', align:'right',format:'0,000' },
+        {
+          text: '전자신고 접수여부',
+          columns: [
+            { header:'근로', dataIndex:'isKun', width:50, renderer: renderFlagEmoji},
+            { header: '<center>근로<br>지급금액</center>',dataIndex: 'isKunAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000' }
+          ]
+        },
+        { header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   flex: 1, editor: { allowBlank: false }	},
+        { header:'오류', dataIndex:'isSkele', width:50, renderer: renderSkeletonEmoji },
+        { header:'<center>제출<br>ID</center>', dataIndex:'issuedID', width:50 }
+      ],
+      dockedItems: [
+        {
+          dock: 'top',
+          xtype: 'toolbar',
+          padding: '10 0 5 10',
+          style: { background: '#fff', border: 'none' },
+          items: [
+            ...dockedItemsConfig,
+            { xtype: 'tbspacer', width: 20 },
+            {
+                xtype: 'buttongroup',
+                columns: 5,
+                frame: false,
+                cls: 'custom-btn-group',
+                bodyStyle: 'background: transparent;',
+                border: false,
+                defaults: {
+                    enableToggle: true,
+                    toggleGroup: 'yearGroup',
+                    margin: '0 4 0 0',
+                    cls: 'custom-toggle-btn',
+                    height: 32,
+                    width: 60
+                },
+                items: Array.from({ length: 5 }, (_, i) => ({
+                  text: `${currentYear - i}년`,
+                  pressed: currentYear - i === parseInt(work_YY, 10),
+                  handler: function () {
+                    work_YY = parseInt(this.text.replace('년', ''), 10);
+                    syncParamsAndReload();
+                  }
+                }))
+            }
+          ]
+        },
+        {
+          xtype: 'toolbar',
+          dock: 'top',
+          padding: '5 0 5 10',
+          style: { background: '#fff', borderBottom: '1px solid #e9edf4' },
+          items: [
+            {
+              xtype: 'buttongroup',
+              columns: 2,
+              frame: false,
+              bodyStyle: 'background: transparent;',
+              border: false,
+              defaults: {
+                  enableToggle: true,
+                  toggleGroup: 'bankiGroup',
+                  margin: '0 4 0 0',
+                  cls: 'custom-toggle-btn',
+                  height: 32,
+                  width: 80
+              },
+              items: [
+                {
+                  text: '상반기',
+                  pressed: work_banki === 'Jan',
+                  handler: function () {
+                    work_banki = 'Jan';
+                    syncParamsAndReload();
+                  }
+                },
+                {
+                  text: '하반기',
+                  pressed: work_banki === 'Jul',
+                  handler: function () {
+                    work_banki = 'Jul';
+                    syncParamsAndReload();
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      listeners: {
+        afterrender: function(grid) {
+             Ext.EventManager.onWindowResize(function() {
+                 if(grid && !grid.isDestroyed) {
+                     grid.setHeight(getGridHeight());
+                     grid.doLayout();
+                 }
+             });
+             setTimeout(function(){ grid.updateLayout(); }, 200);
+        }
+      }
+    });
+
+    if (mainGrid) {
+        attachGridToolTip(mainGrid, '{% url "kijang_member_popup" %}?seq_no={seq_no}');
+    }
+
+    // proxy.extraParams 초기값 세팅 후 조회
+    var initialParams = {
+      input_workyear: work_YY,
+      work_banki: work_banki,
+      ADID: ADID,
+      flag: flag
+    };
+    mainStore.getProxy().extraParams = initialParams;
+    console.log('📡 Initial load with params:', initialParams);
+
+    mainStore.load({
+      callback: function (records, operation, success) {
+        console.log('Store load callback:', { records: records, success: success, recordCount: records ? records.length : 0 });
+        if (success) {
+          console.log('Data loaded successfully. Record count:', mainStore.getCount());
+          if (ADID === "전체") {
+              mainStore.group({ property: 'groupManager', direction: 'ASC' });
+          }
+        } else {
+          console.error('Store load failed!', operation);
+        }
+      }
+    });
+
+    // 생성 직후 레이아웃 1회 보정
+    setTimeout(resizeGrid, 0);
+  }
+
+  // ───────────── [2] 높이 계산 함수 ─────────────
+  function getGridHeight() {
+      var height = window.innerHeight - 180;
+      return height > 300 ? height : 300;
+  }
+
+  function resizeGrid() {
+    if (!mainGrid) return;
+    var wrap = mainGrid.el && mainGrid.el.dom ? mainGrid.el.dom.parentElement : null;
+    if (!wrap) return;
+    var h = wrap.clientHeight;
+    if (h > 50) mainGrid.setHeight(h);
+    mainGrid.doLayout();
+  }
+
+  Ext.onReady(function () {
+    // 최초 active 탭이면 바로 생성
+    buildGrid();
+
+    // 탭 전환 시 생성 + 리사이즈
+    document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(function (el) {
+      el.addEventListener('shown.bs.tab', function () {
+        buildGrid();
+        resizeGrid();
+      });
+    });
+
+    window.addEventListener('resize', resizeGrid);
+  });
+})();
+
+</script>

@@ -37,5 +37,11 @@ urlpatterns = [
 
     # 엑셀 붙여넣기 저장(접수번호저장 팝업)
     path("mng_kani_sa_il/api/paste_issue/", views.api_kani_sa_il_paste_issue, name="api_kani_sa_il_paste_issue"),
+
+    #근로소득 간이지급명세서
+    # 별도 뷰 없이 index 분기(flag=kaniKunro)로 이동
+    path("mng_kani_kunro/", RedirectView.as_view(url="/mngPay?flag=kaniKunro"), name="kani_kunro_page"),
+    path("mng_kani_kunro/api/list/", views.api_kani_kunro_list, name="api_kani_kunro_list"),
+    path("mng_kani_kunro/api/update/", views.api_kani_kunro_update, name="api_kani_kunro_update"),
 ]
 
