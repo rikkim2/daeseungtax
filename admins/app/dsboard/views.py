@@ -222,46 +222,99 @@ def get_pending_filings(request):
                         '대표자': corp.ceo_name
                     })
 
-        # 4. 지급조서간이소득 미신고 업체 (전년도 사업/일용/기타소득)
-        # 지급조서는 다음해 3월 10일까지 제출
-        # 2월부터 3월 10일까지 알림
-        if 2 <= current_month <= 3:
-            # 전년도 지급조서 확인
+        # 4. 지급조서간이소득 미신고 업체 (매월 간이지급명세서)
+        # 제출기한: 이번달 분은 다음달 말일까지
+        # 전월 지급조서 확인 (다음달 말일 마감)
+
+        # 전월 계산
+        if current_month == 1:
+            filing_month = 12
             filing_year = current_year - 1
-            filing_deadline = datetime.date(current_year, 3, 10)
-            days_until_filing = (filing_deadline - today).days
+        else:
+            filing_month = current_month - 1
+            filing_year = current_year
 
-            # 3월 10일 전후 30일 이내만 체크
-            if -30 <= days_until_filing <= 40:
-                # 모든 업체 조회 (사업소득 지급이 있는 업체)
-                all_corps = MemUsers.objects.filter(
-                    del_yn='N'
-                ).exclude(biz_no='')
+        # 이번달 말일이 마감일
+        if current_month == 12:
+            next_month = 1
+            next_year = current_year + 1
+        else:
+            next_month = current_month + 1
+            next_year = current_year
 
-                if 담당자:
-                    all_corps = all_corps.filter(biz_area=담당자)
+        # 마감일: 이번달 말일 계산
+        if current_month in [1, 3, 5, 7, 8, 10, 12]:
+            last_day = 31
+        elif current_month in [4, 6, 9, 11]:
+            last_day = 30
+        else:  # 2월
+            # 윤년 계산
+            if current_year % 4 == 0 and (current_year % 100 != 0 or current_year % 400 == 0):
+                last_day = 29
+            else:
+                last_day = 28
 
-                for corp in all_corps:
-                    과세년도_str = str(filing_year)
+        filing_deadline = datetime.date(current_year, current_month, last_day)
+        days_until_filing = (filing_deadline - today).days
 
-                    # 지급조서간이소득 신고 여부 확인
-                    filed = 지급조서간이소득.objects.filter(
+        # 이번달 말일 전후 5일 이내만 체크
+        if -5 <= days_until_filing <= last_day:
+            # 모든 업체 조회
+            all_corps = MemUsers.objects.filter(
+                del_yn='N'
+            ).exclude(biz_no='')
+
+            if 담당자:
+                all_corps = all_corps.filter(biz_area=담당자)
+
+            for corp in all_corps:
+                # 전월 원천세 신고가 있는지 확인
+                과세연월_str = f"{filing_year}{str(filing_month).zfill(2)}"
+
+                # 원천세 신고 확인
+                원천세_신고 = 원천세전자신고.objects.filter(
+                    사업자번호=corp.biz_no,
+                    과세연월=과세연월_str
+                ).first()
+
+                # 원천세 신고가 있는 업체만 체크
+                if 원천세_신고:
+                    # 지급조서간이소득 신고 여부 확인 (같은 월)
+                    과세년월_str = f"{filing_year}{str(filing_month).zfill(2)}"
+
+                    지급조서_신고 = 지급조서간이소득.objects.filter(
                         사업자번호=corp.biz_no,
-                        과세년도__contains=과세년도_str
-                    ).exists()
+                        과세년도__contains=str(filing_year)
+                    ).first()
 
-                    # 신고하지 않은 업체만 추가
-                    if not filed:
+                    # 지급조서 신고가 없거나, 있어도 해당 월 데이터가 없는 경우
+                    # (간이지급명세서는 매월 제출하므로 접수일시로 확인)
+                    needs_filing = False
+
+                    if not 지급조서_신고:
+                        needs_filing = True
+                    else:
+                        # 접수일시를 확인하여 해당 월에 신고했는지 체크
+                        if 지급조서_신고.접수일시:
+                            접수일시_str = str(지급조서_신고.접수일시)
+                            # 접수일시에 해당 년월이 포함되어 있는지 확인
+                            if 과세연월_str not in 접수일시_str:
+                                needs_filing = True
+                        else:
+                            needs_filing = True
+
+                    if needs_filing:
                         pending_list.append({
                             '업체명': corp.biz_name,
                             '사업자번호': corp.biz_no,
                             '담당자': corp.biz_area,
                             '신고유형': '지급조서(간이)',
-                            '과세기간': f"{filing_year}년",
+                            '과세기간': f"{filing_year}년 {filing_month}월",
                             '신고마감일': filing_deadline.strftime('%Y-%m-%d'),
                             'D_day': days_until_filing,
                             '연락처': corp.biz_tel,
-                            '대표자': corp.ceo_name
+                            '대표자': corp.ceo_name,
+                            '비고': '원천세 신고 있음'
                         })
 
         # D-day 기준으로 정렬 (마감일이 가까운 순)

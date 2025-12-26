@@ -320,6 +320,7 @@
                                 <th>신고마감일</th>
                                 <th>대표자</th>
                                 <th>연락처</th>
+                                <th>비고</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -329,6 +330,7 @@
                 const dDayClass = item.D_day <= 0 ? 'd-day-urgent' :
                                  item.D_day <= 3 ? 'd-day-warning' : '';
                 const dDayText = item.D_day <= 0 ? `D+${Math.abs(item.D_day)}` : `D-${item.D_day}`;
+                const 비고 = item.비고 || '';
 
                 html += `
                     <tr>
@@ -341,6 +343,7 @@
                         <td>${item.신고마감일}</td>
                         <td>${item.대표자}</td>
                         <td>${item.연락처}</td>
+                        <td><small class="text-muted">${비고}</small></td>
                     </tr>
                 `;
             });
