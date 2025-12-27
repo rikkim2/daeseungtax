@@ -4,23 +4,16 @@
 <style>
     /* 부트스트랩 배경색 오버라이드 */
     .bg-primary-light {
-        background-color: #e8f5e9 !important; 
+        background-color: #e8f5e9 !important;
     }
     .modal-xxl {
         min-width: 1200px;
-        max-width: 1400px; 
+        max-width: 1400px;
     }
-    
+
     /* ★ 스크롤 컨테이너 */
     .promo-scroll-container {
-        position: absolute;
-        top: 0; 
-        bottom: 0; 
-        left: 0; 
-        right: 0;
-        overflow-y: auto;   
-        overflow-x: hidden; 
-        padding: 15px;      
+        padding: 20px;
     }
 </style>
 
@@ -34,11 +27,11 @@
                         <div class="card-body project-type-container projects p-4">
                             <h4 class="m-0" id="typeTitle"></h4>
                             <div class="d-sm-flex align-items-center">
-                                <div class="btn-list mx-4"></div> 
+                                <div class="btn-list mx-4"></div>
                                 <nav class="nav card-body p-1 project-type ">
                                     <a class="btn btn-primary active" data-bs-toggle="tab" href="#pjAll" id="pwAll">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-inner-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,13h-8.0005493C13.2234497,13.0001831,12.9998169,13.223999,13,13.5v8.0005493C13.0001831,21.7765503,13.223999,22.0001831,13.5,22h8.0006104C21.7765503,21.9998169,22.0001831,21.776001,22,21.5v-8.0006104C21.9998169,13.2234497,21.776001,12.9998169,21.5,13z M21,21h-7v-7h7V21z M10.5,2H2.4993896C2.2234497,2.0001831,1.9998169,2.223999,2,2.5v8.0005493C2.0001831,10.7765503,2.223999,11.0001831,2.5,11h8.0006104C10.7765503,10.9998169,11.0001831,10.776001,11,10.5V2.4993896C10.9998169,2.2234497,10.776001,1.9998169,10.5,2z M10,10H3V3h7V10z M10.5,13H2.4993896C2.2234497,13.0001831,1.9998169,13.223999,2,13.5v8.0005493C2.0001831,21.7765503,2.223999,22.0001831,2.5,22h8.0006104C10.7765503,21.9998169,11.0001831,21.776001,11,21.5v-8.0006104C10.9998169,13.2234497,10.776001,12.9998169,10.5,13z M10,21H3v-7h7V21z M21.5,2h-8.0005493C13.2234497,2.0001831,12.9998169,2.223999,13,2.5v8.0005493C13.0001831,10.7765503,13.223999,11.0001831,13.5,11h8.0006104C21.7765503,10.9998169,22.0001831,10.776001,22,10.5V2.4993896C21.9998169,2.2234497,21.776001,1.9998169,21.5,2z M21,10h-7V3h7V10z"/></svg>
-                                    </a>                               
+                                    </a>
                                     {% for year in corpYears %}
                                     <a class="btn btn-primary-light btn-sm " data-bs-toggle="tab" href="#pj{{year}}" id="pw{{year}}">
                                         {{year}}
@@ -50,7 +43,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="row ">
                 <div class="tab-content">
                     {% for selectedYear in corpYears %}
@@ -108,7 +101,7 @@
                         </div>
                     </div>
                     {% endfor %}
-                    
+
                     <div class="tab-pane active h-100" id="pjAll">
                         <div class="row">
                             {% for invoice in invoiceAll  %}
@@ -208,7 +201,9 @@
             </div>
         </div>
     </div>
-    </div> <div class="modal fade" id="modalFile2">
+</div>
+
+<div class="modal fade" id="modalFile2">
     <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content modal-content-demo">
             <div class="modal-body">
@@ -235,7 +230,7 @@
 <script>
 // 탭 전용 스크립트 캡슐화
 (function() {
-    
+
     // 데이트피커 초기화
     $(".datepicker_noval").datepicker({
         autoclose: true,
@@ -271,7 +266,7 @@
             });
         }
     }
-    
+
     $(document).on('click', '#pwAll', function(e) {
         $('#typeTitle').html("");
     });
@@ -280,7 +275,6 @@
     $("#saveBtn_fault").click(function(e) {
         e.preventDefault();
         // ... (필요하다면 기존 로직 유지, 없으면 삭제 가능) ...
-        // ...
     });
 
     // ----------------------------------------------------------------
@@ -326,19 +320,19 @@
                             <th class="text-center">당월분</th>
                             <th class="text-center">지급내용</th>
                             <th class="text-center">잔여분</th>
-                            <th class="text-center">잔여지급월</th>                                
+                            <th class="text-center">잔여지급월</th>
                           </tr>
                         </thead>
                         <tbody>`;
 
                 let t_feeamt = 0, t_total_payment_amount = 0, t_payment_amount = 0, t_remaining_payment_amount = 0;
-                
+
                 response.data.forEach((item, index) => {
                     t_feeamt += parseFloat(item.feeamt) || 0;
                     t_total_payment_amount += parseFloat(item.total_payment_amount) || 0;
                     t_payment_amount += parseFloat(item.payment_amount) || 0;
                     t_remaining_payment_amount += parseFloat(item.remaining_payment_amount) || 0;
-                    
+
                     tmpContent += `
                       <tr>
                         <td class="text-center">${index + 1}</td>
@@ -351,12 +345,12 @@
                         <td class="text-end">${parseFloat(item.payment_amount).toLocaleString()}</td>
                         <td class="text-center">${item.payment_reason}</td>
                         <td class="text-end">${parseFloat(item.remaining_payment_amount).toLocaleString()}</td>
-                        <td class="text-center">${item.next_payment_due_month}</td>                              
+                        <td class="text-center">${item.next_payment_due_month}</td>
                       </tr>`;
                 });
-                
+
                 let aftertax_payment = t_payment_amount * 0.967; // 세후 금액
-                
+
                 tmpContent += `
                         <tr>
                           <td colspan="5" class="fw-bold text-uppercase text-end">합계</td>
@@ -420,7 +414,7 @@
         document.body.innerHTML = "<div>" + printContents + "</div>";
         window.print();
         document.body.innerHTML = originalContents;
-        window.location.reload(); 
+        window.location.reload();
     };
 
     window.closeModal = function(modalId) {
