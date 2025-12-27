@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 {% load humanize %}
 
 <style>
@@ -6,17 +6,10 @@
     background-color: #e8f5e9 !important; /* Bootstrap의 연한색 */
 }
 .staff-scroll-container {
-    position: absolute; /* 부모(.tab-pane) 기준으로 위치 고정 */
-    top: 0; 
-    bottom: 0; 
-    left: 0; 
-    right: 0;
-    overflow-y: auto;   /* 세로 스크롤 허용 */
-    overflow-x: hidden; /* 가로 스크롤 방지 */
-    padding: 15px;      /* 내부 여백 */
+    padding: 20px;      /* 내부 여백 */
 }    
 </style>
-<div class="staff-scroll-container">   
+<div class="staff-scroll-container" id="staffPromoRoot">   
 							<!--ROW OPENED-->
 							<div class="row">
 								<div class="col-xl-8 col-md-12">
@@ -24,16 +17,16 @@
 										<div class="col-md-12">
 											<div class="card">
 												<div class="card-body project-type-container projects p-4">
-													<h4 class="m-0" id="typeTitle"></h4>
+													<h4 class="m-0" id="staffTypeTitle"></h4>
 													<div class="d-sm-flex align-items-center">
 														<div class="btn-list mx-4">
 														</div> 
 														<nav class="nav card-body p-1 project-type ">
-															<a class="btn btn-primary active" data-bs-toggle="tab" href="#pjAll" id="pwAll">
+															<a class="btn btn-primary active" data-bs-toggle="tab" href="#pjAll" id="staffPwAll">
 																<svg xmlns="http://www.w3.org/2000/svg" class="w-inner-icn text-white" enable-background="new 0 0 24 24" viewBox="0 0 24 24"><path d="M21.5,13h-8.0005493C13.2234497,13.0001831,12.9998169,13.223999,13,13.5v8.0005493C13.0001831,21.7765503,13.223999,22.0001831,13.5,22h8.0006104C21.7765503,21.9998169,22.0001831,21.776001,22,21.5v-8.0006104C21.9998169,13.2234497,21.776001,12.9998169,21.5,13z M21,21h-7v-7h7V21z M10.5,2H2.4993896C2.2234497,2.0001831,1.9998169,2.223999,2,2.5v8.0005493C2.0001831,10.7765503,2.223999,11.0001831,2.5,11h8.0006104C10.7765503,10.9998169,11.0001831,10.776001,11,10.5V2.4993896C10.9998169,2.2234497,10.776001,1.9998169,10.5,2z M10,10H3V3h7V10z M10.5,13H2.4993896C2.2234497,13.0001831,1.9998169,13.223999,2,13.5v8.0005493C2.0001831,21.7765503,2.223999,22.0001831,2.5,22h8.0006104C10.7765503,21.9998169,11.0001831,21.776001,11,21.5v-8.0006104C10.9998169,13.2234497,10.776001,12.9998169,10.5,13z M10,21H3v-7h7V21z M21.5,2h-8.0005493C13.2234497,2.0001831,12.9998169,2.223999,13,2.5v8.0005493C13.0001831,10.7765503,13.223999,11.0001831,13.5,11h8.0006104C21.7765503,10.9998169,22.0001831,10.776001,22,10.5V2.4993896C21.9998169,2.2234497,21.776001,1.9998169,21.5,2z M21,10h-7V3h7V10z"/></svg>
 															</a>                              
                               {% for year in corpYears %}
-															<a class="btn btn-primary-light btn-sm " data-bs-toggle="tab" href="#pj{{year}}" id="pw{{year}}">
+															<a class="btn btn-primary-light btn-sm " data-bs-toggle="tab" href="#pj{{year}}" id="staffPw{{year}}">
 																{{year}}
 															</a>
                               {% endfor %}
@@ -63,7 +56,7 @@
 																					</div>
                                           
 																					<div class="ms-1">
-																						<h6 class="mb-1 text-normal"> <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="float-start">{{invoice.corpYear}}년 귀속 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+																						<h6 class="mb-1 text-normal"> <a href="javascript:staffPromo.invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="float-start">{{invoice.corpYear}}년 귀속 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
 																						<span class="text-muted border-end pe-2 fs-11 float-start mt-1"> 입사일</span>
 																						<span class="text-teritary ps-1 fs-11">{{invoice.reg_date }}</span>
 																					</div>
@@ -71,7 +64,7 @@
 																			</div>
 																			<div class="col-auto">
 																				<div class="d-flex align-items-center">
-																					<a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+																					<a href="javascript:staffPromo.invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
                                             <h6 class="text-muted">성과급</h6>
                                             <h4 class="mb-0">{{invoice.promoAmt|intcomma}}</h4>
                                           </a>
@@ -119,7 +112,7 @@
 																					</div>
                                           
 																					<div class="ms-1">
-																						<h6 class="mb-1 text-normal"> <a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="float-start">{{invoice.corpYear}}년 귀속 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
+																						<h6 class="mb-1 text-normal"> <a href="javascript:staffPromo.invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="float-start">{{invoice.corpYear}}년 귀속 {{invoice.title}}</a> <span class="text-muted bg-light fs-11 mx-2"> </span> </h6>
 																						<span class="text-muted border-end pe-2 fs-11 float-start mt-1"> 입사일</span>
 																						<span class="text-teritary ps-1 fs-11">{{invoice.reg_date }}</span>
 																					</div>
@@ -127,7 +120,7 @@
 																			</div>
 																			<div class="col-auto">
 																				<div class="d-flex align-items-center">
-																					<a href="javascript:invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
+																					<a href="javascript:staffPromo.invoiceDetail('{{invoice.admin_name}}','{{invoice.corpYear}}','{{invoice.title}}')" class="option-dots" aria-haspopup="true" aria-expanded="false">
                                             <h6 class="text-muted">성과급</h6>
                                             <h4 class="mb-0">{{invoice.promoAmt|intcomma}}</h4>
                                           </a>
@@ -279,7 +272,7 @@
 							</div>
 							<!--ROW CLOSED-->
 
-							<div class="modal fade"  id="modalFile2">
+							<div class="modal fade"  id="staffModalFile2">
 								<div class="modal-dialog modal-lg" role="document">
 									<div class="modal-content modal-content-demo">
 										<div class="modal-body" >
@@ -287,14 +280,14 @@
                         <div class="col-md-12">
                           <div class="card">
                             <div class="card-body">
-                              <div id="summitModal"></div>
+                              <div id="staffSummitModal"></div>
                             </div>
                             <div class="card-footer text-end">
                               <!-- <div class="modal-footer justify-content-center" id="btnKakaoSend1"></div> -->
-                              <button type="button" class="btn btn-info mb-1 me-2" onclick="printDiv('summitModal')">
+                              <button type="button" class="btn btn-info mb-1 me-2" onclick="staffPromo.printDiv('staffSummitModal')">
                                   <i class="si si-printer"></i> 출력
                               </button>
-                              <button class="btn btn-light mb-1" onclick="closeModal('modalFile2')">닫기</button>
+                              <button class="btn btn-light mb-1" onclick="staffPromo.closeModal('staffModalFile2')">닫기</button>
                           </div>
                         </div><!-- COL-END -->
                       </div>
@@ -305,20 +298,16 @@
 </div>		          
 	            
 <script>
-// 탭 전용 스크립트 캡슐화 (즉시 실행 함수)
 (function() {
-    
-    // 카카오 알림톡 URL
+    const $root = $('#staffPromoRoot');
     const objectUrl_kakao = "{% url 'send_kakao_notification' %}";
 
-    // 데이트피커 초기화
     $(".datepicker_noval").datepicker({
         autoclose: true,
         format: 'yyyy-mm-dd',
         todayHighlight: true,
     }).val('');
 
-    // 숫자에 3자리마다 콤마 추가
     function formatNumber(value) {
         return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
@@ -338,31 +327,21 @@
         try { pyJson = JSON.parse(pyJsonStr); } catch(e){}
     }
 
-    // 탭 클릭 시 타이틀 변경 이벤트 바인딩
     if(pyJson.length > 0) {
-        // 중복 바인딩 방지를 위해 off 후 on
-        $(document).off('click', '.year-tab-link').on('click', '.year-tab-link', function(e) {
-             // class="year-tab-link"를 탭 버튼(a태그)에 추가해주시면 더 좋습니다.
-             // 현재는 ID 기반이므로 기존 로직 유지하되, 동적 바인딩 사용
-        });
-
         for (var i = 0; i < pyJson.length; i++) {
-            $(document).on('click', '#pw' + pyJson[i].corpYear, function(e) {
-                $('#typeTitle').html(e.target.innerText + " 년");
+            $root.on('click', '#staffPw' + pyJson[i].corpYear, function(e) {
+                $('#staffTypeTitle').html(e.target.innerText + " 년");
             });
         }
     }
     
-    $(document).on('click', '#pwAll', function(e) {
-        $('#typeTitle').html("");
+    $root.on('click', '#staffPwAll', function() {
+        $('#staffTypeTitle').html("");
     });
 
-    // -----------------------------------------------------------
-    // ★ 핵심 수정: 함수들을 window 객체에 할당 (HTML onclick에서 접근 가능하도록)
-    // -----------------------------------------------------------
+    const staffPromo = {};
 
-    // 1. loadFaultData 함수 정의 (호출보다 먼저 정의해야 안전함)
-    window.loadFaultData = function() {
+    staffPromo.loadFaultData = function() {
         // 템플릿 변수 safe 처리 (값이 없을 경우 대비)
         let admin_id = '{{invoice.admin_name|default:""|escapejs}}'; 
         
@@ -403,18 +382,17 @@
                     tableContent += `<tr><td colspan="4">차감 내역이 없습니다.</td></tr>`;
                 }
                 tableContent += `</tbody></table></div></div></div>`;
-                $("#faultDataContainer").html(tableContent);
+                $root.find("#faultDataContainer").html(tableContent);
             },
             error: function(xhr, status, error) {
                 // 404 에러 등은 여기서 잡힘
                 console.error("Error fetching fault data:", error);
-                $("#faultDataContainer").html("<p class='text-danger text-center mt-3'>데이터를 불러올 수 없습니다.</p>");
+                $root.find("#faultDataContainer").html("<p class='text-danger text-center mt-3'>데이터를 불러올 수 없습니다.</p>");
             }
         });
     };
 
-    // 2. invoiceDetail 함수 정의
-    window.invoiceDetail = function(ADID, work_YY, title) {
+    staffPromo.invoiceDetail = function(ADID, work_YY, title) {
         $.ajax({
             url: "{% url 'getInvoiceDetail' %}",
             type: "POST",
@@ -487,8 +465,8 @@
                   </div>`;
 
                 // 모달 내용 업데이트
-                $("#summitModal").html(tmpContent);
-                $("#modalFile2").modal("show");
+                $("#staffSummitModal").html(tmpContent);
+                $("#staffModalFile2").modal("show");
             },
             error: function(xhr, status, error) {
                 alert("데이터를 불러오는 중 오류가 발생했습니다.");
@@ -497,8 +475,7 @@
         });
     };
 
-    // 3. 기타 유틸 함수들
-    window.printDiv = function(divId) {
+    staffPromo.printDiv = function(divId) {
         var printContents = document.getElementById(divId).innerHTML;
         var originalContents = document.body.innerHTML;
         document.body.innerHTML = "<div>" + printContents + "</div>";
@@ -510,7 +487,7 @@
         window.location.reload();
     };
 
-    window.closeModal = function(modalId) {
+    staffPromo.closeModal = function(modalId) {
         var modalElement = document.getElementById(modalId);
         if(typeof bootstrap !== 'undefined' && bootstrap.Modal) {
              var modalInstance = bootstrap.Modal.getInstance(modalElement);
@@ -525,7 +502,7 @@
     };
 
     // 실수 저장 버튼 이벤트
-    $("#saveBtn_fault").click(function(e) {
+    $root.on("click", "#saveBtn_fault", function(e) {
         e.preventDefault();
 
         let admin_id = $("select[name='admin_id']").val();
@@ -566,9 +543,10 @@
         });
     });
 
-    // ★ 초기 데이터 로드 (함수 정의 후 호출해야 안전함)
-    window.loadFaultData();
+    window.staffPromo = staffPromo;
+    staffPromo.loadFaultData();
 
 })();
 </script>
     
+

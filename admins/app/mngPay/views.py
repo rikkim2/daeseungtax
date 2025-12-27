@@ -950,7 +950,6 @@ def api_kani_sa_il_update(request):
         return JsonResponse({"ok": False, "msg": str(e)}, status=500)
 
 
-
 @require_POST
 @login_required
 def save_clipboard_Kani(request):

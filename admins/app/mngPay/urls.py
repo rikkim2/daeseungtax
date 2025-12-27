@@ -33,9 +33,6 @@ urlpatterns = [
     # [추가] 간이지급명세서 클립보드 저장 URL
     path('save_clipboard_Kani/', views.save_clipboard_Kani, name='save_clipboard_Kani'),
 
-    # 참고: payroll의 클립보드 저장 URL도 이 파일에 함께 정의되어 있을 가능성이 높습니다.
-    # path('save_clipboard_Pay/', views.save_clipboard_Pay, name='save_clipboard_Pay'),
-
 
     #근로소득 간이지급명세서
     # 별도 뷰 없이 index 분기(flag=kaniKunro)로 이동

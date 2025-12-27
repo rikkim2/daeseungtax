@@ -28,8 +28,8 @@
 
     /* [디자인 수정] 토글 버튼 선택됨 (Pressed) */
     .custom-toggle-btn.x-btn-pressed {
-        background-color: #8397f0 !important; /* 테마 색상 (보라/블루) */
-        border-color: #8397f0 !important;
+        background-color: #667eea !important; /* 테마 색상 (보라/블루) */
+        border-color: #667eea !important;
         color: #ffffff !important;
         font-weight: bold !important;
     }
@@ -52,9 +52,9 @@
     }
     
     /* (선택사항) 마우스 올렸을 때 색상 유지하고 싶다면 아래 주석 해제 */
-    .row-yellow-warning.x-grid-row-over .x-grid-cell {
+    /* .row-yellow-warning.x-grid-row-over .x-grid-cell {
         background-color: #ffffaa !important;
-    } 
+    } */
 </style>  
 
 <div class="ext-grid-wrapper"></div>
@@ -68,14 +68,9 @@
   var arrADID = JSON.parse('{{ arr_ADID|safe|escapejs }}');
   var work_YY = '{{ request.session.workyearPay }}';
   var work_MM = '{{ request.session.workmonthPay }}';  
-  
-  // [수정] 값이 없으면 "전월" 기준 설정 (간이지급명세서는 보통 전월분 신고)
-  if (!work_YY || !work_MM) {
-      var d = new Date();
-      d.setMonth(d.getMonth() - 1); // 1개월 전으로 이동 (1월이면 작년 12월로 자동 계산됨)
-      if (!work_YY) work_YY = d.getFullYear();
-      if (!work_MM) work_MM = d.getMonth() + 1;
-  }
+  // 값이 없으면 현재 날짜 기준 설정
+  if(!work_YY) work_YY = new Date().getFullYear();
+  if(!work_MM) work_MM = new Date().getMonth() + 1;  
 console.log(ADID)
   const currentYear = new Date().getFullYear();
   var payrollYear, selectedPeriod, selectedSheetID, selectedSheetName="";
@@ -225,8 +220,8 @@ console.log(ADID)
             params: {
               seq_no: e.record.get('seq_no'),
               field: e.field,
-              work_YY: work_YY,
-              work_MM: work_MM,
+              work_YY: (window.STATE && STATE.work_YY) || '',
+              work_MM: (window.STATE && STATE.work_MM) || '',
               val: e.record.get(e.field)
             },
             failure: function () {
@@ -291,11 +286,15 @@ console.log(ADID)
       return totalWh !== totalPay ? "💀" : "";
     }       
     mainGrid = Ext.create('Ext.grid.Panel', {
+      id: 'mainGrid',
       loadMask : {msg: 'Loading Data...', msgCls: 'some-css-class'},
       store: mainStore,
       renderTo: renderTarget,
       title: '간이지급명세서 - 사업,일용,기타 / 일용직 근로내용확인서',
-      tools: [
+      width: '100%',
+      height: getGridHeight(),
+      columnLines: true,
+      tools: [  // 최상단 오른쪽 툴바
           {
             xtype: 'button',
             text: '접수번호저장',
@@ -304,7 +303,7 @@ console.log(ADID)
               Ext.create('Ext.window.Window', {
                 title: '데이터 붙여넣기',
                 modal: true,
-                frame:false,
+                frame: false,
                 width: 800,
                 height: 200,
                 layout: 'fit',
@@ -320,7 +319,7 @@ console.log(ADID)
                         var win = btn.up('window');
                         var clipboardData = win.down('textarea').getValue();
                         Ext.Ajax.request({
-                          url: "{% url 'save_clipboard_Kani' %}",
+                          url: "{% url 'api_kani_sa_il_update' %}",
                           method: 'POST',
                           params: {
                               clipboardData: clipboardData,
@@ -330,21 +329,17 @@ console.log(ADID)
                             win.close();
                             Swal.fire({
                               title: '작업 성공',
-                              text: '전자신고파일이 성공적으로 저장되었습니다.',
+                              text: '접수번호가 성공적으로 저장되었습니다.',
                               icon: 'success',
                               showConfirmButton: true,
                               willClose: () => {
-                                if (mainStore) mainStore.reload();
+                                // 그리드 새로고침
+                                mainStore.reload();
                               }
                             });
                           },
                           failure: function(response) {
-                            var errorMsg = "서버 오류";
-                            try {
-                                var json = Ext.decode(response.responseText);
-                                errorMsg = json.message || errorMsg;
-                            } catch(e) {}
-                            Swal.fire("오류", "저장오류 : " + errorMsg, "error");
+                            Swal.fire("오류", "저장오류 : " + response.message, "error");
                           }
                         });
                     }
@@ -360,9 +355,6 @@ console.log(ADID)
             style: 'margin-right: 10px;'
           }
       ],
-      width: '100%',
-      height: getGridHeight(),
-      columnLines: true,
       viewConfig: {
           getRowClass: function(record, rowIndex, rowParams, store) {
               // 데이터 모델의 'isSkele' 값이 true(또는 "true")이면 클래스 적용
@@ -402,14 +394,14 @@ console.log(ADID)
           columns: [
             { header:'일용', dataIndex:'isKun', width:50, renderer: renderFlagEmoji},
             { header: '<center>일용<br>지급금액</center>',dataIndex: 'isKunAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
-            {	header: '<center>근로내용확인신고<br>접수번호</center>', dataIndex: 'isIlyoung',  width: 150, editor: { allowBlank: false }			}, 
+            {	header: '<center>근로내용확인신고<br>접수번호</center>', dataIndex: 'isIlyoung',  width: 150, editor: { allowBlank: true }			}, 
             { header:'사업', dataIndex:'isSa',  width:50, renderer: renderFlagEmoji },
             {	header: '<center>사업<br>지급금액</center>', dataIndex: 'isSaAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000'			}, 
             { header:'기타', dataIndex:'isKi',  width:50, renderer: renderFlagEmoji },
             {	header: '<center>기타<br>지급금액</center>', dataIndex: 'isKiAmt',  width: 100,xtype: 'numbercolumn', align:'right',format:'0,000'            }
           ]
 		    }, 
-        {	header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   flex: 1, editor: { allowBlank: false }		}, 
+        {	header: '<center>차이원인을 기록하세요</center>', dataIndex: 'YN_9',   flex: 1, editor: { allowBlank: true }		}, 
         { header:'오류', dataIndex:'isSkele', width:50, renderer: renderSkeletonEmoji },
       ],
       dockedItems: [
@@ -432,7 +424,6 @@ console.log(ADID)
                 defaults: { 
                     enableToggle: true, 
                     toggleGroup: 'yearGroup', 
-                    allowDepress: false,   // ✅ 같은 버튼 다시 눌러도 pressed 해제 불가
                     margin: '0 4 0 0', 
                     cls: 'custom-toggle-btn', // ★ 위에서 정의한 CSS 클래스 적용
                     height: 32, // 버튼 높이를 키워 클릭하기 쉽게
@@ -443,6 +434,8 @@ console.log(ADID)
                   pressed: currentYear - i === parseInt(work_YY, 10),
                   handler: function () {
                     work_YY = parseInt(this.text.replace('년', ''), 10);
+                    // 명시적으로 pressed 상태 업데이트
+                    this.toggle(true);
                     syncParamsAndReload();
                   }
                 }))
@@ -465,7 +458,6 @@ console.log(ADID)
               defaults: { 
                   enableToggle: true, 
                   toggleGroup: 'monthGroup', 
-                  allowDepress: false,   // ✅ 같은 버튼 다시 눌러도 pressed 해제 불가
                   margin: '0 4 0 0', 
                   cls: 'custom-toggle-btn', // ★ 위에서 정의한 CSS 클래스 적용
                   height: 32,
@@ -476,6 +468,8 @@ console.log(ADID)
                   pressed: i + 1 === parseInt(work_MM, 10),
                   handler: function () {
                     work_MM = parseInt(this.text.replace('월', ''), 10);
+                    // 명시적으로 pressed 상태 업데이트
+                    this.toggle(true);
                     syncParamsAndReload();
                   }
               }))

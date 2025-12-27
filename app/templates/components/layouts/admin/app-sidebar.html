@@ -29,7 +29,7 @@
           </a>
           <ul class="slide-menu">
             <li><a href="{% url 'staffInfo'%}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">Profile</a></li>
-            <li><a href="staffOff" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">연월차내역</a></li>
+            <li><a href="{% url 'staffHoliday' %}" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">연월차내역</a></li>
             <li><a href="{% url 'staffList' %}?flag=Pro" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">업무성과</a></li>
             {% if request.session.Admin_Grade == 'SALE'  or request.session.Admin_Grade == 'SA' %}
             <li><a href="{% url 'staffList' %}?flag=SalePro" class="slide-item" data-tab="true" onclick="return openEmbedPage(event, this);">마케팅수수료</a></li>

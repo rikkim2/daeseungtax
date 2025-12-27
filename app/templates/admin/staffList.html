@@ -1,16 +1,10 @@
-{% load static %}
+﻿{% load static %}
 {% load tz %}
 
 <style>
     /* 스크롤 컨테이너 */
     .admin-list-scroll-container {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
+        /* 별도 스크롤 박스 없이 상위 컨테이너 스크롤을 사용하고 여백만 유지 */
         padding: 20px;
         background: #f8f9fa;
     }
@@ -257,7 +251,7 @@
         height: 100% !important;
         max-height: 100% !important;
         display: flex;
-        flex-direction: column; 
+        flex-direction: column;
         overflow: hidden;
     }
 
@@ -364,7 +358,7 @@
                          onerror="this.src='{% static 'assets/images/faces/blank.jpg' %}'">
                     <div class="leader-details">
                         <h4>{{ team.leader.admin_name }}</h4>
-                        <p>
+                                                <p>
                             <i class="fe fe-briefcase me-1"></i>{{ team.leader.admin_biz_area|default:"미지정" }}
                             {% if team.leader.admin_tel_no %}
                             · <i class="fe fe-phone me-1"></i>{{ team.leader.admin_tel_no }}
@@ -438,7 +432,6 @@
     </div>
     {% endif %}
 
-    <!-- 미배정 직원 섹션 -->
     {% if unassigned_admins %}
     <div class="unassigned-section">
         <div class="section-header">
@@ -479,7 +472,7 @@
     </div>
     {% endif %}
 
-    <!-- 기타 관리자 섹션 -->
+
     {% if other_admins %}
     <div class="unassigned-section">
         <div class="section-header">

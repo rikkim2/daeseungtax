@@ -5,6 +5,9 @@ urlpatterns = [
     # path('login/', views.login_view, name='login'),
     path('', include('admins.app.adminAuth.urls', namespace='adminAuth')),
     path('', include('admins.app.urls')),
+    # admin.localhost처럼 앞에 admin/ prefix가 붙는 경우도 대응
+    # path('admin/', include('admins.app.adminAuth.urls', namespace='adminAuth')),
+    path('admin/', include('admins.app.urls')),
 
     path("gpt_admin_query/", views.gpt_admin_query, name="gpt_admin_query"),
     path("gpt_admin_page/", views.gpt_admin_page, name="gpt_admin_page"),  # HTML 페이지    
